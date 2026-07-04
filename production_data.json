@@ -64,5 +64,16 @@
     "retail_price": 5000.0,
     "profit": 2000.0,
     "product_key": "arnes"
+  },
+  {
+    "id": "4eae82be",
+    "date": "2026-07-04T14:05:26.280279",
+    "product_name": "Arnés Tormenta Test",
+    "quantity": 1,
+    "materials_cost": 1000.0,
+    "labor_cost": 2000.0,
+    "retail_price": 5000.0,
+    "profit": 2000.0,
+    "product_key": "arnes"
   }
 ]

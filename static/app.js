@@ -1130,29 +1130,35 @@ async function mockApiHandler(resource, options) {
     // --- RUTA: TENDENCIAS ---
     if (path === '/api/trends' && method === 'GET') {
         const articles = [
-            { "title": "Látex Couture: La evolución del fetiche al prêt-à-porter en 2026", "link": "https://www.lacarmina.com/blog/2026/latex-couture-fashion", "pub_date": "Sun, 07 Jun 2026 08:00:00 GMT", "source": "La Carmina Blog" },
-            { "title": "Corsets de cuero y siluetas victorianas dominan las pasarelas de Milán", "link": "https://news.google.com", "pub_date": "Sat, 06 Jun 2026 15:30:00 GMT", "source": "Google News" },
-            { "title": "Metal Hardware: Argollas y hebillas como elementos estructurales clave", "link": "https://www.lacarmina.com/blog/2026/metal-hardware-harness", "pub_date": "Fri, 05 Jun 2026 10:15:00 GMT", "source": "La Carmina Blog" },
-            { "title": "Slow Fashion: El resurgimiento del diseño artesanal frente al fast fashion", "link": "https://news.google.com", "pub_date": "Thu, 04 Jun 2026 12:00:00 GMT", "source": "Google News" },
-            { "title": "Gothcore y Cyberpunk: La estética oscura toma las calles de Tokio", "link": "https://www.lacarmina.com/blog/2026/tokyo-gothic-cyberpunk-trends", "pub_date": "Wed, 03 Jun 2026 09:45:00 GMT", "source": "La Carmina Blog" },
-            { "title": "Diseño en cuero vegano: Alternativas sostenibles en corsetería y arneses", "link": "https://news.google.com", "pub_date": "Tue, 02 Jun 2026 18:20:00 GMT", "source": "Google News" }
+            { "id": 1, "title": "Látex Couture: La evolución del fetiche al prêt-à-porter en 2026", "category": "latex", "snippet": "Grandes casas de moda incorporan paneles de látex vulcanizado con acabados mate y alto brillo en colecciones de uso diario.", "link": "https://www.lacarmina.com/blog/2026/latex-couture-fashion", "pub_date": "Sun, 07 Jun 2026", "source": "La Carmina Blog" },
+            { "id": 2, "title": "Corsets de cuero y siluetas victorianas dominan las pasarelas de Milán", "category": "latex", "snippet": "La moldería con varillas reforzadas y cierres frontales de herrajes múltiples vuelve como pieza central en la indumentaria de diseño independiente.", "link": "https://news.google.com", "pub_date": "Sat, 06 Jun 2026", "source": "Google News" },
+            { "id": 3, "title": "Metal Hardware: Argollas y hebillas como elementos estructurales clave", "category": "hardware", "snippet": "El uso de argollas de acero soldado de 40mm y remaches dobles se consolida no solo como decoración, sino como soporte de tensión.", "link": "https://www.lacarmina.com/blog/2026/metal-hardware-harness", "pub_date": "Fri, 05 Jun 2026", "source": "La Carmina Blog" },
+            { "id": 4, "title": "Slow Fashion: El resurgimiento del diseño artesanal frente al fast fashion", "category": "slow", "snippet": "Consumidores eligen prendas confeccionadas a mano con materiales duraderos y procesos Zero Waste que garantizan longevidad.", "link": "https://news.google.com", "pub_date": "Thu, 04 Jun 2026", "source": "Google News" },
+            { "id": 5, "title": "Gothcore y Cyberpunk: La estética oscura toma las calles de Tokio", "category": "goth", "snippet": "Tendencias urbanas combinan tiras sintéticas regulables, arneses modulares desmontables y texturas industriales en capas.", "link": "https://www.lacarmina.com/blog/2026/tokyo-gothic-cyberpunk-trends", "pub_date": "Wed, 03 Jun 2026", "source": "La Carmina Blog" },
+            { "id": 6, "title": "Diseño en cuero vegano: Alternativas sostenibles en corsetería y arneses", "category": "slow", "snippet": "Nuevos biotextiles derivados del micelio y PU vegetal ofrecen la misma resistencia y flexibilidad que el cuero vacuno tradicional.", "link": "https://news.google.com", "pub_date": "Tue, 02 Jun 2026", "source": "Google News" },
+            { "id": 7, "title": "Arneses multipropósito: De la subcultura BDSM al accesorio casual unisex", "category": "hardware", "snippet": "Cómo los arneses de hombros y torso se integran sobre camisas, vestidos y abrigos en outfits de diseño urbano.", "link": "https://www.lacarmina.com/blog/2026/unisex-harness-styling", "pub_date": "Mon, 01 Jun 2026", "source": "La Carmina Blog" },
+            { "id": 8, "title": "Optimización Zero Waste en prendas con múltiples herrajes y tiras", "category": "slow", "snippet": "Estrategias de tizada y encimado inteligente para aprovechar retazos de tirantes sintéticos y cintas reforzadas sin desperdicio.", "link": "https://news.google.com", "pub_date": "Sun, 31 May 2026", "source": "Vogue Moda" },
+            { "id": 9, "title": "Cadenas de acero suspendidas y cierres YKK extra reforzados en abrigos", "category": "hardware", "snippet": "Cadenas de eslabón medio integradas en sisas y hombros agregan peso dramático y estética industrial a las piezas.", "link": "https://www.lacarmina.com/blog/2026/heavy-metal-fashion", "pub_date": "Sat, 30 May 2026", "source": "La Carmina Blog" },
+            { "id": 10, "title": "Neogótico e Industrial: Paletas de color y contrastes mate/brillo", "category": "goth", "snippet": "El negro carbón combinado con acentos carmesí y herrajes niquelados lidera las búsquedas de vestuario alternativo en 2026.", "link": "https://news.google.com", "pub_date": "Fri, 29 May 2026", "source": "Google News" }
         ];
         const tags = [
-            { "text": "latex", "weight": 15 },
-            { "text": "gothic", "weight": 12 },
-            { "text": "harness", "weight": 10 },
-            { "text": "leather", "weight": 10 },
-            { "text": "corset", "weight": 8 },
-            { "text": "couture", "weight": 7 },
-            { "text": "cyberpunk", "weight": 6 },
-            { "text": "fetish", "weight": 11 },
-            { "text": "artesanal", "weight": 6 },
-            { "text": "gothcore", "weight": 5 },
-            { "text": "cuero", "weight": 8 },
-            { "text": "hecho-a-mano", "weight": 7 },
-            { "text": "slow-fashion", "weight": 9 },
-            { "text": "argollas", "weight": 4 },
-            { "text": "hebillas", "weight": 4 }
+            { "text": "latex", "weight": 18 },
+            { "text": "gothic", "weight": 15 },
+            { "text": "harness", "weight": 14 },
+            { "text": "leather", "weight": 12 },
+            { "text": "corset", "weight": 10 },
+            { "text": "hardware", "weight": 9 },
+            { "text": "cyberpunk", "weight": 8 },
+            { "text": "fetish", "weight": 12 },
+            { "text": "artesanal", "weight": 7 },
+            { "text": "gothcore", "weight": 8 },
+            { "text": "cuero", "weight": 11 },
+            { "text": "hecho-a-mano", "weight": 8 },
+            { "text": "slow-fashion", "weight": 10 },
+            { "text": "argollas", "weight": 6 },
+            { "text": "hebillas", "weight": 6 },
+            { "text": "zero-waste", "weight": 7 },
+            { "text": "industrial", "weight": 5 }
         ];
         return makeResponse({ articles, tags });
     }
@@ -2798,59 +2804,185 @@ async function handleSaveProduction(event) {
 }
 
 // --- MÓDULO 8: DASHBOARD DE TENDENCIAS EN TIEMPO REAL ---
-async function loadTrends() {
+let rawTrendsData = { articles: [], tags: [] };
+let trendsFilterState = {
+    category: 'all',
+    activeTag: null,
+    searchQuery: ''
+};
+
+async function loadTrends(isManualRefresh = false) {
     const cloudContainer = document.getElementById('trends-tag-cloud');
     const feedContainer = document.getElementById('trends-articles-feed');
+    const refreshBtn = document.getElementById('refresh-trends-btn');
     
-    if (cloudContainer) cloudContainer.innerHTML = '<p style="color: var(--color-text-muted);">Sincronizando tendencias...</p>';
-    if (feedContainer) feedContainer.innerHTML = '<p style="color: var(--color-text-muted);">Sincronizando inspiración...</p>';
+    if (refreshBtn && isManualRefresh) {
+        refreshBtn.classList.add('spinning');
+    }
+    
+    if (cloudContainer && !rawTrendsData.tags.length) cloudContainer.innerHTML = '<p style="color: var(--color-text-muted);">Sincronizando radar de tendencias...</p>';
+    if (feedContainer && !rawTrendsData.articles.length) feedContainer.innerHTML = '<p style="color: var(--color-text-muted);">Cargando noticias de inspiración...</p>';
 
     try {
         const response = await fetch('/api/trends');
         const data = await response.json();
+        rawTrendsData = data;
         
-        // Renderizar Nube de Tags
-        if (cloudContainer && data.tags) {
-            cloudContainer.innerHTML = '';
-            
-            // Asignar clases de tamaño aleatorio ponderadas para dinamismo
-            data.tags.forEach((tag, idx) => {
-                const span = document.createElement('span');
-                let weightClass = 'w-1';
-                
-                // Mapeo simple de tamaño según su índice de repetición
-                if (idx < 3) weightClass = 'w-4';
-                else if (idx < 7) weightClass = 'w-3';
-                else if (idx < 12) weightClass = 'w-2';
-                
-                span.className = `cloud-tag ${weightClass}`;
-                span.textContent = tag.text.toUpperCase();
-                span.title = `${tag.weight} menciones`;
-                cloudContainer.appendChild(span);
-            });
-        }
-
-        // Renderizar artículos de noticias
-        if (feedContainer && data.articles) {
-            feedContainer.innerHTML = '';
-            data.articles.forEach(art => {
-                const card = document.createElement('div');
-                card.className = 'trend-article-card';
-                card.innerHTML = `
-                    <div class="article-header">
-                        <span class="article-source">${art.source}</span>
-                        <span>${art.pub_date}</span>
-                    </div>
-                    <h4 class="article-title">${art.title}</h4>
-                    <a href="${art.link}" target="_blank" class="article-link">Leer artículo completo →</a>
-                `;
-                feedContainer.appendChild(card);
-            });
+        renderTrendsCloud();
+        renderTrendsFeed();
+        
+        if (isManualRefresh) {
+            showToast('Radar de tendencias sincronizado en tiempo real', 'success');
         }
     } catch (error) {
         console.error('Error al cargar tendencias:', error);
-        if (cloudContainer) cloudContainer.innerHTML = '<p style="color: var(--color-text-muted);">Error al cargar nube de tags.</p>';
-        if (feedContainer) feedContainer.innerHTML = '<p style="color: var(--color-text-muted);">Error al cargar artículos.</p>';
+        if (cloudContainer) cloudContainer.innerHTML = '<p style="color: var(--color-text-muted);">Error al cargar nube de conceptos.</p>';
+        if (feedContainer) feedContainer.innerHTML = '<p style="color: var(--color-text-muted);">Error al cargar artículos de inspiración.</p>';
+    } finally {
+        if (refreshBtn) {
+            setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+        }
+    }
+}
+
+function renderTrendsCloud() {
+    const cloudContainer = document.getElementById('trends-tag-cloud');
+    if (!cloudContainer || !rawTrendsData.tags) return;
+    
+    cloudContainer.innerHTML = '';
+    
+    rawTrendsData.tags.forEach((tag, idx) => {
+        const span = document.createElement('span');
+        let weightClass = 'w-1';
+        
+        if (idx < 3) weightClass = 'w-4';
+        else if (idx < 7) weightClass = 'w-3';
+        else if (idx < 12) weightClass = 'w-2';
+        
+        const isTagActive = trendsFilterState.activeTag === tag.text.toLowerCase();
+        span.className = `cloud-tag ${weightClass} ${isTagActive ? 'active-filter' : ''}`;
+        span.textContent = `#${tag.text.toUpperCase()}`;
+        span.title = `${tag.weight} menciones en radar - Haz clic para filtrar`;
+        
+        span.onclick = () => filterByTag(tag.text.toLowerCase());
+        cloudContainer.appendChild(span);
+    });
+}
+
+function renderTrendsFeed() {
+    const feedContainer = document.getElementById('trends-articles-feed');
+    if (!feedContainer || !rawTrendsData.articles) return;
+    
+    let filtered = rawTrendsData.articles.filter(art => {
+        // Filtro por categoría
+        if (trendsFilterState.category !== 'all') {
+            const artCat = art.category || 'goth';
+            if (artCat !== trendsFilterState.category) return false;
+        }
+        
+        // Filtro por tag activo
+        if (trendsFilterState.activeTag) {
+            const fullText = (art.title + ' ' + (art.snippet || '') + ' ' + art.source).toLowerCase();
+            if (!fullText.includes(trendsFilterState.activeTag)) return false;
+        }
+        
+        // Filtro por texto de búsqueda
+        if (trendsFilterState.searchQuery) {
+            const q = trendsFilterState.searchQuery.toLowerCase();
+            const fullText = (art.title + ' ' + (art.snippet || '') + ' ' + art.source).toLowerCase();
+            if (!fullText.includes(q)) return false;
+        }
+        
+        return true;
+    });
+
+    feedContainer.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        feedContainer.innerHTML = '<p style="color: var(--color-text-muted); padding: 1.5rem; text-align: center;">No se encontraron artículos con los filtros aplicados.</p>';
+        return;
+    }
+    
+    filtered.forEach(art => {
+        const card = document.createElement('div');
+        card.className = 'trend-article-card';
+        
+        const catMap = {
+            'latex': 'Látex & Corsetería',
+            'goth': 'Goth & Cyberpunk',
+            'slow': 'Slow Fashion',
+            'hardware': 'Herrajes & Metal'
+        };
+        const catLabel = catMap[art.category] || 'Tendencia Generación';
+        
+        card.innerHTML = `
+            <div class="article-header">
+                <span class="article-source">${art.source}</span>
+                <span class="article-category-badge">${catLabel}</span>
+            </div>
+            <h4 class="article-title">${art.title}</h4>
+            ${art.snippet ? `<p class="article-snippet">${art.snippet}</p>` : ''}
+            <div class="article-footer">
+                <span style="font-size:0.75rem; color: var(--color-text-muted);">${art.pub_date || ''}</span>
+                <a href="${art.link}" target="_blank" class="article-link-btn">Leer artículo →</a>
+            </div>
+        `;
+        feedContainer.appendChild(card);
+    });
+}
+
+function filterByTag(tagName) {
+    if (trendsFilterState.activeTag === tagName) {
+        trendsFilterState.activeTag = null;
+    } else {
+        trendsFilterState.activeTag = tagName;
+    }
+    updateActiveTagBadge();
+    renderTrendsCloud();
+    renderTrendsFeed();
+}
+
+function clearTagFilter() {
+    trendsFilterState.activeTag = null;
+    updateActiveTagBadge();
+    renderTrendsCloud();
+    renderTrendsFeed();
+}
+
+function updateActiveTagBadge() {
+    const badge = document.getElementById('active-tag-filter-badge');
+    const tagNameEl = document.getElementById('active-tag-name');
+    if (!badge || !tagNameEl) return;
+    
+    if (trendsFilterState.activeTag) {
+        tagNameEl.textContent = `#${trendsFilterState.activeTag.toUpperCase()}`;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function setTrendCategory(category) {
+    trendsFilterState.category = category;
+    
+    // Actualizar pills activas
+    const pills = document.querySelectorAll('.trend-pill');
+    pills.forEach(p => {
+        if (p.getAttribute('data-category') === category) {
+            p.classList.add('active');
+        } else {
+            p.classList.remove('active');
+        }
+    });
+    
+    renderTrendsFeed();
+}
+
+function filterTrends() {
+    const input = document.getElementById('trends-search-input');
+    if (input) {
+        trendsFilterState.searchQuery = input.value.trim();
+        renderTrendsFeed();
     }
 }
 
