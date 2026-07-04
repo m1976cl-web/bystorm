@@ -315,11 +315,13 @@ label {
 
 input[type="number"],
 input[type="text"],
-select {
-    background: rgba(255, 255, 255, 0.03);
+input[type="date"],
+select,
+textarea {
+    background: #1a1a24;
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    color: #fff;
+    color: #ffffff;
     padding: 0.75rem 1rem;
     font-family: var(--font-body);
     font-size: 0.95rem;
@@ -328,12 +330,27 @@ select {
     outline: none;
 }
 
+select option {
+    background-color: #1a1a24 !important;
+    color: #ffffff !important;
+    padding: 0.5rem 1rem;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+    background-color: var(--accent-crimson) !important;
+    color: #ffffff !important;
+}
+
 input[type="number"]:focus,
 input[type="text"]:focus,
-select:focus {
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
     border-color: var(--accent-crimson);
     box-shadow: 0 0 8px var(--accent-crimson-glow);
-    background: rgba(255, 255, 255, 0.05);
+    background: #222230;
 }
 
 .input-helper {
@@ -1534,8 +1551,14 @@ html[data-theme="light"] input[type="text"],
 html[data-theme="light"] input[type="date"],
 html[data-theme="light"] select,
 html[data-theme="light"] textarea {
-    background: rgba(0, 0, 0, 0.03);
-    color: #1a1a1a;
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+html[data-theme="light"] select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
 }
 
 html[data-theme="light"] .card-title {
