@@ -181,9 +181,14 @@ function initMockDB() {
     if (!localStorage.getItem(DB_PREFIX + "inventory")) {
         localStorage.setItem(DB_PREFIX + "inventory", JSON.stringify(DEFAULT_INVENTORY));
     }
-    if (!localStorage.getItem(DB_PREFIX + "products")) {
-        localStorage.setItem(DB_PREFIX + "products", JSON.stringify(DEFAULT_PRODUCTS));
-    }
+    
+    // Garantizar que las 10 prendas de Tormenta Indumentaria estén siempre en localStorage
+    let existingProducts = {};
+    try {
+        existingProducts = JSON.parse(localStorage.getItem(DB_PREFIX + "products")) || {};
+    } catch(e) {}
+    const mergedProducts = { ...DEFAULT_PRODUCTS, ...existingProducts };
+    localStorage.setItem(DB_PREFIX + "products", JSON.stringify(mergedProducts));
     if (!localStorage.getItem(DB_PREFIX + "clients")) {
         localStorage.setItem(DB_PREFIX + "clients", JSON.stringify([]));
     }
