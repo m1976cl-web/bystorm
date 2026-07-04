@@ -2419,27 +2419,59 @@ input[type="date"]:focus {
     box-shadow: 0 0 12px var(--accent-crimson-glow);
 }
 
-.refresh-trends-btn {
+.trend-refresh-action-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.45rem 1rem;
-    font-size: 0.85rem;
-    margin-top: 0;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(211, 47, 47, 0.15);
+    border: 1px solid rgba(211, 47, 47, 0.4);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    outline: none;
+    margin-left: auto;
 }
 
-.refresh-trends-btn .refresh-icon {
+.trend-refresh-action-btn:hover {
+    background: var(--accent-crimson);
+    border-color: var(--accent-crimson);
+    box-shadow: 0 0 14px var(--accent-crimson-glow);
+    transform: translateY(-1px);
+}
+
+.trend-refresh-action-btn .refresh-icon {
     width: 16px;
     height: 16px;
-    transition: transform 0.5s ease;
+    stroke: currentColor;
+    flex-shrink: 0;
+    transition: transform 0.4s ease;
 }
 
-.refresh-trends-btn.spinning .refresh-icon {
-    animation: spin 0.8s linear infinite;
+.trend-refresh-action-btn.spinning .refresh-icon {
+    animation: spin 0.75s linear infinite;
 }
 
 @keyframes spin {
     100% { transform: rotate(360deg); }
+}
+
+.trends-status-timestamp {
+    margin-top: 0.75rem;
+    padding: 0.45rem 0.85rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #4ade80;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .active-tag-badge {
