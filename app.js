@@ -3047,6 +3047,8 @@ async function loadTrends(isManualRefresh = false) {
             }, 600);
         }
     }
+}
+
 async function searchLiveTrends() {
     const input = document.getElementById('trends-search-input');
     const searchBtn = document.getElementById('search-live-btn');
