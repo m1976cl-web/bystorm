@@ -2171,12 +2171,41 @@ function renderClientList(clients) {
         const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-AR') : '';
         const notesHtml = client.notes ? `<div class="client-notes-text">📝 ${client.notes}</div>` : '';
         
+        const m = [
+            { label: 'Frente/Cabeza (1)', val: client.forehead },
+            { label: 'Cuello (2)', val: client.neck },
+            { label: 'Hombros (3)', val: client.shoulder_blade },
+            { label: 'Pecho (4)', val: client.chest || client.bust },
+            { label: 'Bajo Busto', val: client.underbust },
+            { label: 'Cintura (5)', val: client.waist },
+            { label: 'Cadera (6)', val: client.hips },
+            { label: 'Muslo (7)', val: client.thigh },
+            { label: 'Rodilla (8)', val: client.knee },
+            { label: 'Pantorrilla (9)', val: client.calf },
+            { label: 'Tobillo (10)', val: client.ankle },
+            { label: 'Calzado (11)', val: client.shoe_size },
+            { label: 'Suela (12)', val: client.sole_length },
+            { label: 'Entrep. Tobillo (13)', val: client.crotch_ankle },
+            { label: 'Bícep (14)', val: client.bicep },
+            { label: 'Codo (15)', val: client.elbow },
+            { label: 'Antebrazo (16)', val: client.forearm },
+            { label: 'Muñeca (17)', val: client.wrist },
+            { label: 'Palma (18)', val: client.palm },
+            { label: 'Tiro U (19)', val: client.u_seam },
+            { label: 'Brazo (20)', val: client.arm_length },
+            { label: 'Estatura (21)', val: client.height }
+        ].filter(item => item.val && parseFloat(item.val) > 0);
+
+        const chipsHtml = m.length > 0
+            ? m.map(item => `<div class="client-measure-chip"><span class="chip-label">${item.label}</span><span class="chip-value">${item.val} cm</span></div>`).join('')
+            : '<div class="client-measure-chip"><span class="chip-label">Sin medidas registradas</span></div>';
+
         card.innerHTML = `
             <div class="client-card-header">
                 <div class="client-card-info">
                     <h4>${client.name}</h4>
                     ${client.contact ? `<div class="client-contact">${client.contact}</div>` : ''}
-                    <div class="client-date">Talla: ${client.preferred_size} · Actualizado: ${dateStr}</div>
+                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talla: ${client.preferred_size} · Actualizado: ${dateStr}</div>
                 </div>
                 <div class="client-card-actions">
                     <button class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al Escalado">
@@ -2190,11 +2219,8 @@ function renderClientList(clients) {
                     </button>
                 </div>
             </div>
-            <div class="client-measurements">
-                <div class="client-measure-chip"><span class="chip-label">Busto</span><span class="chip-value">${client.bust || '—'}</span></div>
-                <div class="client-measure-chip"><span class="chip-label">Bajo Busto</span><span class="chip-value">${client.underbust || '—'}</span></div>
-                <div class="client-measure-chip"><span class="chip-label">Cintura</span><span class="chip-value">${client.waist || '—'}</span></div>
-                <div class="client-measure-chip"><span class="chip-label">Cuello</span><span class="chip-value">${client.neck || '—'}</span></div>
+            <div class="client-measurements" style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.6rem;">
+                ${chipsHtml}
             </div>
             ${notesHtml}
         `;
@@ -2213,11 +2239,31 @@ async function handleSaveClient(event) {
     const payload = {
         name: document.getElementById('client_name').value.trim(),
         contact: document.getElementById('client_contact').value.trim(),
+        gender: document.getElementById('client_gender').value,
+        preferred_size: document.getElementById('client_size').value,
+        height: parseFloat(document.getElementById('client_height').value) || 0,
+        forehead: parseFloat(document.getElementById('client_forehead').value) || 0,
+        neck: parseFloat(document.getElementById('client_neck').value) || 0,
+        shoulder_blade: parseFloat(document.getElementById('client_shoulder_blade').value) || 0,
+        chest: parseFloat(document.getElementById('client_bust').value) || 0,
         bust: parseFloat(document.getElementById('client_bust').value) || 0,
         underbust: parseFloat(document.getElementById('client_underbust').value) || 0,
         waist: parseFloat(document.getElementById('client_waist').value) || 0,
-        neck: parseFloat(document.getElementById('client_neck').value) || 0,
-        preferred_size: document.getElementById('client_size').value,
+        hips: parseFloat(document.getElementById('client_hips').value) || 0,
+        u_seam: parseFloat(document.getElementById('client_u_seam').value) || 0,
+        arm_length: parseFloat(document.getElementById('client_arm_length').value) || 0,
+        bicep: parseFloat(document.getElementById('client_bicep').value) || 0,
+        elbow: parseFloat(document.getElementById('client_elbow').value) || 0,
+        forearm: parseFloat(document.getElementById('client_forearm').value) || 0,
+        wrist: parseFloat(document.getElementById('client_wrist').value) || 0,
+        palm: parseFloat(document.getElementById('client_palm').value) || 0,
+        thigh: parseFloat(document.getElementById('client_thigh').value) || 0,
+        knee: parseFloat(document.getElementById('client_knee').value) || 0,
+        calf: parseFloat(document.getElementById('client_calf').value) || 0,
+        ankle: parseFloat(document.getElementById('client_ankle').value) || 0,
+        crotch_ankle: parseFloat(document.getElementById('client_crotch_ankle').value) || 0,
+        shoe_size: parseFloat(document.getElementById('client_shoe_size').value) || 0,
+        sole_length: parseFloat(document.getElementById('client_sole_length').value) || 0,
         notes: document.getElementById('client_notes').value.trim()
     };
 
@@ -2246,6 +2292,7 @@ async function handleSaveClient(event) {
         document.getElementById('btn-cancel-edit').style.display = 'none';
         
         await loadClients();
+        showToast('Ficha de cliente guardada con éxito', 'success');
 
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -2263,13 +2310,32 @@ async function editClient(clientId) {
         if (!client) return;
 
         document.getElementById('client_edit_id').value = client.id;
-        document.getElementById('client_name').value = client.name;
+        document.getElementById('client_name').value = client.name || '';
         document.getElementById('client_contact').value = client.contact || '';
-        document.getElementById('client_bust').value = client.bust || 0;
+        document.getElementById('client_gender').value = client.gender || 'Unisex';
+        document.getElementById('client_size').value = client.preferred_size || 'M';
+        document.getElementById('client_height').value = client.height || 0;
+        document.getElementById('client_forehead').value = client.forehead || 0;
+        document.getElementById('client_neck').value = client.neck || 0;
+        document.getElementById('client_shoulder_blade').value = client.shoulder_blade || 0;
+        document.getElementById('client_bust').value = client.chest || client.bust || 0;
         document.getElementById('client_underbust').value = client.underbust || 0;
         document.getElementById('client_waist').value = client.waist || 0;
-        document.getElementById('client_neck').value = client.neck || 0;
-        document.getElementById('client_size').value = client.preferred_size || 'M';
+        document.getElementById('client_hips').value = client.hips || 0;
+        document.getElementById('client_u_seam').value = client.u_seam || 0;
+        document.getElementById('client_arm_length').value = client.arm_length || 0;
+        document.getElementById('client_bicep').value = client.bicep || 0;
+        document.getElementById('client_elbow').value = client.elbow || 0;
+        document.getElementById('client_forearm').value = client.forearm || 0;
+        document.getElementById('client_wrist').value = client.wrist || 0;
+        document.getElementById('client_palm').value = client.palm || 0;
+        document.getElementById('client_thigh').value = client.thigh || 0;
+        document.getElementById('client_knee').value = client.knee || 0;
+        document.getElementById('client_calf').value = client.calf || 0;
+        document.getElementById('client_ankle').value = client.ankle || 0;
+        document.getElementById('client_crotch_ankle').value = client.crotch_ankle || 0;
+        document.getElementById('client_shoe_size').value = client.shoe_size || 0;
+        document.getElementById('client_sole_length').value = client.sole_length || 0;
         document.getElementById('client_notes').value = client.notes || '';
 
         document.getElementById('client-form-title').textContent = `Editando: ${client.name}`;
