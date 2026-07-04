@@ -13,7 +13,7 @@ import uuid
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -151,43 +151,34 @@ class ProductionResponse(ProductionRecord):
 
 DEFAULT_BOMS = {
     "arnes": BOMItem(
-        cinta=2.5,       # 2.5 metros de cinta
-        argollas=6,      # 6 argollas metálicas
-        hebillas=4,      # 4 hebillas reguladoras
-        remaches=12,     # 12 remaches de unión
-        ojalillos=0,
-        varillas=0,
-        cadenas=0.0,
-        tachas=8,        # Tachas decorativas
-        mosquetones=2    # 2 mosquetones para enganche
+        cinta=2.5, argollas=6, hebillas=4, remaches=12, ojalillos=0, varillas=0, cadenas=0.0, tachas=8, mosquetones=2
+    ),
+    "arnes_body": BOMItem(
+        cinta=5.5, argollas=12, hebillas=8, remaches=24, ojalillos=0, varillas=0, cadenas=1.0, tachas=16, mosquetones=4
+    ),
+    "arnes_muslo": BOMItem(
+        cinta=1.8, argollas=4, hebillas=2, remaches=8, ojalillos=0, varillas=0, cadenas=0.0, tachas=4, mosquetones=2
+    ),
+    "choker_dring": BOMItem(
+        cinta=0.4, argollas=1, hebillas=1, remaches=4, ojalillos=0, varillas=0, cadenas=0.0, tachas=6, mosquetones=0
+    ),
+    "corset_underbust": BOMItem(
+        cinta=3.5, argollas=0, hebillas=0, remaches=8, ojalillos=16, varillas=12, panels_count=4, panel_width=25.0, panel_height=35.0, cadenas=0.0, tachas=6, mosquetones=0
+    ),
+    "corset_overbust": BOMItem(
+        cinta=4.5, argollas=4, hebillas=2, remaches=12, ojalillos=20, varillas=16, panels_count=6, panel_width=20.0, panel_height=40.0, cadenas=2.0, tachas=12, mosquetones=2
     ),
     "mascara": BOMItem(
-        cinta=0.5,       # 0.5 metros para tiras de sujeción
-        argollas=2,
-        hebillas=1,
-        remaches=8,
-        ojalillos=0,
-        varillas=0,
-        panels_count=1,
-        panel_width=30.0, # Panel de cuerina de 30cm
-        panel_height=25.0, # Panel de cuerina de 25cm
-        cadenas=0.0,
-        tachas=4,
-        mosquetones=0
+        cinta=0.8, argollas=2, hebillas=1, remaches=8, ojalillos=0, varillas=0, panels_count=1, panel_width=30.0, panel_height=25.0, cadenas=0.0, tachas=4, mosquetones=0
     ),
-    "corset": BOMItem(
-        cinta=2.0,       # 2.0 metros de cinta de raso para acordonar
-        argollas=0,
-        hebillas=0,
-        remaches=0,
-        ojalillos=14,    # 14 ojalillos metálicos para la espalda
-        varillas=10,     # 10 varillas de soporte plásticas/espiraladas
-        panels_count=4,  # Requiere 4 paneles (patrones laterales/frontales)
-        panel_width=25.0,
-        panel_height=35.0,
-        cadenas=1.5,     # Cadenas decorativas colgantes
-        tachas=12,
-        mosquetones=4
+    "falda_latex": BOMItem(
+        cinta=0.5, argollas=0, hebillas=0, remaches=6, ojalillos=4, varillas=0, panels_count=2, panel_width=45.0, panel_height=55.0, cadenas=0.0, tachas=4, mosquetones=0
+    ),
+    "cinturon_portaligas": BOMItem(
+        cinta=2.2, argollas=4, hebillas=3, remaches=12, ojalillos=0, varillas=0, cadenas=0.5, tachas=8, mosquetones=4
+    ),
+    "brazaletes": BOMItem(
+        cinta=0.6, argollas=0, hebillas=2, remaches=16, ojalillos=0, varillas=0, cadenas=0.0, tachas=10, mosquetones=0
     )
 }
 
@@ -197,20 +188,24 @@ PRODUCTS_FILE = os.path.join(os.path.dirname(__file__), "products_data.json")
 
 def _load_products() -> Dict[str, dict]:
     if not os.path.exists(PRODUCTS_FILE):
-        # Inicializar con DEFAULT_BOMS convertidos a diccionario con nombre
+        names = {
+            "arnes": "Arnés Pechera Tormenta (Base)",
+            "arnes_body": "Arnés Corporal Integral (Body Harness)",
+            "arnes_muslo": "Set Ligas de Muslo con Argollas O-Ring",
+            "choker_dring": "Gargantilla Choker D-Ring Neopunk",
+            "corset_underbust": "Corset Underbust de Cuero (Vesta)",
+            "corset_overbust": "Corset Overbust Neogótico (Couture)",
+            "mascara": "Máscara Gótica Shadow (Performance)",
+            "falda_latex": "Falda Tubo Neopunk con Cierre Frontal",
+            "cinturon_portaligas": "Cinturón Portaligas con Mosquetones",
+            "brazaletes": "Set de Brazaletes / Muñequeras con Remaches"
+        }
         initial_data = {
-            "arnes": {
-                "name": "Arnés Tormenta (Base)",
-                **DEFAULT_BOMS["arnes"].model_dump()
-            },
-            "mascara": {
-                "name": "Máscara Gótica (Shadow)",
-                **DEFAULT_BOMS["mascara"].model_dump()
-            },
-            "corset": {
-                "name": "Corset de Cuero (Vesta)",
-                **DEFAULT_BOMS["corset"].model_dump()
+            k: {
+                "name": names.get(k, k),
+                **v.model_dump()
             }
+            for k, v in DEFAULT_BOMS.items()
         }
         _save_products(initial_data)
         return initial_data
@@ -784,7 +779,18 @@ def optimize_batch(request: BatchProductionRequest):
     total_mosquetones = 0
     total_labor_hours = 0.0
     
-    PRODUCT_LABOR_HOURS = {"arnes": 2.5, "mascara": 1.5, "corset": 4.5}
+    PRODUCT_LABOR_HOURS = {
+        "arnes": 2.5,
+        "arnes_body": 5.0,
+        "arnes_muslo": 2.0,
+        "choker_dring": 1.0,
+        "corset_underbust": 4.5,
+        "corset_overbust": 6.5,
+        "mascara": 1.5,
+        "falda_latex": 3.5,
+        "cinturon_portaligas": 2.5,
+        "brazaletes": 1.5
+    }
     
     panel_requirements = []
     
@@ -1045,6 +1051,53 @@ def get_trends():
         "articles": articles[:12],
         "tags": tags
     }
+
+
+@app.get("/api/trends/search")
+def search_trends(q: str = Query(..., min_length=2)):
+    """Busca noticias de moda alternativa en tiempo real usando RSS de Google News."""
+    encoded_q = urllib.parse.quote(q)
+    url = f"https://news.google.com/rss/search?q={encoded_q}+fashion&hl=es-419&gl=AR&ceid=AR:es-419"
+    articles = []
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AntigravityClient/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=4.0) as response:
+            xml_data = response.read()
+            
+        root = ET.fromstring(xml_data)
+        for item in root.findall('.//item')[:12]:
+            title_elem = item.find('title')
+            link_elem = item.find('link')
+            if title_elem is None or title_elem.text is None:
+                continue
+            title = title_elem.text
+            link = link_elem.text if link_elem is not None else "#"
+            pub_date = item.find('pubDate').text if item.find('pubDate') is not None else ""
+            
+            source_elem = item.find('source')
+            source_name = source_elem.text if (source_elem is not None and source_elem.text) else "Prensa Moda"
+            
+            articles.append({
+                "id": len(articles) + 1,
+                "title": title,
+                "link": link,
+                "pub_date": pub_date,
+                "source": source_name,
+                "category": "all",
+                "snippet": f"Noticia en tiempo real rastreada sobre '{q}'."
+            })
+    except Exception:
+        pass
+        
+    return {
+        "query": q,
+        "articles": articles
+    }
+
 
 
 # --- PERSISTENCIA DE INVENTARIO (JSON local) ---
