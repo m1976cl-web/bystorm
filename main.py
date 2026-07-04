@@ -1023,17 +1023,19 @@ def get_trends():
             
     if not articles:
         articles = [
-            {"title": "Látex Couture: La evolución del fetiche al prêt-à-porter en 2026", "link": "https://www.lacarmina.com/blog/2026/latex-couture-fashion", "pub_date": "Sun, 07 Jun 2026 08:00:00 GMT", "source": "La Carmina Blog"},
-            {"title": "Corsets de cuero y siluetas victorianas dominan las pasarelas de Milán", "link": "https://news.google.com", "pub_date": "Sat, 06 Jun 2026 15:30:00 GMT", "source": "Google News"},
-            {"title": "Metal Hardware: Argollas y hebillas como elementos estructurales clave", "link": "https://www.lacarmina.com/blog/2026/metal-hardware-harness", "pub_date": "Fri, 05 Jun 2026 10:15:00 GMT", "source": "La Carmina Blog"},
-            {"title": "Slow Fashion: El resurgimiento del diseño artesanal frente al fast fashion", "link": "https://news.google.com", "pub_date": "Thu, 04 Jun 2026 12:00:00 GMT", "source": "Google News"},
-            {"title": "Gothcore y Cyberpunk: La estética oscura toma las calles de Tokio", "link": "https://www.lacarmina.com/blog/2026/tokyo-gothic-cyberpunk-trends", "pub_date": "Wed, 03 Jun 2026 09:45:00 GMT", "source": "La Carmina Blog"},
-            {"title": "Diseño en cuero vegano: Alternativas sostenibles en corsetería y arneses", "link": "https://news.google.com", "pub_date": "Tue, 02 Jun 2026 18:20:00 GMT", "source": "Google News"}
+            {"title": "How to Style a Corset: The Ultimate Corsetry Fashion Guide", "link": "https://www.harpersbazaar.com/fashion/trends/a39563229/how-to-style-a-corset/", "pub_date": "Harper's BAZAAR", "source": "Harper's BAZAAR"},
+            {"title": "Why Gothic Fashion and Dark Romanticism Rule Modern Runway Aesthetics", "link": "https://www.dazeddigital.com/fashion", "pub_date": "Dazed Digital", "source": "Dazed Digital"},
+            {"title": "Metal Hardware & Harness Styling in Modern Underground Fashion Editorials", "link": "https://www.kaltblut-magazine.com/", "pub_date": "KALTBLUT Magazine", "source": "KALTBLUT Magazine"},
+            {"title": "Tormenta Indumentaria: Vestuario Neopunk, Corsetería y Performance en Chile", "link": "https://www.instagram.com/tormenta_indumentaria/", "pub_date": "@tormenta_indumentaria", "source": "Instagram Oficial"},
+            {"title": "Nu-Goth & Industrial Dark Fashion Trends: Style Guide & Streetwear", "link": "https://www.impericon.com/en/gothic-fashion.html", "pub_date": "Impericon Magazine", "source": "Impericon"},
+            {"title": "Tokyo Gothic & Cyberpunk Subculture: Alternative Fashion & Harajuku Guide", "link": "https://lacarmina.com/blog/2026/06/tokyo-japan-goth-metal-rock-bars-guide-nanzuka-taken-guinea-pig/", "pub_date": "La Carmina Blog", "source": "La Carmina Blog"},
+            {"title": "The Evolution of Corsetry: From Restriction to Liberation & Leatherwork", "link": "https://www.vogue.com/article/vivienne-westwood-corset-history-fashion", "pub_date": "Vogue Magazine", "source": "Vogue"},
+            {"title": "Slow Fashion y Confección Artesanal: El resurgimiento del diseño Zero Waste", "link": "https://fashionunited.es/", "pub_date": "FashionUnited", "source": "FashionUnited"}
         ]
         word_counts = {
-            "latex": 15, "gothic": 12, "harness": 10, "leather": 10, "corset": 8, 
-            "couture": 7, "cyberpunk": 6, "fetish": 11, "artesanal": 6, "gothcore": 5,
-            "cuero": 8, "hecho-a-mano": 7, "slow-fashion": 9, "argollas": 4, "hebillas": 4
+            "latex": 18, "gothic": 15, "harness": 14, "leather": 12, "corset": 10, 
+            "hardware": 9, "cyberpunk": 8, "fetish": 12, "artesanal": 7, "gothcore": 8,
+            "cuero": 11, "hecho-a-mano": 8, "slow-fashion": 10, "argollas": 6, "hebillas": 6
         }
         
     sorted_tags = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:20]
