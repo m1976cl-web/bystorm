@@ -1129,10 +1129,16 @@
 
                 <!-- Barra de Búsqueda y Filtros -->
                 <div class="glass-card trends-filter-card">
-                    <div class="trends-controls-bar">
-                        <div class="search-box-group">
-                            <input type="text" id="trends-search-input" class="form-input" placeholder="🔍 Buscar por palabra clave (ej. látex, corset, cyberpunk)..." oninput="filterTrends()">
+                    <div class="trends-search-row">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="trends-search-input" class="form-input" placeholder="🔍 Escribe un tema de búsqueda (ej. corset, arnés, látex, gothcore, slow fashion)..." onkeyup="if(event.key==='Enter') searchLiveTrends()">
                         </div>
+                        <button class="btn-primary search-live-trends-btn" id="search-live-btn" onclick="searchLiveTrends()">
+                            <span>🔍 Buscar Artículos Actualizados</span>
+                        </button>
+                    </div>
+
+                    <div class="trends-controls-bar" style="margin-top: 1rem;">
                         <div class="trends-category-pills" id="trends-category-pills">
                             <button class="trend-pill active" data-category="all" onclick="setTrendCategory('all')">Todos</button>
                             <button class="trend-pill" data-category="latex" onclick="setTrendCategory('latex')">Látex & Corsetería</button>
@@ -1140,7 +1146,7 @@
                             <button class="trend-pill" data-category="slow" onclick="setTrendCategory('slow')">Slow Fashion</button>
                             <button class="trend-pill" data-category="hardware" onclick="setTrendCategory('hardware')">Herrajes & Metal</button>
                         </div>
-                        <button class="trend-refresh-action-btn" id="refresh-trends-btn" onclick="loadTrends(true)" title="Sincronizar tendencias en tiempo real">
+                        <button class="trend-refresh-action-btn" id="refresh-trends-btn" onclick="loadTrends(true)" title="Sincronizar tendencias generales en tiempo real">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="refresh-icon" id="refresh-trends-icon">
                                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                             </svg>

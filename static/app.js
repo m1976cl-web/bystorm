@@ -1040,7 +1040,18 @@ async function mockApiHandler(resource, options) {
         let totalMosquetones = 0;
         let totalLaborHours = 0.0;
         
-        const PRODUCT_LABOR_HOURS = { arnes: 2.5, mascara: 1.5, corset: 4.5 };
+        const PRODUCT_LABOR_HOURS = {
+            arnes: 2.5,
+            arnes_body: 5.0,
+            arnes_muslo: 2.0,
+            choker_dring: 1.0,
+            corset_underbust: 4.5,
+            corset_overbust: 6.5,
+            mascara: 1.5,
+            falda_latex: 3.5,
+            cinturon_portaligas: 2.5,
+            brazaletes: 1.5
+        };
         const panelRequirements = [];
         const products = getMockData('products');
         
@@ -2968,6 +2979,99 @@ async function loadTrends(isManualRefresh = false) {
                 refreshBtn.classList.remove('spinning');
                 if (btnText) btnText.textContent = 'Sincronizar Radar';
             }, 600);
+        }
+    }
+async function searchLiveTrends() {
+    const input = document.getElementById('trends-search-input');
+    const searchBtn = document.getElementById('search-live-btn');
+    const feedContainer = document.getElementById('trends-articles-feed');
+    const timestampBanner = document.getElementById('trends-status-timestamp');
+    const timestampText = document.getElementById('trends-timestamp-text');
+    
+    if (!input) return;
+    const query = input.value.trim();
+    if (!query) {
+        showToast('Por favor, escribe un tema o palabra clave para buscar.', 'warning');
+        return;
+    }
+    
+    trendsFilterState.searchQuery = query;
+    
+    if (searchBtn) {
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span>🔎 Buscando en vivo...</span>';
+    }
+    
+    if (feedContainer) {
+        feedContainer.innerHTML = `<p style="padding: 1.5rem; text-align: center; color: var(--accent-gold); font-size: 0.9rem;">🔎 Buscando artículos en vivo sobre "<strong>${query}</strong>" en prensa y redes...</p>`;
+    }
+    
+    try {
+        let liveArticles = [];
+        
+        // 1. Intentar llamar al backend local si está disponible
+        try {
+            const res = await fetch(`/api/trends/search?q=${encodeURIComponent(query)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.articles && data.articles.length > 0) {
+                    liveArticles = data.articles;
+                }
+            }
+        } catch (e) {
+            console.log("Backend offline, intentando API de RSS en vivo...");
+        }
+        
+        // 2. Si no se obtuvo del backend (modo offline / GitHub Pages / Netlify), consultar API pública RSS2JSON de Google News
+        if (liveArticles.length === 0) {
+            try {
+                const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+fashion&hl=es-419&gl=AR&ceid=AR:es-419`;
+                const rssApi = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+                const rssRes = await originalFetch(rssApi);
+                if (rssRes.ok) {
+                    const rssData = await rssRes.json();
+                    if (rssData.items && rssData.items.length > 0) {
+                        liveArticles = rssData.items.map((item, idx) => ({
+                            id: idx + 1,
+                            title: item.title,
+                            link: item.link || item.guid || '#',
+                            pub_date: item.pubDate ? item.pubDate.split(' ')[0] : 'Hoy',
+                            source: item.author || 'Prensa Moda',
+                            category: 'all',
+                            snippet: item.description ? item.description.replace(/<[^>]*>?/gm, '').substring(0, 140) + '...' : `Artículo de prensa en vivo sobre ${query}.`
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.log("RSS API externa omitida o bloqueada.");
+            }
+        }
+        
+        // 3. Si se obtuvieron artículos en vivo, actualizar el feed con ellos
+        if (liveArticles.length > 0) {
+            rawTrendsData.articles = liveArticles;
+            renderTrendsFeed();
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            if (timestampBanner && timestampText) {
+                timestampText.textContent = `✓ Se encontraron ${liveArticles.length} artículos en vivo para "${query}" (${timeStr} hs)`;
+                timestampBanner.style.display = 'flex';
+            }
+            showToast(`Búsqueda completada: ${liveArticles.length} noticias en vivo encontradas para "${query}"`, 'success');
+        } else {
+            // Fallback: filtrar la base local si la API externa falla
+            renderTrendsFeed();
+            showToast(`Resultados filtrados para "${query}"`, 'info');
+        }
+    } catch (err) {
+        console.error('Error en búsqueda de tendencias:', err);
+        renderTrendsFeed();
+    } finally {
+        if (searchBtn) {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<span>🔍 Buscar Artículos Actualizados</span>';
         }
     }
 }
