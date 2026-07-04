@@ -1140,10 +1140,15 @@
                             <button class="trend-pill" data-category="slow" onclick="setTrendCategory('slow')">Slow Fashion</button>
                             <button class="trend-pill" data-category="hardware" onclick="setTrendCategory('hardware')">Herrajes & Metal</button>
                         </div>
-                        <button class="btn-secondary refresh-trends-btn" id="refresh-trends-btn" onclick="loadTrends(true)" title="Sincronizar tendencias">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="refresh-icon"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                            <span>Sincronizar Radar</span>
+                        <button class="trend-refresh-action-btn" id="refresh-trends-btn" onclick="loadTrends(true)" title="Sincronizar tendencias en tiempo real">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="refresh-icon" id="refresh-trends-icon">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                            </svg>
+                            <span id="refresh-trends-btn-text">Sincronizar Radar</span>
                         </button>
+                    </div>
+                    <div id="trends-status-timestamp" class="trends-status-timestamp" style="display: none;">
+                        <span>✓ <span id="trends-timestamp-text">Radar sincronizado</span></span>
                     </div>
                     <div id="active-tag-filter-badge" class="active-tag-badge" style="display: none;">
                         <span>Filtro de etiqueta activo: <strong id="active-tag-name"></strong></span>

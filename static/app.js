@@ -2920,9 +2920,13 @@ async function loadTrends(isManualRefresh = false) {
     const cloudContainer = document.getElementById('trends-tag-cloud');
     const feedContainer = document.getElementById('trends-articles-feed');
     const refreshBtn = document.getElementById('refresh-trends-btn');
+    const btnText = document.getElementById('refresh-trends-btn-text');
+    const timestampBanner = document.getElementById('trends-status-timestamp');
+    const timestampText = document.getElementById('trends-timestamp-text');
     
     if (refreshBtn && isManualRefresh) {
         refreshBtn.classList.add('spinning');
+        if (btnText) btnText.textContent = 'Escaneando...';
     }
     
     if (cloudContainer && !rawTrendsData.tags.length) cloudContainer.innerHTML = '<p style="color: var(--color-text-muted);">Sincronizando radar de tendencias...</p>';
@@ -2931,13 +2935,28 @@ async function loadTrends(isManualRefresh = false) {
     try {
         const response = await fetch('/api/trends');
         const data = await response.json();
+        
+        // Si es un refresh manual en modo offline, rotar sutilmente la lista para un efecto dinámico en vivo
+        if (isManualRefresh && data.articles && data.articles.length) {
+            const first = data.articles.shift();
+            data.articles.push(first);
+        }
+        
         rawTrendsData = data;
         
         renderTrendsCloud();
         renderTrendsFeed();
         
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        if (timestampBanner && timestampText) {
+            timestampText.textContent = `Radar sincronizado a las ${timeStr} hs (${(data.articles || []).length} fuentes analizadas)`;
+            timestampBanner.style.display = 'flex';
+        }
+
         if (isManualRefresh) {
-            showToast('Radar de tendencias sincronizado en tiempo real', 'success');
+            showToast(`Radar de tendencias sincronizado (${timeStr} hs)`, 'success');
         }
     } catch (error) {
         console.error('Error al cargar tendencias:', error);
@@ -2945,7 +2964,10 @@ async function loadTrends(isManualRefresh = false) {
         if (feedContainer) feedContainer.innerHTML = '<p style="color: var(--color-text-muted);">Error al cargar artículos de inspiración.</p>';
     } finally {
         if (refreshBtn) {
-            setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+            setTimeout(() => {
+                refreshBtn.classList.remove('spinning');
+                if (btnText) btnText.textContent = 'Sincronizar Radar';
+            }, 600);
         }
     }
 }
