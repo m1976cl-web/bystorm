@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tormenta Indumentaria - Taller & Moldería Inteligente</title>
+    <!-- Google Fonts: Outfit (modern, geometric) and IM Fell English (for that artisanal gothic touch) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <header class="app-header">
+        <div class="logo-container">
+            <h1 class="brand-title">TORMENTA</h1>
+            <p class="brand-subtitle">INDUMENTARIA · SLOW FASHION WORKSHOP</p>
+        </div>
+        <div class="header-status">
+            <span class="status-indicator online"></span>
+            <span class="status-text">Taller Conectado</span>
+            <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+                <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            </button>
+            <button class="settings-btn" onclick="toggleBackupModal()" title="Backup / Restaurar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <!-- Navegación de Pestañas -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+                </svg>
+                Dashboard
+            </button>
+            <button class="tab-btn" id="tab-scaling" onclick="switchTab('scaling')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                </svg>
+                Escalado de Patrones
+            </button>
+            <button class="tab-btn" id="tab-optimization" onclick="switchTab('optimization')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Optimización Zero Waste
+            </button>
+            <button class="tab-btn" id="tab-batch" onclick="switchTab('batch')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Planificador de Lotes
+            </button>
+            <button class="tab-btn" id="tab-catalog" onclick="switchTab('catalog')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Catálogo de Fichas
+            </button>
+            <button class="tab-btn" id="tab-quote" onclick="switchTab('quote')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                Cotizador
+            </button>
+            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Registro e Historial
+            </button>
+            <button class="tab-btn" id="tab-clients" onclick="switchTab('clients')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                Fichas de Clientes
+            </button>
+            <button class="tab-btn" id="tab-trends" onclick="switchTab('trends')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Tendencias de Moda
+            </button>
+            <button class="tab-btn" id="tab-inventory" onclick="switchTab('inventory')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                Inventario
+            </button>
+            <button class="tab-btn" id="tab-suppliers" onclick="switchTab('suppliers')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                </svg>
+                Proveedores
+            </button>
+            <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
+                </svg>
+                Órdenes
+            </button>
+        </nav>
+
+        <!-- Contenido de las Pestañas -->
+        <div class="tab-content-wrapper">
+
+            <!-- PESTAÑA: DASHBOARD -->
+            <section class="tab-pane active" id="pane-dashboard">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-info">
+                            <span class="kpi-value" id="kpi-garments">0</span>
+                            <span class="kpi-label">Prendas Este Mes</span>
+                        </div>
+                        <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.38 3.46L16 2 12 5.5 8 2 3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-info">
+                            <span class="kpi-value" id="kpi-profit">$0</span>
+                            <span class="kpi-label">Ganancia Neta</span>
+                        </div>
+                        <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-info">
+                            <span class="kpi-value" id="kpi-alerts">0</span>
+                            <span class="kpi-label">Alertas de Stock</span>
+                        </div>
+                        <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-info">
+                            <span class="kpi-value" id="kpi-orders">0</span>
+                            <span class="kpi-label">Órdenes Pendientes</span>
+                        </div>
+                        <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+                    </div>
+                    <div class="kpi-card" id="kpi-overdue-card">
+                        <div class="kpi-info">
+                            <span class="kpi-value" id="kpi-overdue" style="color: #e57373;">0</span>
+                            <span class="kpi-label">Órdenes Atrasadas</span>
+                        </div>
+                        <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #e57373;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h4>Producción Semanal</h4>
+                        <div class="chart-canvas-wrap"><canvas id="chart-weekly"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Costos vs Margen</h4>
+                        <div class="chart-canvas-wrap"><canvas id="chart-doughnut"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="charts-row" style="grid-template-columns:1fr;">
+                    <div class="chart-card">
+                        <h4>Tendencia de Ganancia Mensual</h4>
+                        <div class="chart-canvas-wrap"><canvas id="chart-profit-trend"></canvas></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- PESTAÑA: ESCALADO DE PATRONES -->
+            <section class="tab-pane" id="pane-scaling">
+                <div class="grid-two-cols">
+                    
+                    <!-- Tarjeta de Entradas -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Molde Base (Prototipo)</h2>
+                            <p class="card-desc">Ingresa las medidas reales tomadas sobre el prototipo base (talla estándar M).</p>
+                        </div>
+                        
+                        <form id="scaling-form" onsubmit="handleScale(event)">
+                            <div class="inputs-grid">
+                                <div class="form-group">
+                                    <label for="bust">Contorno de Busto (cm)</label>
+                                    <input type="number" id="bust" min="40" max="180" step="0.5" value="90" required>
+                                    <span class="input-helper">Medida sobre la parte más prominente</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="underbust">Bajo Busto (cm)</label>
+                                    <input type="number" id="underbust" min="40" max="160" step="0.5" value="75" required>
+                                    <span class="input-helper">Base de soporte para arneses y corsés</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="waist">Cintura (cm)</label>
+                                    <input type="number" id="waist" min="30" max="160" step="0.5" value="70" required>
+                                    <span class="input-helper">Contorno natural de cintura</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="neck">Cuello (cm)</label>
+                                    <input type="number" id="neck" min="20" max="60" step="0.5" value="36" required>
+                                    <span class="input-helper">Clave para gargantillas y arneses de cuello</span>
+                                </div>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <div class="controls-grid">
+                                <div class="form-group">
+                                    <label for="base_size">Talla del Prototipo</label>
+                                    <select id="base_size">
+                                        <option value="S">S</option>
+                                        <option value="M" selected>M (Recomendado)</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="contour_increment">Escalado Contornos (cm)</label>
+                                    <input type="number" id="contour_increment" min="1" max="10" step="0.5" value="4.0">
+                                    <span class="input-helper">Variación por talla en busto/cintura</span>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="neck_increment">Escalado Cuello (cm)</label>
+                                    <input type="number" id="neck_increment" min="0.5" max="5" step="0.1" value="1.5">
+                                    <span class="input-helper">Variación por talla en contorno cuello</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="scaling_factor">Factor Elasticidad/Ajuste</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="scaling_factor" min="0.5" max="1.5" step="0.05" value="1.0" oninput="updateFactorText(this.value)">
+                                        <span class="slider-val" id="factor-display">1.0x (Estándar)</span>
+                                    </div>
+                                    <span class="input-helper">Modificador: &lt; 1 elásticos | &gt; 1 rígidos</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" id="btn-scale">
+                                <span class="btn-text">Calcular Escalado</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Tarjeta de Resultados -->
+                    <div class="glass-card" id="scaling-results-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Tabla de Graduación Textil</h2>
+                            <p class="card-desc">Dimensiones calculadas listas para el trazado de patrones y corte de tiras/paneles.</p>
+                        </div>
+                        
+                        <div class="results-placeholder" id="scaling-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4M12 8h.01"/>
+                            </svg>
+                            <p>Completa las medidas del prototipo y haz clic en <strong>Calcular Escalado</strong> para generar las tallas.</p>
+                        </div>
+
+                        <div class="results-table-container hidden" id="scaling-results">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Talla</th>
+                                        <th>Busto (cm)</th>
+                                        <th>Bajo Busto (cm)</th>
+                                        <th>Cintura (cm)</th>
+                                        <th>Cuello (cm)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scaling-table-body">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                            <div class="scaling-info-note">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                                </svg>
+                                <span>Las medidas del <strong>Molde Base</strong> ingresado se muestran con un marco de realce en la tabla.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 2: OPTIMIZACIÓN DE MATERIALES -->
+            <section class="tab-pane" id="pane-optimization">
+                <div class="grid-two-cols">
+                    
+                    <!-- Tarjeta de Inventario y Producción -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Stock del Taller & Producto</h2>
+                            <p class="card-desc">Registra el material disponible para calcular la producción óptima antes de que se agoten los recursos.</p>
+                        </div>
+
+                        <form id="optimize-form" onsubmit="handleOptimize(event)">
+                            <h3 class="section-subtitle">1. Material Base (Cuerina / Tela / Rollos)</h3>
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="roll_width">Ancho del Rollo (cm)</label>
+                                    <input type="number" id="roll_width" min="10" max="300" value="140" required>
+                                    <span class="input-helper">Usualmente 140cm en ecocuero</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="roll_length">Largo del Rollo (m)</label>
+                                    <input type="number" id="roll_length" min="0.1" max="1000" step="0.1" value="5.0" required>
+                                    <span class="input-helper">Metros lineales en stock</span>
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">2. Insumos Metálicos & Estructurales</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="stock_argollas">Argollas (uds)</label>
+                                    <input type="number" id="stock_argollas" min="0" value="100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_hebillas">Hebillas (uds)</label>
+                                    <input type="number" id="stock_hebillas" min="0" value="80" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_remaches">Remaches (uds)</label>
+                                    <input type="number" id="stock_remaches" min="0" value="300" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_ojalillos">Ojalillos (uds)</label>
+                                    <input type="number" id="stock_ojalillos" min="0" value="200" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_varillas">Varillas (uds)</label>
+                                    <input type="number" id="stock_varillas" min="0" value="50" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_cadenas">Cadenas (m)</label>
+                                    <input type="number" id="stock_cadenas" min="0" step="0.1" value="10.0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_tachas">Tachas (uds)</label>
+                                    <input type="number" id="stock_tachas" min="0" value="150" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock_mosquetones">Mosquetones (uds)</label>
+                                    <input type="number" id="stock_mosquetones" min="0" value="40" required>
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">3. Producto a Fabricar</h3>
+                            <div class="form-group">
+                                <label for="product_key">Prenda / Accesorio</label>
+                                <select id="product_key" onchange="toggleCustomBOMFields(this.value)">
+                                    <option value="arnes" selected>Arnés Tormenta (Tiras & Remaches)</option>
+                                    <option value="mascara">Máscara Gótica (1 Panel de cuero + herrajes)</option>
+                                    <option value="corset">Corset de Cuero (4 Paneles + varillas + ojalillos)</option>
+                                    <option value="custom">Ficha de Insumos Personalizada (BOM Manual)</option>
+                                </select>
+                            </div>
+
+                            <!-- Campos de BOM personalizado (ocultos por defecto) -->
+                            <div id="custom-bom-fields" class="hidden-fields hidden">
+                                <h4 class="mini-title">BOM del Producto Personalizado</h4>
+                                <div class="inputs-grid compact cols-3">
+                                    <div class="form-group">
+                                        <label for="bom_cinta">Cinta/Strap (m/prenda)</label>
+                                        <input type="number" id="bom_cinta" min="0" step="0.1" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_argollas">Argollas (uds/prenda)</label>
+                                        <input type="number" id="bom_argollas" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_hebillas">Hebillas (uds/prenda)</label>
+                                        <input type="number" id="bom_hebillas" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_remaches">Remaches (uds/prenda)</label>
+                                        <input type="number" id="bom_remaches" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_ojalillos">Ojalillos (uds/prenda)</label>
+                                        <input type="number" id="bom_ojalillos" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_varillas">Varillas (uds/prenda)</label>
+                                        <input type="number" id="bom_varillas" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_cadenas">Cadenas (m/prenda)</label>
+                                        <input type="number" id="bom_cadenas" min="0" step="0.1" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_tachas">Tachas (uds/prenda)</label>
+                                        <input type="number" id="bom_tachas" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bom_mosquetones">Mosquetones (uds/prenda)</label>
+                                        <input type="number" id="bom_mosquetones" min="0" value="0">
+                                    </div>
+                                </div>
+                                <div class="inputs-grid compact">
+                                    <div class="form-group">
+                                        <label for="bom_panels">Paneles de Cuerina (uds)</label>
+                                        <input type="number" id="bom_panels" min="0" value="0" onchange="toggleCustomPanelDims(this.value)">
+                                    </div>
+                                    <div class="form-group bom-panel-dim hidden">
+                                        <label for="bom_panel_w">Ancho Panel (cm)</label>
+                                        <input type="number" id="bom_panel_w" min="1" value="20">
+                                    </div>
+                                    <div class="form-group bom-panel-dim hidden">
+                                        <label for="bom_panel_h">Alto Panel (cm)</label>
+                                        <input type="number" id="bom_panel_h" min="1" value="20">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" id="btn-optimize">
+                                <span class="btn-text">Calcular Producción Máxima</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Tarjeta de Análisis Zero Waste -->
+                    <div class="glass-card" id="optimize-results-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Reporte de Capacidad & Cuellos de Botella</h2>
+                            <p class="card-desc">Análisis de rendimiento textil y optimización de corte.</p>
+                        </div>
+
+                        <div class="results-placeholder" id="optimize-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                <path d="M13 5H4a2 2 0 00-2 2v10h2m10-12h7a2 2 0 012 2v9a2 2 0 01-2 2H9"/>
+                            </svg>
+                            <p>Ingresa el stock actual y selecciona una prenda para conocer cuántas unidades puedes producir.</p>
+                        </div>
+
+                        <div class="optimize-results hidden" id="optimize-results">
+                            <div class="production-badge-container">
+                                <span class="badge-label">Capacidad Máxima</span>
+                                <div class="badge-value" id="production-max-value">0</div>
+                                <span class="badge-unit">Prendas Terminadas</span>
+                            </div>
+
+                            <!-- Barra de cuellos de botella -->
+                            <div class="bottleneck-card alert-danger" id="bottleneck-info">
+                                <div class="alert-icon">⚠️</div>
+                                <div class="alert-content">
+                                    <strong class="alert-title">Cuello de Botella Detectado:</strong>
+                                    <p class="alert-desc" id="bottleneck-names">Remaches (0 unidades restantes)</p>
+                                </div>
+                            </div>
+
+                            <!-- Listado de Insumos Limitantes y Consumos -->
+                            <div class="table-title">Consumo de Insumos & Límites</div>
+                            <table class="data-table small">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Consumo Unitario</th>
+                                        <th>Disponible</th>
+                                        <th>Máx. Unidades</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="optimize-table-body">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+
+                            <!-- Sección Zero Waste de Tela / Rollos -->
+                            <div id="zero-waste-section" class="zero-waste-container hidden">
+                                <div class="table-title">Análisis de Desperdicio (Zero Waste)</div>
+                                <div class="waste-grid">
+                                    <div class="waste-metric-card">
+                                        <span class="waste-label">Tela Usada</span>
+                                        <span class="waste-val" id="waste-used-area">0.00 m²</span>
+                                    </div>
+                                    <div class="waste-metric-card">
+                                        <span class="waste-label">Desperdicio Neto</span>
+                                        <span class="waste-val" id="waste-leftover-area">0.00 m²</span>
+                                    </div>
+                                    <div class="waste-metric-card highlight">
+                                        <span class="waste-label">% Desperdicio</span>
+                                        <span class="waste-val" id="waste-percent">0.0%</span>
+                                    </div>
+                                </div>
+                                <div class="layout-description" id="waste-layout-desc">
+                                    Orientación del corte óptima: <strong>Horizontal</strong>. Filas de corte: 4, Columnas de corte: 12.
+                                </div>
+                                <div class="layout-visualizer-container">
+                                    <svg id="roll-svg-map" viewBox="0 0 800 250" width="100%" height="auto"></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 3: CATALOGO DE FICHAS DE INSUMOS -->
+            <section class="tab-pane" id="pane-catalog">
+                <div class="grid-two-cols">
+                    <!-- Formulario de Ficha Técnica -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title" id="catalog-form-title">Registrar Ficha de Prenda (BOM)</h2>
+                            <p class="card-desc">Define la cantidad de materiales estándar consumidos por esta prenda en tu catálogo.</p>
+                        </div>
+                        
+                        <form id="catalog-form" onsubmit="handleSaveProduct(event)">
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="cat_key">Clave del Producto (única)</label>
+                                    <input type="text" id="cat_key" required placeholder="Ej: gargantilla_cadenas">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_name">Nombre Comercial</label>
+                                    <input type="text" id="cat_name" required placeholder="Ej: Gargantilla con Cadenas">
+                                </div>
+                            </div>
+                            
+                            <h3 class="section-subtitle">Insumos Lineales y Paneles</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="cat_cinta">Cinta/Correa (m)</label>
+                                    <input type="number" id="cat_cinta" min="0" step="0.1" value="0.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_cadenas">Cadenas (m)</label>
+                                    <input type="number" id="cat_cadenas" min="0" step="0.1" value="0.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_panels">Paneles Cuero (uds)</label>
+                                    <input type="number" id="cat_panels" min="0" value="0" onchange="toggleCatalogPanelDims(this.value)">
+                                </div>
+                            </div>
+                            <div class="inputs-grid compact cat-panel-dim hidden">
+                                <div class="form-group">
+                                    <label for="cat_panel_w">Ancho Panel (cm)</label>
+                                    <input type="number" id="cat_panel_w" min="1" value="20">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_panel_h">Alto Panel (cm)</label>
+                                    <input type="number" id="cat_panel_h" min="1" value="20">
+                                </div>
+                            </div>
+                            
+                            <h3 class="section-subtitle">Herrajes y Accesorios (uds)</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="cat_argollas">Argollas</label>
+                                    <input type="number" id="cat_argollas" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_hebillas">Hebillas</label>
+                                    <input type="number" id="cat_hebillas" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_remaches">Remaches</label>
+                                    <input type="number" id="cat_remaches" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_ojalillos">Ojalillos</label>
+                                    <input type="number" id="cat_ojalillos" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_varillas">Varillas</label>
+                                    <input type="number" id="cat_varillas" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_tachas">Tachas</label>
+                                    <input type="number" id="cat_tachas" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_mosquetones">Mosquetones</label>
+                                    <input type="number" id="cat_mosquetones" min="0" value="0">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary" id="btn-save-catalog" style="margin-top: 1.5rem;">
+                                <span class="btn-text">Guardar Ficha</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Fichas Técnicas Activas -->
+                    <div class="glass-card" style="display: flex; flex-direction: column;">
+                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div>
+                                <h2 class="card-title">Catálogo Técnico Activo</h2>
+                                <p class="card-desc">Prendas disponibles en el taller para cálculo de stock, optimizaciones y presupuestos.</p>
+                            </div>
+                            <button class="btn-export-pdf" onclick="exportToPDF('pane-catalog','catalogo_tecnico.pdf')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                Exportar PDF
+                            </button>
+                        </div>
+                        <div class="catalog-grid" id="catalog-items-list" style="grid-template-columns: 1fr; gap: 1rem; overflow-y: auto; max-height: 600px; padding-right: 0.5rem;">
+                            <!-- Dinámico -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 4: COTIZADOR / PRESUPUESTADOR -->
+            <section class="tab-pane" id="pane-quote">
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Presupuestador de Prenda</h2>
+                            <p class="card-desc">Ingresá los costos unitarios de tus insumos para generar un presupuesto con margen de ganancia sugerido.</p>
+                        </div>
+
+                        <form id="quote-form" onsubmit="handleQuote(event)">
+                            <h3 class="section-subtitle">1. Producto & Cliente</h3>
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="quote_product">Prenda / Accesorio</label>
+                                    <select id="quote_product">
+                                        <option value="" disabled selected>Cargando catálogo...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="quote_client">Cliente (Opcional)</label>
+                                    <select id="quote_client">
+                                        <option value="">-- Sin Cliente (Presupuesto Genérico) --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">2. Costos de Insumos ($ por unidad)</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="cost_cinta">Cinta/Correa ($/m)</label>
+                                    <input type="number" id="cost_cinta" min="0" step="10" value="800">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_panel_m2">Cuero/Cuerina ($/m²)</label>
+                                    <input type="number" id="cost_panel_m2" min="0" step="100" value="5000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_argolla">Argolla ($/ud)</label>
+                                    <input type="number" id="cost_argolla" min="0" step="10" value="350">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_hebilla">Hebilla ($/ud)</label>
+                                    <input type="number" id="cost_hebilla" min="0" step="10" value="450">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_remache">Remache ($/ud)</label>
+                                    <input type="number" id="cost_remache" min="0" step="5" value="50">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_ojalillo">Ojalillo ($/ud)</label>
+                                    <input type="number" id="cost_ojalillo" min="0" step="5" value="80">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_varilla">Varilla ($/ud)</label>
+                                    <input type="number" id="cost_varilla" min="0" step="10" value="200">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_cadena">Cadena ($/m)</label>
+                                    <input type="number" id="cost_cadena" min="0" step="10" value="1200">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_tacha">Tacha ($/ud)</label>
+                                    <input type="number" id="cost_tacha" min="0" step="5" value="60">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cost_mosqueton">Mosquetón ($/ud)</label>
+                                    <input type="number" id="cost_mosqueton" min="0" step="10" value="500">
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">3. Mano de Obra & Margen</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="labor_hours">Horas de Trabajo</label>
+                                    <input type="number" id="labor_hours" min="0.5" step="0.5" value="3.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="labor_rate">Tarifa ($/hora)</label>
+                                    <input type="number" id="labor_rate" min="0" step="100" value="2000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profit_margin">Margen de Ganancia (%)</label>
+                                    <input type="number" id="profit_margin" min="0" max="500" step="5" value="60">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" id="btn-quote">
+                                <span class="btn-text">Generar Presupuesto</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Resultado del Presupuesto -->
+                    <div class="glass-card" id="quote-results-card">
+                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div>
+                                <h2 class="card-title">Presupuesto Detallado</h2>
+                                <p class="card-desc">Desglose de costos y precio de venta sugerido.</p>
+                            </div>
+                            <button class="btn-export-pdf" onclick="exportToPDF('quote-results','presupuesto_tormenta.pdf')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                Exportar PDF
+                            </button>
+                        </div>
+
+                        <div class="results-placeholder" id="quote-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                            </svg>
+                            <p>Seleccioná un producto y ajustá los costos de insumos para generar un <strong>presupuesto con margen</strong>.</p>
+                        </div>
+
+                        <div class="quote-results hidden" id="quote-results" style="padding: 1.5rem;">
+                            <!-- Encabezado de Presupuesto Formal (Tormenta Indumentaria) -->
+                            <div class="budget-header" id="budget-header" style="border-bottom: 2px solid var(--border-color, #3a3a40); padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h1 style="font-family: var(--font-display, inherit); font-size: 1.4rem; color: var(--color-primary, #c5a059); margin: 0; text-transform: uppercase; letter-spacing: 2px;">🔩 Tormenta Indumentaria</h1>
+                                    <p style="font-size: 0.75rem; color: var(--color-text-muted, #888); margin: 0.2rem 0 0 0;">Slow Fashion & Custom Leather Accessories</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; font-size: 1rem; color: var(--color-primary, #c5a059);" id="budget-number">PRESUPUESTO #0000</div>
+                                    <div style="font-size: 0.75rem; color: var(--color-text-muted, #888);" id="budget-date">Fecha: --/--/----</div>
+                                    <div style="font-size: 0.75rem; color: var(--color-text-muted, #888);" id="budget-validity">Validez: 15 días</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Info del Cliente -->
+                            <div class="budget-client-info" id="budget-client-info" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #3a3a40);">
+                                <h4 style="margin: 0 0 0.4rem 0; font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted, #888); letter-spacing: 1px;">Cliente</h4>
+                                <div id="budget-client-name" style="font-weight: bold; font-size: 0.95rem;">Consumidor Final</div>
+                                <div id="budget-client-contact" style="font-size: 0.8rem; color: var(--color-text-muted, #888);">Sin contacto registrado</div>
+                            </div>
+                            
+                            <!-- Tabla de desglose -->
+                            <div class="table-title">Desglose de Materiales</div>
+                            <table class="data-table small">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Cantidad</th>
+                                        <th>Costo Unitario</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quote-table-body">
+                                </tbody>
+                            </table>
+
+                            <!-- Resumen de precios -->
+                            <div class="quote-summary">
+                                <div class="quote-summary-row">
+                                    <span>Materiales</span>
+                                    <span id="quote-materials-total">$0</span>
+                                </div>
+                                <div class="quote-summary-row">
+                                    <span>Mano de Obra (<span id="quote-labor-hours">3</span>h × $<span id="quote-labor-rate">2000</span>/h)</span>
+                                    <span id="quote-labor-total">$0</span>
+                                </div>
+                                <div class="quote-summary-row subtotal-row">
+                                    <span>Costo Total (sin margen)</span>
+                                    <span id="quote-subtotal">$0</span>
+                                </div>
+                                <div class="quote-summary-row margin-row">
+                                    <span>Margen de Ganancia (<span id="quote-margin-pct">60</span>%)</span>
+                                    <span id="quote-profit">$0</span>
+                                </div>
+                            </div>
+
+                            <!-- Precio final grande -->
+                            <div class="price-final-badge">
+                                <span class="price-label">Precio de Venta Sugerido</span>
+                                <div class="price-value" id="quote-final-price">$0</div>
+                                <span class="price-note">IVA no incluido</span>
+                            </div>
+                            
+                            <!-- Footer/Firmas del Presupuesto -->
+                            <div class="budget-footer" style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color, #3a3a40); padding-top: 1rem; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-muted, #888);">
+                                <div>
+                                    <p style="margin: 0;"><strong>Condiciones:</strong> 50% de seña para comenzar, saldo contra entrega.</p>
+                                    <p style="margin: 0.15rem 0 0 0;">Confección a medida, demora estimada: 7-10 días hábiles.</p>
+                                </div>
+                                <div style="text-align: right; font-style: italic;">
+                                    <p style="margin: 0;">Tormenta Indumentaria</p>
+                                    <p style="margin: 0.15rem 0 0 0;">Buenos Aires, Argentina</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 5: FICHAS DE CLIENTES -->
+            <section class="tab-pane" id="pane-clients">
+                <div class="grid-two-cols">
+                    <!-- Formulario de Cliente -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title" id="client-form-title">Registrar Nuevo Cliente</h2>
+                            <p class="card-desc">Guardá las medidas corporales de tus clientes para pedidos personalizados futuros.</p>
+                        </div>
+
+                        <form id="client-form" onsubmit="handleSaveClient(event)">
+                            <input type="hidden" id="client_edit_id" value="">
+
+                            <h3 class="section-subtitle">Datos del Cliente</h3>
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="client_name">Nombre Completo</label>
+                                    <input type="text" id="client_name" required placeholder="Ej: María López">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client_contact">Contacto (Tel / IG / Email)</label>
+                                    <input type="text" id="client_contact" placeholder="Ej: @maria_lopez">
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">Medidas Corporales (cm)</h3>
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="client_bust">Contorno de Busto</label>
+                                    <input type="number" id="client_bust" min="0" max="200" step="0.5" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client_underbust">Bajo Busto</label>
+                                    <input type="number" id="client_underbust" min="0" max="200" step="0.5" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client_waist">Cintura</label>
+                                    <input type="number" id="client_waist" min="0" max="200" step="0.5" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client_neck">Cuello</label>
+                                    <input type="number" id="client_neck" min="0" max="100" step="0.5" value="0">
+                                </div>
+                            </div>
+
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="client_size">Talla Preferida</label>
+                                    <select id="client_size">
+                                        <option value="S">S</option>
+                                        <option value="M" selected>M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client_notes">Notas del Taller</label>
+                                    <input type="text" id="client_notes" placeholder="Ej: Prefiere ajuste suelto, alergia al níquel">
+                                </div>
+                            </div>
+
+                            <div class="client-form-actions">
+                                <button type="submit" class="btn-primary" id="btn-save-client">
+                                    <span class="btn-text">Guardar Cliente</span>
+                                    <div class="btn-loader"></div>
+                                </button>
+                                <button type="button" class="btn-secondary" id="btn-cancel-edit" onclick="cancelClientEdit()" style="display:none;">
+                                    Cancelar Edición
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Lista de Clientes -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Clientes Registrados</h2>
+                            <p class="card-desc">Seleccioná un cliente para editar o cargar sus medidas en el módulo de escalado.</p>
+                        </div>
+
+                        <div class="results-placeholder" id="clients-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                            </svg>
+                            <p>No hay clientes registrados aún. Usá el formulario para agregar el primer cliente.</p>
+                        </div>
+
+                        <div class="client-list" id="client-list">
+                            <!-- Dynamic client cards -->
+                        </div>
+                    </div>
+            </section>
+
+            <!-- PESTAÑA: PLANIFICADOR DE LOTES -->
+            <section class="tab-pane" id="pane-batch">
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Planificación de Lote de Producción</h2>
+                            <p class="card-desc">Carga la lista de prendas que vas a fabricar y valida si el stock actual cubre los insumos requeridos.</p>
+                        </div>
+                        
+                        <form id="batch-add-form" onsubmit="addBatchItem(event)">
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="batch_product_select">Prenda a fabricar</label>
+                                    <select id="batch_product_select">
+                                        <!-- Dinámico -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="batch_quantity">Cantidad (uds)</label>
+                                    <input type="number" id="batch_quantity" min="1" value="1" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-secondary" style="width: 100%; margin-top: 0.5rem;">Añadir al Lote</button>
+                        </form>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="table-title">Cola de Producción Activa</div>
+                        <table class="data-table small">
+                            <thead>
+                                <tr>
+                                    <th>Prenda</th>
+                                    <th>Cantidad</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batch-items-body">
+                                <tr><td colspan="3" style="text-align: center; color: var(--color-text-muted);">El lote está vacío</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="divider"></div>
+                        
+                        <button type="button" class="btn-primary" id="btn-validate-batch" onclick="validateBatchProduction()" style="margin-top: 1rem;">
+                            <span class="btn-text">Validar Viabilidad del Lote</span>
+                            <div class="btn-loader"></div>
+                        </button>
+                    </div>
+
+                    <div class="glass-card" id="batch-results-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Resultado del Análisis de Stock</h2>
+                            <p class="card-desc">Validación de recursos e inventario requerido.</p>
+                        </div>
+
+                        <div class="results-placeholder" id="batch-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="7" height="9" rx="1" />
+                                <rect x="14" y="3" width="7" height="5" rx="1" />
+                                <rect x="14" y="12" width="7" height="9" rx="1" />
+                                <rect x="3" y="16" width="7" height="5" rx="1" />
+                            </svg>
+                            <p>Carga prendas en la cola y haz clic en <strong>Validar Viabilidad del Lote</strong> para calcular el impacto en el stock.</p>
+                        </div>
+
+                        <div class="batch-results-content hidden" id="batch-results">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                <div class="production-badge-container" id="batch-viability-badge" style="margin-bottom: 0;">
+                                    <span class="badge-label">Estado del Lote</span>
+                                    <div class="badge-value" style="font-size: 1.8rem;" id="batch-viability-text">VIABLE</div>
+                                </div>
+                                <div class="production-badge-container" id="batch-time-badge" style="margin-bottom: 0; background: rgba(255,255,255,0.02); border-color: var(--border-color, #3a3a40);">
+                                    <span class="badge-label">Tiempo Estimado</span>
+                                    <div class="badge-value" style="font-size: 1.8rem; color: var(--color-secondary, #c5a059);" id="batch-time-text">0h</div>
+                                    <span class="badge-subtext" id="batch-days-text" style="font-size: 0.75rem; color: var(--color-text-muted, #888); margin-top: 0.2rem; display: block;">0 días (de 8h)</span>
+                                </div>
+                            </div>
+                            
+                            <div class="table-title">Desglose de Materiales del Lote</div>
+                            <table class="data-table small">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Requerido</th>
+                                        <th>Disponible</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batch-materials-table">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                            
+                            <div id="batch-panels-section" class="zero-waste-container hidden" style="margin-top: 1.5rem;">
+                                <div class="table-title">Corte de Paneles para el Lote</div>
+                                <div id="batch-panels-list" style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <!-- Dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: REGISTRO E HISTORIAL -->
+            <section class="tab-pane" id="pane-history">
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Registrar Prenda Producida</h2>
+                            <p class="card-desc">Registra los datos financieros de las prendas confeccionadas para analizar el rendimiento de tu taller.</p>
+                        </div>
+                        
+                        <form id="production-form" onsubmit="handleSaveProduction(event)">
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="prod_product_key">Prenda del Catálogo</label>
+                                    <select id="prod_product_key" onchange="handleProductionProductChange()">
+                                        <option value="" disabled selected>Cargando catálogo...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="prod_name_custom_group" style="display: none;">
+                                    <label for="prod_name_custom">Nombre Personalizado</label>
+                                    <input type="text" id="prod_name_custom" placeholder="Ej: Corset Especial de Látex">
+                                </div>
+                            </div>
+                            
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="prod_qty">Cantidad Producida</label>
+                                    <input type="number" id="prod_qty" min="1" value="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prod_mat_cost">Costo Total Materiales ($)</label>
+                                    <input type="number" id="prod_mat_cost" min="0" value="1000" required>
+                                </div>
+                            </div>
+                            
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="prod_labor_cost">Costo Mano de Obra ($)</label>
+                                    <input type="number" id="prod_labor_cost" min="0" value="2000" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prod_retail_price">Precio de Venta ($)</label>
+                                    <input type="number" id="prod_retail_price" min="0" value="4800" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary" id="btn-save-production" style="margin-top: 1.5rem;">
+                                <span class="btn-text">Registrar Producción</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div>
+                                <h2 class="card-title">Rendimiento Financiero & Histórico</h2>
+                                <p class="card-desc">Métricas agregadas y registro histórico de producción.</p>
+                            </div>
+                            <button class="btn-export-pdf" onclick="exportToPDF('pane-history','historial_produccion.pdf')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                Exportar PDF
+                            </button>
+                        </div>
+                        
+                        <!-- Panel de analíticas -->
+                        <div class="waste-grid" style="margin-bottom: 2rem;">
+                            <div class="waste-metric-card">
+                                <span class="waste-label">Ingresos Totales</span>
+                                <span class="waste-val" id="stats-total-revenue">$0</span>
+                            </div>
+                            <div class="waste-metric-card">
+                                <span class="waste-label">Costos Totales</span>
+                                <span class="waste-val" id="stats-total-cost">$0</span>
+                            </div>
+                            <div class="waste-metric-card highlight">
+                                <span class="waste-label">Ganancia Neta</span>
+                                <span class="waste-val" id="stats-net-profit">$0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="table-title">Historial de Confección</div>
+                        <div class="results-placeholder" id="history-placeholder">
+                            <p>Cargando historial...</p>
+                        </div>
+                        <div class="results-table-container hidden" id="history-table-container" style="max-height: 300px; overflow-y: auto;">
+                            <table class="data-table small">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Prenda</th>
+                                        <th>Cant.</th>
+                                        <th>Venta ($)</th>
+                                        <th>Margen ($)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: TENDENCIAS DE MODA -->
+            <section class="tab-pane" id="pane-trends">
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Nube de Tendencias (BDSM / Cyberpunk / Goth)</h2>
+                            <p class="card-desc">Conceptos clave más calientes rastreados en tiempo real en blogs de moda alternativa y noticias globales.</p>
+                        </div>
+                        <div class="tag-cloud-container" id="trends-tag-cloud">
+                            <!-- Dinámico -->
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Feed de Noticias de Inspiración</h2>
+                            <p class="card-desc">Artículos destacados sobre la evolución del diseño artesanal, látex y moda alternativa.</p>
+                        </div>
+                        <div class="trends-feed-container" id="trends-articles-feed" style="display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
+                            <!-- Dinámico -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: INVENTARIO -->
+            <section class="tab-pane" id="pane-inventory">
+                <div id="inventory-alert-banner" class="inventory-alert-banner ok">
+                    <span>✓</span> <span id="inventory-alert-text">Todos los insumos están dentro de los niveles seguros.</span>
+                </div>
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Estado del Inventario</h2>
+                            <p class="card-desc">Stock actual de todos los insumos del taller.</p>
+                        </div>
+                        <div class="results-table-container">
+                            <table class="data-table small">
+                                <thead>
+                                    <tr><th>Insumo</th><th>Stock</th><th>Mínimo</th><th>Unidad</th><th>Estado</th></tr>
+                                </thead>
+                                <tbody id="inventory-table-body"><!-- Dinámico --></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Actualizar Stock</h2>
+                            <p class="card-desc">Registra entradas, mermas o ajustes manuales de stock para tus insumos.</p>
+                        </div>
+                        <form id="inventory-form" onsubmit="handleUpdateInventory(event)">
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="inv_item">Insumo</label>
+                                    <select id="inv_item"><!-- Dinámico --></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inv_operation">Operación</label>
+                                    <select id="inv_operation">
+                                        <option value="sumar">Sumar (+)</option>
+                                        <option value="restar">Restar (-)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="inputs-grid compact" style="margin-top: 0.5rem;">
+                                <div class="form-group">
+                                    <label for="inv_quantity">Cantidad</label>
+                                    <input type="number" id="inv_quantity" min="1" value="10" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inv_reason">Motivo</label>
+                                    <select id="inv_reason">
+                                        <option value="compra">Compra</option>
+                                        <option value="donacion">Donación</option>
+                                        <option value="ajuste">Ajuste de Inventario</option>
+                                        <option value="merma">Merma / Desperdicio</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:1.5rem;">
+                                <span class="btn-text">Actualizar Stock</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="glass-card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Historial de Movimientos (Trazabilidad)</h2>
+                        <p class="card-desc">Historial cronológico de consumos por producción, compras, mermas y ajustes.</p>
+                    </div>
+                    <div class="results-table-container">
+                        <table class="data-table small">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Insumo</th>
+                                    <th>Operación</th>
+                                    <th>Cantidad</th>
+                                    <th>Motivo</th>
+                                    <th>Detalle / Referencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-movements-table-body">
+                                <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Cargando historial de movimientos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: PROVEEDORES -->
+            <section class="tab-pane" id="pane-suppliers">
+                <div class="grid-two-cols">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title" id="supplier-form-title">Registrar Proveedor</h2>
+                            <p class="card-desc">Datos de contacto y lista de precios por insumo.</p>
+                        </div>
+                        <form id="supplier-form" onsubmit="handleSaveSupplier(event)">
+                            <input type="hidden" id="supplier_edit_id" value="">
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="sup_name">Nombre / Razón Social</label>
+                                    <input type="text" id="sup_name" required placeholder="Ej: Cueros del Sur S.A.">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sup_contact">Contacto</label>
+                                    <input type="text" id="sup_contact" placeholder="Tel / Email / Web">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top:0.5rem;">
+                                <label for="sup_notes">Notas</label>
+                                <textarea id="sup_notes" rows="2" placeholder="Envíos, condiciones, etc."></textarea>
+                            </div>
+                            <h3 class="section-subtitle">Precios por Insumo ($ por unidad)</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group"><label for="sup_p_cinta">Cinta ($/m)</label><input type="number" id="sup_p_cinta" min="0" step="10" value="0"></div>
+                                <div class="form-group"><label for="sup_p_argollas">Argollas ($/ud)</label><input type="number" id="sup_p_argollas" min="0" step="10" value="0"></div>
+                                <div class="form-group"><label for="sup_p_hebillas">Hebillas ($/ud)</label><input type="number" id="sup_p_hebillas" min="0" step="10" value="0"></div>
+                                <div class="form-group"><label for="sup_p_remaches">Remaches ($/ud)</label><input type="number" id="sup_p_remaches" min="0" step="5" value="0"></div>
+                                <div class="form-group"><label for="sup_p_ojalillos">Ojalillos ($/ud)</label><input type="number" id="sup_p_ojalillos" min="0" step="5" value="0"></div>
+                                <div class="form-group"><label for="sup_p_cadenas">Cadenas ($/m)</label><input type="number" id="sup_p_cadenas" min="0" step="10" value="0"></div>
+                            </div>
+                            <button type="submit" class="btn-primary" id="btn-save-supplier" style="margin-top:1.5rem;">
+                                <span class="btn-text">Guardar Proveedor</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="glass-card" style="display:flex;flex-direction:column;">
+                        <div class="card-header">
+                            <h2 class="card-title">Proveedores Registrados</h2>
+                            <p class="card-desc">Listado y comparación de precios entre proveedores.</p>
+                        </div>
+                        <div class="suppliers-list" id="suppliers-list"><!-- Dinámico --></div>
+                        <div class="divider"></div>
+                        <div class="card-header" style="margin-bottom:0.5rem;">
+                            <h2 class="card-title" style="font-size:1rem;">Comparación de Precios</h2>
+                        </div>
+                        <div class="results-table-container">
+                            <table class="data-table small">
+                                <thead id="compare-thead"><tr><th>Insumo</th></tr></thead>
+                                <tbody id="compare-tbody"><!-- Dinámico --></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA: ÓRDENES -->
+            <section class="tab-pane" id="pane-orders">
+                <div class="glass-card" style="margin-bottom:1.5rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Nueva Orden de Trabajo</h2>
+                        <p class="card-desc">Crea una orden asociada a un cliente y producto del catálogo.</p>
+                    </div>
+                    <form id="order-form" onsubmit="handleCreateOrder(event)">
+                        <div class="inputs-grid compact cols-3">
+                            <div class="form-group">
+                                <label for="order_client">Cliente</label>
+                                <select id="order_client"><!-- Dinámico --></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_product">Producto</label>
+                                <select id="order_product"><!-- Dinámico --></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_size">Talla</label>
+                                <select id="order_size">
+                                    <option value="S">S</option><option value="M" selected>M</option><option value="L">L</option><option value="XL">XL</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_price">Precio Cotizado ($)</label>
+                                <input type="number" id="order_price" min="0" step="100" value="5000">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_due">Fecha de Entrega</label>
+                                <input type="date" id="order_due" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_notes">Notas</label>
+                                <input type="text" id="order_notes" placeholder="Detalles especiales">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary" id="btn-create-order" style="margin-top:1rem;">
+                            <span class="btn-text">Crear Orden</span>
+                            <div class="btn-loader"></div>
+                        </button>
+                    </form>
+                </div>
+
+                <h3 class="section-subtitle" style="margin-bottom:1rem;">Tablero Kanban</h3>
+                <div class="kanban-board" id="kanban-board">
+                    <div class="kanban-col" data-status="pendiente">
+                        <div class="kanban-col-header">Pendiente <span class="col-count" id="count-pendiente">0</span></div>
+                        <div id="kanban-pendiente"></div>
+                    </div>
+                    <div class="kanban-col" data-status="en_confeccion">
+                        <div class="kanban-col-header">En Confección <span class="col-count" id="count-en_confeccion">0</span></div>
+                        <div id="kanban-en_confeccion"></div>
+                    </div>
+                    <div class="kanban-col" data-status="terminado">
+                        <div class="kanban-col-header">Terminado <span class="col-count" id="count-terminado">0</span></div>
+                        <div id="kanban-terminado"></div>
+                    </div>
+                    <div class="kanban-col" data-status="entregado">
+                        <div class="kanban-col-header">Entregado <span class="col-count" id="count-entregado">0</span></div>
+                        <div id="kanban-entregado"></div>
+                    </div>
+                </div>
+
+                <h3 class="section-subtitle" style="margin-bottom:1rem;">Calendario de Entregas</h3>
+                <div class="calendar-container">
+                    <div class="calendar-nav">
+                        <button onclick="changeCalendarMonth(-1)">← Anterior</button>
+                        <span class="calendar-month-label" id="calendar-month-label"></span>
+                        <button onclick="changeCalendarMonth(1)">Siguiente →</button>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid"><!-- Dinámico --></div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Backup Modal -->
+    <div class="backup-modal-overlay" id="backup-modal">
+        <div class="backup-modal">
+            <h3>Backup & Restaurar Datos</h3>
+            <div class="backup-actions">
+                <button class="btn-primary" onclick="downloadBackup()" style="margin-top:0;">
+                    <span class="btn-text">📥 Descargar Backup</span>
+                </button>
+                <div class="divider"></div>
+                <div class="backup-file-group">
+                    <label style="text-transform:none;font-size:0.85rem;">📤 Restaurar desde archivo JSON:</label>
+                    <input type="file" id="backup-file-input" accept=".json">
+                    <button class="btn-secondary" onclick="restoreBackup()">Restaurar Datos</button>
+                </div>
+            </div>
+            <button class="backup-close-btn" onclick="toggleBackupModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
+    </footer>
+
+    <script src="/app.js"></script>
+</body>
+</html>
