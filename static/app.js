@@ -453,11 +453,17 @@ async function ensureBackendChecked() {
             } catch (e) {
                 backendAvailable = false;
             }
-            if (backendAvailable === false) {
+
+            // Actualizar indicador en el encabezado
+            const indicatorEl = document.querySelector('.header-status .status-indicator');
+            const textEl = document.querySelector('.header-status .status-text');
+            if (backendAvailable) {
+                if (indicatorEl) { indicatorEl.className = 'status-indicator online'; }
+                if (textEl) { textEl.textContent = 'Servidor Conectado'; }
+            } else {
                 console.log("FastAPI backend no responde. Modo Offline (Simulador LocalStorage) activado.");
-                setTimeout(() => {
-                    showToast("Servidor FastAPI no detectado. Iniciando en Modo Offline (Simulador con LocalStorage)", "warning");
-                }, 1000);
+                if (indicatorEl) { indicatorEl.className = 'status-indicator offline'; }
+                if (textEl) { textEl.textContent = 'Modo Local (Offline)'; }
             }
         })();
     }
