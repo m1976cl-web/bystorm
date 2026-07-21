@@ -1598,5 +1598,85 @@
     "movement_type": "produccion",
     "reference": "Confección de 1x Arnés Tormenta Test",
     "date": "2026-07-20T22:49:02.669837"
+  },
+  {
+    "id": "1597db92",
+    "item_key": "argollas",
+    "quantity": 10.0,
+    "movement_type": "Compra de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:51:14.086096"
+  },
+  {
+    "id": "a730306c",
+    "item_key": "argollas",
+    "quantity": -10.0,
+    "movement_type": "Correccion de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:51:14.121545"
+  },
+  {
+    "id": "de387292",
+    "item_key": "argollas",
+    "quantity": 5.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-20T22:51:14.174117"
+  },
+  {
+    "id": "2eb2d65e",
+    "item_key": "argollas",
+    "quantity": -5.0,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:51:14.212528"
+  },
+  {
+    "id": "1b30fbbc",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.241369"
+  },
+  {
+    "id": "e63314de",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.258167"
+  },
+  {
+    "id": "6eaa01d4",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.278985"
+  },
+  {
+    "id": "997513ca",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.290838"
+  },
+  {
+    "id": "73d3fee8",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.305350"
+  },
+  {
+    "id": "ff89cd86",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:51:14.319978"
   }
 ]

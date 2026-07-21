@@ -2740,3 +2740,192 @@ input[type="date"]:focus {
     transform: translateX(3px);
 }
 
+/* =============================================================
+   MOBILE & TABLET RESPONSIVENESS (PHONES & TABLETS)
+   ============================================================= */
+
+/* Tablets & Small Laptops (< 1024px) */
+@media (max-width: 1024px) {
+    .app-container {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .grid-two-cols {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .charts-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .kanban-board {
+        display: flex;
+        overflow-x: auto;
+        gap: 1rem;
+        padding-bottom: 0.8rem;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .kanban-col {
+        flex: 0 0 280px;
+        scroll-snap-align: start;
+    }
+}
+
+/* Phones & Small Tablets (< 768px) */
+@media (max-width: 768px) {
+    .app-header {
+        padding: 1rem 1.25rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .header-status {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .brand-title {
+        font-size: 1.6rem;
+    }
+
+    .brand-subtitle {
+        font-size: 0.65rem;
+        letter-spacing: 0.12rem;
+    }
+
+    .app-container {
+        padding: 1rem;
+    }
+
+    /* KPI Grid on Phones: 2 columns */
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .kpi-card {
+        padding: 0.85rem 1rem !important;
+    }
+
+    .kpi-value {
+        font-size: 1.35rem !important;
+    }
+
+    .kpi-label {
+        font-size: 0.7rem !important;
+    }
+
+    .kpi-icon {
+        width: 22px !important;
+        height: 22px !important;
+    }
+
+    /* Data Tables Horizontal Scrolling */
+    .data-table, .data-table.small {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    /* Forms & Inputs */
+    .inputs-grid, .inputs-grid.cols-3, .inputs-grid.compact {
+        grid-template-columns: 1fr !important;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+        min-height: 42px;
+    }
+
+    /* Calendar Grid horizontal scroll wrapper */
+    .calendar-grid-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .calendar-grid {
+        min-width: 520px;
+    }
+
+    /* Client Cards actions stacked/flex */
+    .client-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .client-card-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .client-action-btn {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+        padding: 0.4rem 0.6rem;
+    }
+
+    /* Chart Canvas Wrappers */
+    .chart-canvas-wrap {
+        height: 250px !important;
+    }
+
+    /* SVG maps */
+    #strip-roll-svg-map, #nesting-map-svg {
+        max-height: 320px;
+    }
+
+    /* Budget / Quote printable view */
+    .budget-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .budget-header > div:last-child {
+        text-align: left !important;
+    }
+
+    .budget-footer {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .budget-footer > div:last-child {
+        text-align: left !important;
+    }
+
+    /* Toast Container on Mobile */
+    .toast-container {
+        right: 1rem;
+        left: 1rem;
+        bottom: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+/* Small Phones (< 480px) */
+@media (max-width: 480px) {
+    .kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .tab-btn {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.82rem;
+    }
+
+    .brand-title {
+        font-size: 1.4rem;
+    }
+}
+

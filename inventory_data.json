@@ -2,21 +2,21 @@
   {
     "item_key": "argollas",
     "name": "Argollas metálicas",
-    "stock": 82.0,
+    "stock": 76.0,
     "min_stock": 20,
     "unit": "uds"
   },
   {
     "item_key": "hebillas",
     "name": "Hebillas reguladoras",
-    "stock": 88.0,
+    "stock": 84.0,
     "min_stock": 15,
     "unit": "uds"
   },
   {
     "item_key": "remaches",
     "name": "Remaches de unión",
-    "stock": 464.0,
+    "stock": 452.0,
     "min_stock": 50,
     "unit": "uds"
   },
@@ -44,21 +44,21 @@
   {
     "item_key": "tachas",
     "name": "Tachas decorativas",
-    "stock": 126.0,
+    "stock": 118.0,
     "min_stock": 25,
     "unit": "uds"
   },
   {
     "item_key": "mosquetones",
     "name": "Mosquetones de enganche",
-    "stock": 44.0,
+    "stock": 42.0,
     "min_stock": 8,
     "unit": "uds"
   },
   {
     "item_key": "cinta",
     "name": "Cinta/Correa",
-    "stock": 92.5,
+    "stock": 90.0,
     "min_stock": 5.0,
     "unit": "metros"
   },
