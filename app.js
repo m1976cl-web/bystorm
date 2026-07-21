@@ -612,14 +612,11 @@ async function mockApiHandler(resource, options) {
     if (path === '/api/clients' && method === 'POST') {
         const clients = getMockData('clients') || [];
         const newClient = {
+            ...body,
             id: Math.random().toString(36).substring(2, 10),
-            name: body.name,
             contact: body.contact || "",
-            bust: body.bust || 0,
-            underbust: body.underbust || 0,
-            waist: body.waist || 0,
-            neck: body.neck || 0,
             preferred_size: body.preferred_size || "M",
+            gender: body.gender || "Unisex",
             notes: body.notes || "",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -639,14 +636,9 @@ async function mockApiHandler(resource, options) {
         }
         clients[idx] = {
             ...clients[idx],
-            name: body.name,
-            contact: body.contact || "",
-            bust: body.bust || 0,
-            underbust: body.underbust || 0,
-            waist: body.waist || 0,
-            neck: body.neck || 0,
-            preferred_size: body.preferred_size || "M",
-            notes: body.notes || "",
+            ...body,
+            id: clients[idx].id,
+            created_at: clients[idx].created_at,
             updated_at: new Date().toISOString()
         };
         setMockData('clients', clients);
@@ -754,6 +746,7 @@ async function mockApiHandler(resource, options) {
             quoted_price: parseFloat(body.quoted_price) || 0.0,
             due_date: body.due_date || "",
             status: body.status || "pendiente",
+            status_updated_at: body.status_updated_at || new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
@@ -775,6 +768,7 @@ async function mockApiHandler(resource, options) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
         orders[idx].status = body.status;
+        orders[idx].status_updated_at = body.status_updated_at || new Date().toISOString();
         orders[idx].updated_at = new Date().toISOString();
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
@@ -2341,6 +2335,12 @@ async function handleQuote(event) {
         document.getElementById('quote-margin-pct').textContent = data.profit_margin_percent;
         document.getElementById('quote-profit').textContent = `+$${data.profit_amount.toLocaleString()}`;
         document.getElementById('quote-final-price').textContent = `$${data.suggested_retail_price.toLocaleString()}`;
+        
+        const beTargetEl = document.getElementById('be_target_price');
+        if (beTargetEl) beTargetEl.value = data.suggested_retail_price;
+
+        // Comparación de costos por proveedor
+        renderQuoteSupplierComparison(data.breakdown);
 
         // Añadir botón dinámico para registrar directamente en el historial
         let regBtn = document.getElementById('btn-quote-register-prod');
@@ -2354,9 +2354,37 @@ async function handleQuote(event) {
             document.querySelector('#quote-results').appendChild(regBtn);
         }
 
+        let waBtn = document.getElementById('btn-quote-whatsapp');
+        if (!waBtn) {
+            waBtn = document.createElement('button');
+            waBtn.id = 'btn-quote-whatsapp';
+            waBtn.className = 'btn-primary';
+            waBtn.style.marginTop = '0.5rem';
+            waBtn.style.width = '100%';
+            waBtn.style.backgroundColor = '#25D366';
+            waBtn.style.borderColor = '#25D366';
+            waBtn.textContent = '📱 Enviar por WhatsApp';
+            document.querySelector('#quote-results').appendChild(waBtn);
+        }
+
         // Obtener el nombre del producto para registrarlo
         const productSelect = document.getElementById('quote_product');
         const productKey = productSelect.value;
+        const productName = productSelect.options[productSelect.selectedIndex]?.text || productKey;
+
+        waBtn.onclick = () => {
+            const message = `🔩 TORMENTA INDUMENTARIA\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 Presupuesto #${budgetNum}\n📦 ${productName}\n━━━━━━━━━━━━━━━━━━━━━━━\n🧵 Materiales: $${data.total_materials.toLocaleString('es-AR')}\n🔧 Mano de obra: $${data.labor.total.toLocaleString('es-AR')}\n💰 PRECIO FINAL: $${data.suggested_retail_price.toLocaleString('es-AR')}\n━━━━━━━━━━━━━━━━━━━━━━━\n📅 Válido por 15 días\n⏱️ Confección: 7-10 días hábiles\n✨ Confección artesanal · Slow Fashion`;
+            navigator.clipboard.writeText(message).then(() => {
+                showToast('Presupuesto copiado al portapapeles', 'success');
+            });
+            const clientContact = document.getElementById('budget-client-contact').textContent;
+            if (clientContact && /\d/.test(clientContact)) {
+                const phone = clientContact.replace(/\D/g, '');
+                if (phone.length > 5) {
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+                }
+            }
+        };
 
         regBtn.onclick = () => {
             // Autofill the production form in pane-history
@@ -2490,6 +2518,9 @@ function renderClientList(clients) {
                 <div class="client-card-actions">
                     <button class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al Escalado">
                         ↗ Escalar
+                    </button>
+                    <button class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha de medidas">
+                        📄 Ficha
                     </button>
                     <button class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar cliente">
                         ✏ Editar
@@ -3595,6 +3626,9 @@ async function loadDashboard() {
         renderWeeklyChart(data.production_by_week || []);
         renderCostDoughnut(data.cost_breakdown || {}, pMonth);
         renderProfitTrend(data.monthly_profit_trend || []);
+        
+        renderProductAnalytics();
+        renderRestockPredictions();
     } catch (error) {
         console.error('Error loading dashboard:', error);
     }
@@ -3700,6 +3734,255 @@ function renderProfitTrend(data) {
                 x: { grid: { display: false }, ticks: { color: '#90a4ae' } }
             }
         }
+    });
+}
+
+function renderProductAnalytics() {
+    const prodData = getMockData('production') || [];
+    
+    // Aggregate by product_key
+    const productsMap = {};
+    prodData.forEach(p => {
+        if (!productsMap[p.product_key]) {
+            productsMap[p.product_key] = {
+                name: p.product_name,
+                units: 0,
+                revenue: 0,
+                cost: 0,
+                labor: 0
+            };
+        }
+        productsMap[p.product_key].units += p.quantity || 0;
+        productsMap[p.product_key].revenue += p.revenue || 0;
+        productsMap[p.product_key].cost += p.cost || 0;
+        productsMap[p.product_key].labor += p.labor_hours || 0;
+    });
+
+    // Calculate metrics
+    const productsArray = Object.values(productsMap).map(p => {
+        const net_profit = p.revenue - p.cost;
+        const profit_per_unit = p.units > 0 ? net_profit / p.units : 0;
+        const profit_per_hour = p.labor > 0 ? net_profit / p.labor : 0;
+        return {
+            ...p,
+            net_profit,
+            profit_per_unit,
+            profit_per_hour
+        };
+    });
+
+    // Sort by net_profit descending
+    productsArray.sort((a, b) => b.net_profit - a.net_profit);
+
+    // Render ranking table
+    const rankingContainer = document.getElementById('product-ranking-container');
+    if (rankingContainer) {
+        rankingContainer.innerHTML = '';
+        if (productsArray.length === 0) {
+            rankingContainer.innerHTML = '<div style="padding:1rem;color:var(--color-text-muted);text-align:center;">Sin datos de producción</div>';
+        } else {
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.padding = '0.5rem';
+            header.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            header.style.color = 'var(--color-text-muted)';
+            header.style.fontSize = '0.85rem';
+            header.innerHTML = `
+                <div style="flex:0 0 30px;">#</div>
+                <div style="flex:1;">Producto</div>
+                <div style="flex:0 0 60px;text-align:right;">Uds</div>
+                <div style="flex:0 0 90px;text-align:right;">G. Neta</div>
+                <div style="flex:0 0 70px;text-align:right;">$/Hr</div>
+            `;
+            rankingContainer.appendChild(header);
+
+            productsArray.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.padding = '0.75rem 0.5rem';
+                row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                row.style.alignItems = 'center';
+                
+                let medal = `${idx + 1}`;
+                if (idx === 0) medal = '🥇';
+                else if (idx === 1) medal = '🥈';
+                else if (idx === 2) medal = '🥉';
+
+                const nameStyle = idx === 0 ? 'color:#c5a059;font-weight:bold;' : '';
+
+                row.innerHTML = `
+                    <div style="flex:0 0 30px;font-weight:bold;">${medal}</div>
+                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${nameStyle}">${p.name}</div>
+                    <div style="flex:0 0 60px;text-align:right;">${p.units}</div>
+                    <div style="flex:0 0 90px;text-align:right;color:#4caf50;">$${p.net_profit.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}</div>
+                    <div style="flex:0 0 70px;text-align:right;">$${p.profit_per_hour.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</div>
+                `;
+                rankingContainer.appendChild(row);
+            });
+        }
+    }
+
+    // Chart: product distribution (Doughnut)
+    const ctxDist = document.getElementById('chart-product-dist');
+    if (ctxDist) {
+        if (chartInstances.productDist) chartInstances.productDist.destroy();
+        
+        const labels = productsArray.map(p => p.name);
+        const dataUnits = productsArray.map(p => p.units);
+        
+        // Generate nice HSL colors
+        const bgColors = productsArray.map((_, i) => `hsl(${(i * 360 / Math.max(1, productsArray.length)) % 360}, 70%, 50%)`);
+
+        chartInstances.productDist = new Chart(ctxDist, {
+            type: 'doughnut',
+            data: {
+                labels: labels.length ? labels : ['Sin datos'],
+                datasets: [{
+                    data: dataUnits.length ? dataUnits : [1],
+                    backgroundColor: dataUnits.length ? bgColors : ['#2a2a2e'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#90a4ae', padding: 10, font: {size: 10} } }
+                }
+            }
+        });
+    }
+
+    // Chart: profit per hour (Horizontal Bar)
+    const ctxPerHour = document.getElementById('chart-profit-per-hour');
+    if (ctxPerHour) {
+        if (chartInstances.profitPerHour) chartInstances.profitPerHour.destroy();
+        
+        // Sort by profit per hour descending for this chart
+        const profitHourArray = [...productsArray].sort((a, b) => b.profit_per_hour - a.profit_per_hour);
+        const labels = profitHourArray.map(p => p.name);
+        const dataProfitHour = profitHourArray.map(p => p.profit_per_hour);
+
+        chartInstances.profitPerHour = new Chart(ctxPerHour, {
+            type: 'bar',
+            data: {
+                labels: labels.length ? labels : ['Sin datos'],
+                datasets: [{
+                    label: 'Ganancia / Hora ($)',
+                    data: dataProfitHour.length ? dataProfitHour : [0],
+                    backgroundColor: '#d32f2f',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#90a4ae' } },
+                    y: { grid: { display: false }, ticks: { color: '#90a4ae' } }
+                }
+            }
+        });
+    }
+}
+
+function renderRestockPredictions() {
+    const inventory = getMockData('inventory') || [];
+    const movements = getMockData('movements') || [];
+    
+    const container = document.getElementById('restock-predictions');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (inventory.length === 0) {
+        container.innerHTML = '<div style="color:var(--color-text-muted);">No hay insumos en el inventario.</div>';
+        return;
+    }
+
+    const predictions = inventory.map(item => {
+        // Filter consumption movements
+        const itemMoves = movements.filter(m => m.item_key === item.item_key && 
+            (m.movement_type === 'produccion' || (m.movement_type === 'ajuste' && m.quantity < 0)));
+            
+        if (itemMoves.length === 0) {
+            return {
+                ...item,
+                daily_rate: 0,
+                days_until_zero: Infinity,
+                urgency: 'green'
+            };
+        }
+        
+        // Sort by date
+        itemMoves.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let totalConsumed = 0;
+        itemMoves.forEach(m => totalConsumed += Math.abs(m.quantity));
+        
+        const firstDate = new Date(itemMoves[0].date);
+        const lastDate = new Date(itemMoves[itemMoves.length - 1].date);
+        
+        // Days difference between first and last + 1 to avoid division by zero and represent span
+        let daysSpan = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+        if (daysSpan < 1) daysSpan = 1;
+        
+        const daily_rate = totalConsumed / daysSpan;
+        const days_until_zero = daily_rate > 0 ? item.stock / daily_rate : Infinity;
+        
+        let urgency = 'green';
+        if (days_until_zero < 7) urgency = 'red';
+        else if (days_until_zero <= 30) urgency = 'yellow';
+        
+        return {
+            ...item,
+            daily_rate,
+            days_until_zero,
+            urgency
+        };
+    });
+    
+    // Sort by days_until_zero ascending
+    predictions.sort((a, b) => a.days_until_zero - b.days_until_zero);
+    
+    const colors = {
+        'red': { hex: '#e57373', emoji: '🔴' },
+        'yellow': { hex: '#ffd54f', emoji: '🟡' },
+        'green': { hex: '#81c784', emoji: '🟢' }
+    };
+    
+    predictions.forEach(p => {
+        const color = colors[p.urgency];
+        const pct = Math.min(100, (p.days_until_zero / 30) * 100);
+        const daysText = p.days_until_zero === Infinity ? 'Sin consumo registrado' : `⏳ ~${Math.round(p.days_until_zero)} días restantes`;
+        const rateText = p.daily_rate > 0 ? p.daily_rate.toFixed(1) : '0';
+        
+        const card = document.createElement('div');
+        card.style.background = 'rgba(255,255,255,0.03)';
+        card.style.border = '1px solid var(--border-color)';
+        card.style.borderRadius = '12px';
+        card.style.padding = '1rem';
+        card.style.borderLeft = `4px solid ${color.hex}`;
+        
+        card.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong>${p.name}</strong>
+                <span>${color.emoji}</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.5rem;">
+                Stock: ${p.stock} ${p.unit} &middot; Consumo: ${rateText}/día
+            </div>
+            <div style="font-size:0.85rem;margin-top:0.4rem;font-weight:600;color:${color.hex};">
+                ${daysText}
+            </div>
+            <div style="margin-top:0.5rem;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${p.days_until_zero === Infinity ? 100 : pct}%;background:${color.hex};border-radius:3px;transition:width 0.5s;"></div>
+            </div>
+        `;
+        
+        container.appendChild(card);
     });
 }
 
@@ -4067,7 +4350,8 @@ async function handleCreateOrder(event) {
         custom_notes: document.getElementById('order_notes').value.trim(),
         quoted_price: parseFloat(document.getElementById('order_price').value) || 0,
         due_date: document.getElementById('order_due').value,
-        status: 'pendiente'
+        status: 'pendiente',
+        status_updated_at: new Date().toISOString()
     };
 
     try {
@@ -4087,18 +4371,21 @@ async function handleCreateOrder(event) {
 
 async function advanceOrderStatus(orderId, currentStatus) {
     const flow = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
+    const statusLabels = { pendiente: 'Pendiente', en_confeccion: 'En Confección', terminado: 'Terminado', entregado: 'Entregado' };
     const idx = flow.indexOf(currentStatus);
     if (idx < 0 || idx >= flow.length - 1) return;
     const nextStatus = flow[idx + 1];
+
+    if (!confirm(`¿Avanzar orden de "${statusLabels[currentStatus] || currentStatus}" a "${statusLabels[nextStatus] || nextStatus}"?`)) return;
 
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: nextStatus })
+            body: JSON.stringify({ status: nextStatus, status_updated_at: new Date().toISOString() })
         });
         if (!response.ok) throw new Error('Error al avanzar estado');
-        showToast(`Orden avanzada a: ${nextStatus.replace('_',' ')}`, 'success');
+        showToast(`Orden avanzada a: ${statusLabels[nextStatus] || nextStatus.replace('_',' ')}`, 'success');
         await loadOrders();
     } catch (error) {
         showToast(error.message, 'error');
@@ -4152,6 +4439,7 @@ function renderKanban(orders) {
                     <span style="${isOverdue ? 'color:#e57373;font-weight:bold;' : ''}">📅 ${dueStr} ${isOverdue ? '<span style="background:#d32f2f;color:white;font-size:0.55rem;padding:2px 4px;border-radius:3px;margin-left:4px;display:inline-block;vertical-align:middle;font-weight:bold;">ATRASADA</span>' : ''}</span>
                     <span class="order-price">$${(order.quoted_price || 0).toLocaleString()}</span>
                 </div>
+                ${order.status_updated_at ? `<div style="font-size:0.65rem;color:var(--color-text-muted);margin-top:0.3rem;">🕒 Actualizado: ${new Date(order.status_updated_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'})}</div>` : ''}
                 <div class="order-actions">
                     ${showAdvance ? `<button class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ Avanzar</button>` : ''}
                     <button class="kanban-delete-btn" onclick="deleteOrder('${order.id}')">✕</button>
@@ -4229,6 +4517,333 @@ function renderCalendar(month, year) {
         });
 
         grid.appendChild(cell);
+    }
+}
+
+let breakEvenChart = null;
+
+function calculateBreakEven() {
+    const finalPriceStr = document.getElementById('quote-final-price').textContent;
+    const subtotalStr = document.getElementById('quote-subtotal').textContent;
+    
+    if (!finalPriceStr || finalPriceStr === '$0') {
+        showToast('Generá un presupuesto primero', 'error');
+        return;
+    }
+
+    const parseMoney = str => parseFloat(str.replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0;
+    
+    const quotePrice = parseMoney(finalPriceStr);
+    const subtotal = parseMoney(subtotalStr);
+    
+    const fixedCosts = parseFloat(document.getElementById('be_fixed_costs').value) || 0;
+    let targetPrice = parseFloat(document.getElementById('be_target_price').value) || 0;
+    if (targetPrice <= 0) targetPrice = quotePrice;
+    
+    const maxHours = parseFloat(document.getElementById('be_max_hours').value) || 160;
+    const laborHours = parseFloat(document.getElementById('labor_hours').value) || 1;
+    
+    const variableCost = subtotal;
+    const contributionMargin = targetPrice - variableCost;
+    
+    if (contributionMargin <= 0) {
+        showToast('El margen de contribución es nulo o negativo. Revisá el precio.', 'error');
+        return;
+    }
+    
+    const beUnits = Math.ceil(fixedCosts / contributionMargin);
+    const marginReal = ((targetPrice - variableCost) / targetPrice) * 100;
+    const maxUnits = Math.floor(maxHours / laborHours);
+    
+    document.getElementById('be-units').textContent = beUnits;
+    document.getElementById('be-margin-real').textContent = marginReal.toFixed(1) + '%';
+    document.getElementById('be-max-units').textContent = maxUnits;
+    
+    document.getElementById('breakeven-results').classList.remove('hidden');
+    
+    if (breakEvenChart) breakEvenChart.destroy();
+    
+    const ctx = document.getElementById('chart-breakeven').getContext('2d');
+    const maxX = Math.max(beUnits * 2, 10);
+    const step = Math.ceil(maxX / 10);
+    
+    const labels = [];
+    const costData = [];
+    const revData = [];
+    
+    for (let i = 0; i <= maxX; i += step) {
+        labels.push(i);
+        costData.push(fixedCosts + (variableCost * i));
+        revData.push(targetPrice * i);
+    }
+    
+    const rootStyle = getComputedStyle(document.documentElement);
+    const textColor = rootStyle.getPropertyValue('--color-text').trim() || '#fff';
+    const gridColor = rootStyle.getPropertyValue('--border-color').trim() || '#3a3a40';
+    
+    breakEvenChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Ingresos Totales',
+                    data: revData,
+                    borderColor: '#25D366',
+                    backgroundColor: 'rgba(37, 211, 102, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: 'Costos Totales',
+                    data: costData,
+                    borderColor: '#e57373',
+                    backgroundColor: 'rgba(229, 115, 115, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: { display: true, text: 'Unidades', color: textColor },
+                    grid: { color: gridColor },
+                    ticks: { color: textColor }
+                },
+                y: {
+                    title: { display: true, text: 'Pesos ($)', color: textColor },
+                    grid: { color: gridColor },
+                    ticks: { color: textColor }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: textColor } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.raw.toLocaleString('es-AR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// --- MÓDULO: COMPARACIÓN DE PROVEEDORES EN COTIZADOR (#5) ---
+async function renderQuoteSupplierComparison(breakdown) {
+    const container = document.getElementById('quote-supplier-compare');
+    const body = document.getElementById('quote-supplier-compare-body');
+    const savingsEl = document.getElementById('quote-supplier-savings');
+    if (!container || !body) return;
+
+    try {
+        const response = await fetch('/api/suppliers/compare');
+        const compareData = await response.json();
+
+        // Map quote item names to supplier item keys
+        const itemKeyMap = {
+            'Cinta/Correa': 'cinta', 'Cuerina (paneles)': 'cuerina_rollo',
+            'Argollas': 'argollas', 'Hebillas': 'hebillas', 'Remaches': 'remaches',
+            'Ojalillos': 'ojalillos', 'Varillas': 'varillas', 'Cadenas': 'cadenas',
+            'Tachas': 'tachas', 'Mosquetones': 'mosquetones'
+        };
+
+        // Parse supplier comparison data (handles both array and object format)
+        const supplierPrices = {};
+        if (Array.isArray(compareData)) {
+            // If the mock returns the comparison format
+            compareData.forEach(entry => {
+                if (entry.suppliers) {
+                    // Format: { suppliers: [...], items: { ... } }
+                    for (const [item, prices] of Object.entries(entry.items || {})) {
+                        supplierPrices[item] = prices;
+                    }
+                }
+            });
+        } else if (compareData.suppliers && compareData.items) {
+            for (const [item, prices] of Object.entries(compareData.items)) {
+                supplierPrices[item] = prices;
+            }
+        } else {
+            // Direct format: { item_key: [{supplier, price}, ...], ... }
+            for (const [item, entries] of Object.entries(compareData)) {
+                if (Array.isArray(entries)) {
+                    supplierPrices[item] = {};
+                    entries.forEach(e => { supplierPrices[item][e.supplier] = e.price; });
+                }
+            }
+        }
+
+        if (Object.keys(supplierPrices).length === 0) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        let totalCurrentCost = 0;
+        let totalBestCost = 0;
+        let rows = '';
+
+        breakdown.forEach(item => {
+            const itemKey = itemKeyMap[item.item];
+            if (!itemKey || !supplierPrices[itemKey]) return;
+
+            const prices = supplierPrices[itemKey];
+            const priceValues = Object.values(prices).filter(v => v > 0);
+            if (priceValues.length === 0) return;
+
+            const bestPrice = Math.min(...priceValues);
+            const bestSupplier = Object.keys(prices).find(k => prices[k] === bestPrice);
+            const bestSubtotal = Math.round(bestPrice * item.qty * 100) / 100;
+
+            totalCurrentCost += item.subtotal;
+            totalBestCost += bestSubtotal;
+
+            const diff = item.subtotal - bestSubtotal;
+            const diffColor = diff > 0 ? '#66bb6a' : (diff < 0 ? '#ef5350' : 'var(--color-text-muted)');
+
+            rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span>${item.item}</span>
+                <span style="text-align:right;">
+                    <strong style="color:${diffColor};">${bestSupplier}</strong>
+                    <span style="color:var(--color-text-muted);margin-left:0.4rem;">$${bestPrice.toLocaleString()}/ud → $${bestSubtotal.toLocaleString()}</span>
+                    ${diff > 0 ? `<span style="color:#66bb6a;margin-left:0.4rem;font-size:0.75rem;">↓ $${Math.round(diff).toLocaleString()}</span>` : ''}
+                </span>
+            </div>`;
+        });
+
+        if (rows) {
+            body.innerHTML = rows;
+            const totalSavings = Math.round(totalCurrentCost - totalBestCost);
+            if (totalSavings > 0) {
+                savingsEl.textContent = `💡 Ahorro potencial: $${totalSavings.toLocaleString()} usando los mejores precios`;
+            } else {
+                savingsEl.textContent = '✅ Ya estás usando los mejores precios disponibles';
+            }
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+        }
+    } catch (error) {
+        console.warn('No supplier data available for comparison:', error);
+        container.classList.add('hidden');
+    }
+}
+
+// --- MÓDULO: FICHA IMPRIMIBLE DE MEDIDAS (#6) ---
+function printClientMeasurements(clientId) {
+    const clients = getMockData('clients') || [];
+    const client = clients.find(c => c.id === clientId);
+    if (!client) { showToast('Cliente no encontrado', 'error'); return; }
+
+    const measurements = [
+        { group: '🔴 Cabeza, Cuello & Torso', items: [
+            { label: '1. Circunferencia Cabeza/Frente', val: client.forehead },
+            { label: '2. Circunferencia Cuello', val: client.neck },
+            { label: '3. Ancho Espalda/Hombros', val: client.shoulder_blade },
+            { label: '4. Pecho / Busto', val: client.chest || client.bust },
+            { label: '   Bajo Busto', val: client.underbust },
+            { label: '5. Cintura', val: client.waist },
+            { label: '6. Cadera', val: client.hips },
+            { label: '19. Tiro en U', val: client.u_seam },
+        ]},
+        { group: '🟡 Piernas & Pies', items: [
+            { label: '7. Muslo', val: client.thigh },
+            { label: '8. Rodilla', val: client.knee },
+            { label: '9. Pantorrilla', val: client.calf },
+            { label: '10. Tobillo', val: client.ankle },
+            { label: '11. Talle Calzado', val: client.shoe_size },
+            { label: '12. Largo Suela', val: client.sole_length },
+            { label: '13. Entrepierna-Tobillo', val: client.crotch_ankle },
+        ]},
+        { group: '🔵 Brazos & Manos', items: [
+            { label: '14. Bícep', val: client.bicep },
+            { label: '15. Codo', val: client.elbow },
+            { label: '16. Antebrazo', val: client.forearm },
+            { label: '17. Muñeca', val: client.wrist },
+            { label: '18. Palma', val: client.palm },
+            { label: '20. Largo Brazo', val: client.arm_length },
+        ]},
+        { group: '📐 General', items: [
+            { label: '21. Estatura Total', val: client.height },
+            { label: '22. Género / Fit', val: client.gender, unit: '' },
+        ]}
+    ];
+
+    let groupsHtml = '';
+    measurements.forEach(g => {
+        let rows = '';
+        g.items.forEach(item => {
+            const val = item.val && parseFloat(item.val) > 0 ? item.val : '___';
+            const unit = item.unit !== undefined ? item.unit : 'cm';
+            rows += `<tr>
+                <td style="padding:6px 10px;border-bottom:1px solid #ddd;font-size:13px;">${item.label}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid #ddd;text-align:center;font-weight:bold;font-size:14px;min-width:80px;">${val}${val !== '___' && unit ? ` ${unit}` : ''}</td>
+            </tr>`;
+        });
+        groupsHtml += `<div style="break-inside:avoid;margin-bottom:12px;">
+            <h3 style="font-size:14px;margin:0 0 6px 0;padding:6px 10px;background:#2a2a2e;color:#c5a059;border-radius:6px;">${g.group}</h3>
+            <table style="width:100%;border-collapse:collapse;">${rows}</table>
+        </div>`;
+    });
+
+    const dateStr = new Date().toLocaleDateString('es-AR');
+    const printContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha de Medidas - ${client.name}</title>
+    <style>
+        @media print { body { margin: 0; } @page { margin: 1cm; } }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; max-width: 700px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2a2a2e; padding-bottom: 12px; margin-bottom: 16px; }
+        .brand { font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #2a2a2e; }
+        .brand-sub { font-size: 10px; color: #888; letter-spacing: 1px; }
+        .client-info { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; margin-bottom: 16px; padding: 10px; background: #f5f5f5; border-radius: 8px; font-size: 13px; }
+        .client-info strong { color: #2a2a2e; }
+        .measures-grid { columns: 2; column-gap: 16px; }
+        .footer { margin-top: 20px; padding-top: 10px; border-top: 2px solid #2a2a2e; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+        .notes-box { margin-top: 14px; border: 1px dashed #aaa; border-radius: 8px; padding: 10px; min-height: 60px; }
+        .notes-label { font-size: 12px; font-weight: bold; color: #555; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="brand">🔩 TORMENTA INDUMENTARIA</div>
+            <div class="brand-sub">FICHA DE MEDIDAS · SLOW FASHION WORKSHOP</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#888;">
+            <div>Fecha: ${dateStr}</div>
+            <div>Ficha #${Math.floor(100 + Math.random() * 900)}</div>
+        </div>
+    </div>
+    <div class="client-info">
+        <div><strong>Cliente:</strong> ${client.name}</div>
+        <div><strong>Contacto:</strong> ${client.contact || '—'}</div>
+        <div><strong>Talla Preferida:</strong> ${client.preferred_size || 'M'}</div>
+        <div><strong>Género/Fit:</strong> ${client.gender || 'Unisex'}</div>
+    </div>
+    <div class="measures-grid">${groupsHtml}</div>
+    <div class="notes-box">
+        <div class="notes-label">📝 Notas del Taller:</div>
+        <div style="font-size:12px;color:#555;">${client.notes || ''}</div>
+    </div>
+    <div class="footer">
+        <span>Tormenta Indumentaria · Buenos Aires, Argentina</span>
+        <span>Medidas en centímetros · No reproducir</span>
+    </div>
+    <script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
     }
 }
 
