@@ -122,6 +122,11 @@ body {
     animation: pulse 2s infinite;
 }
 
+.status-indicator.offline {
+    background-color: #c5a059;
+    box-shadow: 0 0 8px #c5a059;
+}
+
 .status-text {
     font-size: 0.75rem;
     font-weight: 600;
