@@ -292,10 +292,19 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 2: OPTIMIZACIÓN DE MATERIALES -->
-            <section class="tab-pane" id="pane-optimization">
-                <div class="grid-two-cols">
-                    
+            <!-- PESTAÑA 2: OPTIMIZ            <section class="tab-pane" id="pane-optimization">
+                <!-- Sub-pestañas segmentadas -->
+                <div class="optimization-subtabs" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                    <button class="subtab-btn active" id="subtab-panels" onclick="switchOptSubtab('panels')" style="background: none; border: none; color: var(--color-text-primary); font-family: var(--font-heading); font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid var(--accent-crimson); transition: var(--transition-fast);">
+                        Optimización de Paneles
+                    </button>
+                    <button class="subtab-btn" id="subtab-strips" onclick="switchOptSubtab('strips')" style="background: none; border: none; color: var(--color-text-secondary); font-family: var(--font-heading); font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; transition: var(--transition-fast);">
+                        Optimización de Tiras & Correas
+                    </button>
+                </div>
+
+                <!-- SUB-PANE: OPTIMIZACIÓN DE PANELES -->
+                <div class="grid-two-cols" id="opt-panels-subpane">
                     <!-- Tarjeta de Inventario y Producción -->
                     <div class="glass-card">
                         <div class="card-header">
@@ -506,6 +515,110 @@
                                 <div class="layout-visualizer-container">
                                     <svg id="roll-svg-map" viewBox="0 0 800 250" width="100%" height="auto"></svg>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-PANE: OPTIMIZACIÓN DE TIRAS & CORREAS -->
+                <div class="grid-two-cols" id="opt-strips-subpane" style="display: none;">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Corte de Tiras & Correas</h2>
+                            <p class="card-desc">Calcula el rendimiento y dibuja el mapa de corte lineal para tiras de arneses, portaligas y chokers.</p>
+                        </div>
+                        <form id="optimize-strips-form" onsubmit="handleOptimizeStrips(event)">
+                            <h3 class="section-subtitle">1. Material Base (Cuerina / Tela / Rollos)</h3>
+                            <div class="inputs-grid compact">
+                                <div class="form-group">
+                                    <label for="strip_roll_width">Ancho del Rollo (cm)</label>
+                                    <input type="number" id="strip_roll_width" min="10" max="300" value="140" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="strip_roll_length">Largo del Rollo (m)</label>
+                                    <input type="number" id="strip_roll_length" min="0.1" max="1000" step="0.1" value="5.0" required>
+                                </div>
+                            </div>
+
+                            <h3 class="section-subtitle">2. Tiras Requeridas</h3>
+                            <div class="inputs-grid compact cols-3">
+                                <div class="form-group">
+                                    <label for="strip_width">Ancho de la Tira (cm)</label>
+                                    <input type="number" id="strip_width" min="0.1" max="50" step="0.1" value="2.5" required>
+                                    <span class="input-helper">Ej: 2.5cm standard</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="strip_length">Largo de la Tira (cm)</label>
+                                    <input type="number" id="strip_length" min="1" max="500" value="100" required>
+                                    <span class="input-helper">Longitud de cada correa</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="strips_needed">Tiras Necesarias (uds)</label>
+                                    <input type="number" id="strips_needed" min="1" value="12" required>
+                                    <span class="input-helper">Cantidad para el lote</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" id="btn-optimize-strips" style="margin-top:1.5rem;">
+                                <span class="btn-text">Calcular Distribución de Tiras</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Tarjeta de Resultados del Optimizador de Tiras -->
+                    <div class="glass-card" id="optimize-strips-results-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Distribución y Desperdicio de Tiras</h2>
+                            <p class="card-desc">Análisis de corte óptimo lineal con representación visual del rollo.</p>
+                        </div>
+
+                        <div class="results-placeholder" id="optimize-strips-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <line x1="3" y1="9" x2="21" y2="9"/>
+                                <line x1="3" y1="15" x2="21" y2="15"/>
+                            </svg>
+                            <p>Ingresa las dimensiones y haz clic en <strong>Calcular Distribución de Tiras</strong> para ver el mapa de corte.</p>
+                        </div>
+
+                        <div class="optimize-results hidden" id="optimize-strips-results">
+                            <div class="production-badge-container">
+                                <span class="badge-label">Capacidad de Tiras</span>
+                                <div class="badge-value" id="strip-production-max-value">0 / 0</div>
+                                <span class="badge-unit" id="strip-status-badge">Tiras Conseguidas</span>
+                            </div>
+
+                            <div class="bottleneck-card alert-success" id="strip-sufficiency-banner">
+                                <div class="alert-icon">✓</div>
+                                <div class="alert-content">
+                                    <strong class="alert-title" id="strip-sufficiency-title">¡Lote Viable!</strong>
+                                    <p class="alert-desc" id="strip-sufficiency-desc">El rollo tiene suficiente material para las tiras requeridas.</p>
+                                </div>
+                            </div>
+
+                            <div class="table-title">Métricas de Rendimiento Lineal</div>
+                            <div class="waste-grid" style="margin-bottom: 1.5rem;">
+                                <div class="waste-metric-card">
+                                    <span class="waste-label">Área del Rollo</span>
+                                    <span class="waste-val" id="strip-roll-area">0.00 m²</span>
+                                </div>
+                                <div class="waste-metric-card">
+                                    <span class="waste-label">Área Utilizada</span>
+                                    <span class="waste-val" id="strip-used-area">0.00 m²</span>
+                                </div>
+                                <div class="waste-metric-card highlight">
+                                    <span class="waste-label">% Desperdicio</span>
+                                    <span class="waste-val" id="strip-waste-percent">0.0%</span>
+                                </div>
+                            </div>
+
+                            <div class="layout-description" id="strip-layout-desc">
+                                Orientación de corte óptima: <strong>Longitudinal</strong>. Columnas (tiras a lo ancho): 56, Filas (tiras a lo largo): 2.
+                            </div>
+
+                            <div class="layout-visualizer-container">
+                                <svg id="strip-roll-svg-map" viewBox="0 0 800 250" width="100%" height="auto"></svg>
                             </div>
                         </div>
                     </div>

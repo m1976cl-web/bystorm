@@ -367,6 +367,40 @@ function jsCalculateMaxPanelsFromRoll(rollWidth, rollLengthM, panelW, panelH) {
     }
 }
 
+function jsCalculateMaxStripsFromRoll(rollWidth, rollLengthM, stripW, stripH) {
+    const rollLengthCm = rollLengthM * 100.0;
+    
+    // Orientación 1: Longitudinal (ancho tira paralelo a ancho rollo)
+    const stripsWNormal = Math.floor(rollWidth / stripW);
+    const stripsHNormal = Math.floor(rollLengthCm / stripH);
+    const countNormal = stripsWNormal * stripsHNormal;
+    
+    // Orientación 2: Transversal (largo tira paralelo a ancho rollo)
+    const stripsWRotated = Math.floor(rollWidth / stripH);
+    const stripsHRotated = Math.floor(rollLengthCm / stripW);
+    const countRotated = stripsWRotated * stripsHRotated;
+    
+    if (countNormal >= countRotated) {
+        return {
+            count: countNormal,
+            orientation: "longitudinal",
+            cols: stripsWNormal,
+            rows: stripsHNormal,
+            used_width: stripsWNormal * stripW,
+            used_length: stripsHNormal * stripH / 100.0
+        };
+    } else {
+        return {
+            count: countRotated,
+            orientation: "transversal",
+            cols: stripsWRotated,
+            rows: stripsHRotated,
+            used_width: stripsWRotated * stripH,
+            used_length: stripsHRotated * stripW / 100.0
+        };
+    }
+}
+
 function jsCalculateCuerinaConsumedM(panelWidth, panelHeight, neededPanels) {
     const ROLL_WIDTH = 140.0;
     if (neededPanels <= 0 || panelWidth <= 0 || panelHeight <= 0) {
@@ -954,6 +988,44 @@ async function mockApiHandler(resource, options) {
             constraints: constraints,
             leftover_inventory: leftover,
             waste_optimization: wasteMetrics
+        });
+    }
+
+    // --- RUTA: OPTIMIZACIÓN DE TIRAS ---
+    if (path === '/api/optimize/strips' && method === 'POST') {
+        const info = jsCalculateMaxStripsFromRoll(
+            body.roll_width, body.roll_length, body.strip_width, body.strip_length
+        );
+        
+        if (info.count === 0) {
+            return makeResponse({
+                count: 0,
+                orientation: "none",
+                strips_possible: 0,
+                is_sufficient: false,
+                waste_percentage: 100.0
+            });
+        }
+        
+        const stripsFit = info.count;
+        const isSufficient = stripsFit >= body.strips_needed;
+        
+        const totalRollArea = body.roll_width * (body.roll_length * 100.0);
+        const usedStripArea = body.strip_width * body.strip_length;
+        const totalUsedArea = Math.min(body.strips_needed, stripsFit) * usedStripArea;
+        const wasteArea = totalRollArea - totalUsedArea;
+        const wastePercent = (wasteArea / totalRollArea) * 100.0;
+        
+        return makeResponse({
+            packing: info,
+            strips_needed: body.strips_needed,
+            strips_possible: stripsFit,
+            is_sufficient: isSufficient,
+            waste_percentage: Math.round(wastePercent * 10) / 10,
+            total_roll_area_m2: Math.round((totalRollArea / 10000.0) * 1000) / 1000,
+            used_area_m2: Math.round((totalUsedArea / 10000.0) * 1000) / 1000,
+            waste_area_m2: Math.round((wasteArea / 10000.0) * 1000) / 1000,
+            shortage: Math.max(0, body.strips_needed - stripsFit)
         });
     }
 
@@ -1985,6 +2057,209 @@ function renderNestingMap(rollWidth, rollLengthM, layout, panelW, panelH) {
         svg.appendChild(lineText);
     }
 }
+
+// --- OPTIMIZACIÓN DE TIRAS & CORREAS ---
+function switchOptSubtab(mode) {
+    const subtabPanels = document.getElementById('subtab-panels');
+    const subtabStrips = document.getElementById('subtab-strips');
+    const optPanelsPane = document.getElementById('opt-panels-subpane');
+    const optStripsPane = document.getElementById('opt-strips-subpane');
+    
+    if (mode === 'panels') {
+        subtabPanels.classList.add('active');
+        subtabStrips.classList.remove('active');
+        optPanelsPane.style.display = 'grid';
+        optStripsPane.style.display = 'none';
+    } else {
+        subtabPanels.classList.remove('active');
+        subtabStrips.classList.add('active');
+        optPanelsPane.style.display = 'none';
+        optStripsPane.style.display = 'grid';
+    }
+}
+
+// Exponer la función para que funcione desde el atributo onclick del HTML
+window.switchOptSubtab = switchOptSubtab;
+
+async function handleOptimizeStrips(event) {
+    event.preventDefault();
+
+    const btn = document.getElementById('btn-optimize-strips');
+    const placeholder = document.getElementById('optimize-strips-placeholder');
+    const resultsContainer = document.getElementById('optimize-strips-results');
+    
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const payload = {
+        roll_width: parseFloat(document.getElementById('strip_roll_width').value),
+        roll_length: parseFloat(document.getElementById('strip_roll_length').value),
+        strip_width: parseFloat(document.getElementById('strip_width').value),
+        strip_length: parseFloat(document.getElementById('strip_length').value),
+        strips_needed: parseInt(document.getElementById('strips_needed').value)
+    };
+
+    try {
+        const response = await fetch('/api/optimize/strips', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Error en la optimización de tiras');
+        }
+
+        const data = await response.json();
+        
+        document.getElementById('strip-production-max-value').textContent = `${data.strips_possible} / ${data.strips_needed}`;
+
+        const banner = document.getElementById('strip-sufficiency-banner');
+        const bannerTitle = document.getElementById('strip-sufficiency-title');
+        const bannerDesc = document.getElementById('strip-sufficiency-desc');
+        
+        if (data.is_sufficient) {
+            banner.className = 'bottleneck-card alert-success';
+            bannerTitle.textContent = '¡Lote Viable!';
+            bannerDesc.textContent = `El rollo de material tiene suficiente capacidad para las ${data.strips_needed} tiras requeridas.`;
+        } else {
+            banner.className = 'bottleneck-card alert-danger';
+            bannerTitle.textContent = '¡Material Insuficiente!';
+            bannerDesc.textContent = `Faltan ${data.shortage} tiras para completar el lote. Agrega más material base.`;
+        }
+
+        document.getElementById('strip-roll-area').textContent = `${data.total_roll_area_m2.toFixed(3)} m²`;
+        document.getElementById('strip-used-area').textContent = `${data.used_area_m2.toFixed(3)} m²`;
+        document.getElementById('strip-waste-percent').textContent = `${data.waste_percentage.toFixed(1)}%`;
+
+        const layout = data.packing;
+        const orientationText = layout.orientation === 'longitudinal' ? 'Longitudinal (A lo largo)' : 'Transversal (A lo ancho)';
+        document.getElementById('strip-layout-desc').innerHTML = 
+            `<strong>Plan de Trazado de Tiras:</strong> Orientación óptima: <em>${orientationText}</em>.<br>` +
+            `Distribución de corte: <strong>${layout.cols} tiras a lo ancho</strong> x <strong>${layout.rows} filas</strong>.<br>` +
+            `Total de tiras conseguidas: <strong>${data.strips_possible}</strong> (de las cuales se usan <strong>${Math.min(data.strips_needed, data.strips_possible)}</strong>).`;
+
+        renderStripsRollMap(payload.roll_width, payload.roll_length, payload.strip_width, payload.strip_length, layout, data.strips_needed);
+
+        placeholder.classList.add('hidden');
+        resultsContainer.classList.remove('hidden');
+
+    } catch (error) {
+        showToast(`Error al optimizar tiras: ${error.message}`, 'error');
+    } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }
+}
+
+// Exponer handleOptimizeStrips
+window.handleOptimizeStrips = handleOptimizeStrips;
+
+function renderStripsRollMap(rollWidth, rollLengthM, stripW, stripH, packing, needed) {
+    const svg = document.getElementById('strip-roll-svg-map');
+    if (!svg) return;
+    svg.innerHTML = '';
+
+    const rollLengthCm = rollLengthM * 100;
+    
+    // Scale factor: 1cm = 2px
+    const scale = 2.0;
+    const svgWidth = rollLengthCm * scale;
+    const svgHeight = rollWidth * scale;
+    svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+
+    // Fondo del rollo (desperdicio inicial)
+    const rectFondo = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rectFondo.setAttribute('x', '0');
+    rectFondo.setAttribute('y', '0');
+    rectFondo.setAttribute('width', svgWidth);
+    rectFondo.setAttribute('height', svgHeight);
+    rectFondo.setAttribute('fill', 'rgba(255, 255, 255, 0.03)');
+    rectFondo.setAttribute('stroke', 'rgba(255, 255, 255, 0.15)');
+    rectFondo.setAttribute('stroke-width', '2');
+    svg.appendChild(rectFondo);
+
+    // Si no caben tiras, terminamos
+    if (packing.count === 0) return;
+
+    let drawnCount = 0;
+    const orientation = packing.orientation;
+    const cols = packing.cols;
+    const rows = packing.rows;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            let x, y, w, h;
+            
+            if (orientation === "longitudinal") {
+                x = c * stripH * scale;
+                y = r * stripW * scale;
+                w = stripH * scale;
+                h = stripW * scale;
+            } else {
+                x = c * stripW * scale;
+                y = r * stripH * scale;
+                w = stripW * scale;
+                h = stripH * scale;
+            }
+
+            if (x + w > svgWidth || y + h > svgHeight) continue;
+
+            const rectTira = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rectTira.setAttribute('x', x);
+            rectTira.setAttribute('y', y);
+            rectTira.setAttribute('width', w);
+            rectTira.setAttribute('height', h);
+            
+            if (drawnCount < needed) {
+                rectTira.setAttribute('fill', '#d32f2f');
+                rectTira.setAttribute('opacity', '0.85');
+                rectTira.setAttribute('stroke', '#ff8a80');
+            } else {
+                rectTira.setAttribute('fill', '#546e7a');
+                rectTira.setAttribute('opacity', '0.4');
+                rectTira.setAttribute('stroke', '#90a4ae');
+            }
+            rectTira.setAttribute('stroke-width', '1');
+            rectTira.setAttribute('rx', '1');
+
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `Tira #${drawnCount + 1}: ${stripW}x${stripH}cm (${orientation})`;
+            rectTira.appendChild(title);
+
+            svg.appendChild(rectTira);
+            drawnCount++;
+        }
+    }
+
+    // Dibujar una línea vertical punteada que indica la porción de rollo realmente utilizada
+    const isRotated = orientation !== "longitudinal";
+    const maxColLength = packing.cols * (isRotated ? stripW : stripH);
+    const lineX = maxColLength * scale;
+    if (lineX > 0 && lineX < svgWidth) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', lineX);
+        line.setAttribute('y1', 0);
+        line.setAttribute('x2', lineX);
+        line.setAttribute('y2', svgHeight);
+        line.setAttribute('stroke', '#4caf50');
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-dasharray', '5,5');
+        svg.appendChild(line);
+
+        const lineText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lineText.setAttribute('x', lineX + 5);
+        lineText.setAttribute('y', 15);
+        lineText.setAttribute('fill', '#4caf50');
+        lineText.setAttribute('font-family', 'var(--font-body)');
+        lineText.setAttribute('font-size', '8px');
+        lineText.setAttribute('font-weight', '600');
+        lineText.textContent = `Límite de Corte: ${maxColLength}cm`;
+        svg.appendChild(lineText);
+    }
+}
+
 
 // --- MÓDULO 3: COTIZADOR / PRESUPUESTADOR ---
 async function handleQuote(event) {

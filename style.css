@@ -1281,6 +1281,66 @@ textarea:focus {
     border-radius: 4px;
 }
 
+#strip-roll-svg-map {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    background: #121214;
+    border-radius: 4px;
+}
+
+/* Sub-tabs segmentados de optimización */
+.optimization-subtabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.subtab-btn {
+    background: none !important;
+    border: none !important;
+    font-family: var(--font-heading) !important;
+    font-size: 1.1rem !important;
+    cursor: pointer !important;
+    padding: 0.5rem 1rem !important;
+    transition: var(--transition-fast) !important;
+    position: relative !important;
+}
+
+html[data-theme="dark"] .subtab-btn {
+    color: var(--color-text-secondary) !important;
+    border-bottom: 2px solid transparent !important;
+}
+
+html[data-theme="dark"] .subtab-btn:hover {
+    color: var(--color-text-primary) !important;
+}
+
+html[data-theme="dark"] .subtab-btn.active {
+    color: var(--color-text-primary) !important;
+    border-bottom: 2px solid var(--accent-crimson) !important;
+}
+
+html[data-theme="light"] .subtab-btn {
+    color: #555555 !important;
+    border-bottom: 2px solid transparent !important;
+}
+
+html[data-theme="light"] .subtab-btn:hover {
+    color: #1a1a1a !important;
+}
+
+html[data-theme="light"] .subtab-btn.active {
+    color: #1a1a1a !important;
+    border-bottom: 2px solid var(--accent-crimson) !important;
+}
+
+html[data-theme="light"] #strip-roll-svg-map {
+    background: #e2e8f0;
+}
+
 /* Nube de Tags (Tendencias) */
 .tag-cloud-container {
     display: flex;

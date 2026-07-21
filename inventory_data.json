@@ -2,70 +2,70 @@
   {
     "item_key": "argollas",
     "name": "Argollas metálicas",
-    "stock": 4.0,
+    "stock": 94.0,
     "min_stock": 20,
     "unit": "uds"
   },
   {
     "item_key": "hebillas",
     "name": "Hebillas reguladoras",
-    "stock": 16,
+    "stock": 96.0,
     "min_stock": 15,
     "unit": "uds"
   },
   {
     "item_key": "remaches",
     "name": "Remaches de unión",
-    "stock": 108,
+    "stock": 488.0,
     "min_stock": 50,
     "unit": "uds"
   },
   {
     "item_key": "ojalillos",
     "name": "Ojalillos metálicos",
-    "stock": 200,
+    "stock": 200.0,
     "min_stock": 30,
     "unit": "uds"
   },
   {
     "item_key": "varillas",
     "name": "Varillas de soporte",
-    "stock": 50,
+    "stock": 50.0,
     "min_stock": 10,
     "unit": "uds"
   },
   {
     "item_key": "cadenas",
     "name": "Cadenas metálicas",
-    "stock": 10.0,
+    "stock": 20.0,
     "min_stock": 2.0,
     "unit": "metros"
   },
   {
     "item_key": "tachas",
     "name": "Tachas decorativas",
-    "stock": 22,
+    "stock": 142.0,
     "min_stock": 25,
     "unit": "uds"
   },
   {
     "item_key": "mosquetones",
     "name": "Mosquetones de enganche",
-    "stock": 8,
+    "stock": 48.0,
     "min_stock": 8,
     "unit": "uds"
   },
   {
     "item_key": "cinta",
     "name": "Cinta/Correa",
-    "stock": 80.0,
+    "stock": 97.5,
     "min_stock": 5.0,
     "unit": "metros"
   },
   {
     "item_key": "cuerina_rollo",
     "name": "Cuerina en rollo",
-    "stock": 15.0,
+    "stock": 20.0,
     "min_stock": 3.0,
     "unit": "metros"
   }

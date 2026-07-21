@@ -1326,5 +1326,117 @@
     "movement_type": "produccion",
     "reference": "Confección de 1x Arnés Tormenta Test",
     "date": "2026-07-05T12:21:33.347919"
+  },
+  {
+    "id": "f4bac09f",
+    "item_key": "argollas",
+    "quantity": 10.0,
+    "movement_type": "Compra de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:30:58.576654"
+  },
+  {
+    "id": "0d586743",
+    "item_key": "argollas",
+    "quantity": -10.0,
+    "movement_type": "Correccion de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:30:58.608280"
+  },
+  {
+    "id": "00a1af48",
+    "item_key": "argollas",
+    "quantity": 5.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-20T22:30:58.652648"
+  },
+  {
+    "id": "4781ce71",
+    "item_key": "argollas",
+    "quantity": -5.0,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:30:58.687356"
+  },
+  {
+    "id": "9ea6353d",
+    "item_key": "argollas",
+    "quantity": 10.0,
+    "movement_type": "Compra de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:31:30.353229"
+  },
+  {
+    "id": "ef5d4d41",
+    "item_key": "argollas",
+    "quantity": -10.0,
+    "movement_type": "Correccion de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:31:30.383333"
+  },
+  {
+    "id": "2a69daf6",
+    "item_key": "argollas",
+    "quantity": 5.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-20T22:31:30.433968"
+  },
+  {
+    "id": "8255080e",
+    "item_key": "argollas",
+    "quantity": -5.0,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-20T22:31:30.464726"
+  },
+  {
+    "id": "0fb9ff9a",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.485045"
+  },
+  {
+    "id": "e3c1bbcd",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.497544"
+  },
+  {
+    "id": "bd96daf2",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.510730"
+  },
+  {
+    "id": "a0e35fb7",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.526229"
+  },
+  {
+    "id": "2d6ba07e",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.539419"
+  },
+  {
+    "id": "8b5303c7",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-20T22:31:30.553990"
   }
 ]
