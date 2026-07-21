@@ -1659,6 +1659,10 @@ function switchTab(tabId) {
     } else if (tabId === 'orders') {
         loadOrders();
         loadOrderFormDropdowns();
+    } else if (tabId === 'quote' || tabId === 'optimization') {
+        loadCatalog();
+    } else if (tabId === 'clients') {
+        loadClients();
     }
 }
 
