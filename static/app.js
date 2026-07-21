@@ -1636,7 +1636,10 @@ async function exportToPDF(elementId, filename) {
 // --- MANEJO DE PESTAÑAS (TABS) ---
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.style.display = 'none';
+    });
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
     const activePane = document.getElementById(`pane-${tabId}`);
@@ -1644,33 +1647,39 @@ function switchTab(tabId) {
     if (activeBtn && activePane) {
         activeBtn.classList.add('active');
         activePane.classList.add('active');
+        activePane.style.display = 'block';
     }
 
-    // Acciones al abrir pestañas específicas
-    if (tabId === 'trends') {
-        loadTrends();
-    } else if (tabId === 'history') {
-        loadProductionHistory();
-    } else if (tabId === 'batch') {
-        loadCatalogForBatch();
-    } else if (tabId === 'catalog') {
-        loadCatalog();
-    } else if (tabId === 'dashboard') {
-        loadDashboard();
-    } else if (tabId === 'inventory') {
-        loadInventory();
-    } else if (tabId === 'suppliers') {
-        loadSuppliers();
-        loadPriceComparison();
-    } else if (tabId === 'orders') {
-        loadOrders();
-        loadOrderFormDropdowns();
-    } else if (tabId === 'quote' || tabId === 'optimization') {
-        loadCatalog();
-    } else if (tabId === 'clients') {
-        loadClients();
+    try {
+        // Acciones al abrir pestañas específicas
+        if (tabId === 'trends') {
+            loadTrends();
+        } else if (tabId === 'history') {
+            loadProductionHistory();
+        } else if (tabId === 'batch') {
+            loadCatalogForBatch();
+        } else if (tabId === 'catalog') {
+            loadCatalog();
+        } else if (tabId === 'dashboard') {
+            loadDashboard();
+        } else if (tabId === 'inventory') {
+            loadInventory();
+        } else if (tabId === 'suppliers') {
+            loadSuppliers();
+            loadPriceComparison();
+        } else if (tabId === 'orders') {
+            loadOrders();
+            loadOrderFormDropdowns();
+        } else if (tabId === 'quote' || tabId === 'optimization') {
+            loadCatalog();
+        } else if (tabId === 'clients') {
+            loadClients();
+        }
+    } catch (e) {
+        console.error('Error al ejecutar acciones de la pestaña:', e);
     }
 }
+window.switchTab = switchTab;
 
 // --- ACTUALIZACIONES DINÁMICAS EN FORMULARIOS ---
 function updateFactorText(val) {
@@ -4863,6 +4872,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('tormenta-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
+
+    // Event listeners para pestañas de navegación (fail-safe)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabId = btn.id.replace('tab-', '');
+            if (tabId) switchTab(tabId);
+        });
+    });
 
     // Load initial data
     loadClients();

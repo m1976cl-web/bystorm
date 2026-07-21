@@ -239,14 +239,16 @@ body {
 .tab-pane {
     display: none;
     opacity: 0;
+    visibility: hidden;
     transform: translateY(10px);
     transition: opacity var(--transition-smooth), transform var(--transition-smooth);
 }
 
 .tab-pane.active {
-    display: block;
-    opacity: 1;
-    transform: translateY(0);
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
 }
 
 /* -------------------------------------------------------------
