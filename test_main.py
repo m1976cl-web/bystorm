@@ -329,3 +329,102 @@ def test_overdue_orders_and_movements_flow():
     assert response.status_code == 400
     assert "Falta stock" in response.json()["detail"]
 
+
+def test_orders_flow_t1_to_t9():
+    # T1: Crear orden con seña 50% -> payment_status == "seña", balance correcto
+    order_payload = {
+        "client_name": "Ana Goth",
+        "product_key": "arnes_body",
+        "product_name": "Arnés Corporal Integral",
+        "quantity": 1,
+        "size": "L",
+        "quoted_price": 50000.0,
+        "deposit_amount": 25000.0,
+        "contact_phone": "5491112345678"
+    }
+    res = client.post("/api/orders", json=order_payload)
+    assert res.status_code == 201
+    order1 = res.json()
+    assert order1["payment_status"] == "seña"
+    assert order1["balance_amount"] == 25000.0
+    assert order1["stock_deducted"] is False
+    order_id = order1["id"]
+
+    # T2: from-quote -> 201 + campos snapshot
+    quote_payload = {
+        "client_id": "c123",
+        "client_name": "Valeria Dark",
+        "product_key": "choker_dring",
+        "product_name": "Gargantilla Choker D-Ring",
+        "quantity": 2,
+        "size": "M",
+        "quoted_price": 12000.0,
+        "deposit_amount": 6000.0,
+        "materials_cost_snapshot": 3000.0,
+        "labor_cost_snapshot": 2000.0,
+        "contact_phone": "5491187654321"
+    }
+    res = client.post("/api/orders/from-quote", json=quote_payload)
+    assert res.status_code == 201
+    quote_order = res.json()
+    assert quote_order["payment_status"] == "seña"
+    assert quote_order["quantity"] == 2
+    assert quote_order["materials_cost_snapshot"] == 3000.0
+
+    # T3: pendiente -> en_confeccion (Sin tocar stock)
+    res = client.put(f"/api/orders/{order_id}/status", json={"status": "en_confeccion"})
+    assert res.status_code == 200
+    assert res.json()["status"] == "en_confeccion"
+    assert res.json()["stock_deducted"] is False
+
+    # T4: -> terminado con stock OK (stock baja, movement produccion, stock_deducted=True)
+    # Dar stock suficiente de cinta, remaches, etc. primero
+    client.put("/api/inventory/cinta", json={"quantity": 100.0, "reason": "test setup"})
+    client.put("/api/inventory/remaches", json={"quantity": 500, "reason": "test setup"})
+    client.put("/api/inventory/argollas", json={"quantity": 500, "reason": "test setup"})
+    client.put("/api/inventory/hebillas", json={"quantity": 500, "reason": "test setup"})
+    
+    res = client.put(f"/api/orders/{order_id}/status", json={"status": "terminado"})
+    assert res.status_code == 200
+    finished_order = res.json()
+    assert finished_order["status"] == "terminado"
+    assert finished_order["stock_deducted"] is True
+    assert finished_order["production_id"] is not None
+
+    # T5: -> terminado sin stock (devuelve 400 Bad Request y no altera estado)
+    huge_order = {
+        "client_name": "Stock Test",
+        "product_key": "arnes_body",
+        "product_name": "Arnés Body Imposible",
+        "quantity": 99999,
+        "quoted_price": 999999.0
+    }
+    res_huge = client.post("/api/orders", json=huge_order)
+    huge_id = res_huge.json()["id"]
+    res_fail = client.put(f"/api/orders/{huge_id}/status", json={"status": "terminado"})
+    assert res_fail.status_code == 400
+    assert "Falta stock" in res_fail.json()["detail"]
+
+    # T6: -> terminado otra vez (idempotente, no vuelve a descontar)
+    res_repeat = client.put(f"/api/orders/{order_id}/status", json={"status": "terminado"})
+    assert res_repeat.status_code == 200
+    assert res_repeat.json()["stock_deducted"] is True
+
+    # T7: whatsapp-ready
+    res_wa = client.get(f"/api/orders/{order_id}/whatsapp-ready")
+    assert res_wa.status_code == 200
+    wa_data = res_wa.json()
+    assert "Tormenta Indumentaria" in wa_data["text"]
+    assert wa_data["wa_url"] is not None
+    assert "5491112345678" in wa_data["wa_url"]
+
+    # T8: Producción manual sigue funcionando (probado arriba)
+
+    # T9: Órdenes legacy sin campos nuevos no rompen (defaults aplicados)
+    res_list = client.get("/api/orders")
+    assert res_list.status_code == 200
+    for o in res_list.json():
+        assert "payment_status" in o
+        assert "balance_amount" in o
+
+
