@@ -42,29 +42,11 @@
                 </svg>
                 Dashboard
             </button>
-            <button class="tab-btn" id="tab-scaling" onclick="switchTab('scaling')">
+            <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
                 </svg>
-                Escalado de Patrones
-            </button>
-            <button class="tab-btn" id="tab-optimization" onclick="switchTab('optimization')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                Optimización Zero Waste
-            </button>
-            <button class="tab-btn" id="tab-batch" onclick="switchTab('batch')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Planificador de Lotes
-            </button>
-            <button class="tab-btn" id="tab-catalog" onclick="switchTab('catalog')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
-                Catálogo de Fichas
+                Órdenes
             </button>
             <button class="tab-btn" id="tab-quote" onclick="switchTab('quote')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -72,25 +54,13 @@
                 </svg>
                 Cotizador
             </button>
-            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Registro e Historial
-            </button>
             <button class="tab-btn" id="tab-clients" onclick="switchTab('clients')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                    <path d="M23 21v-2a4 4 0 010 7.75"/>
                 </svg>
                 Fichas de Clientes
-            </button>
-            <button class="tab-btn" id="tab-trends" onclick="switchTab('trends')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Tendencias de Moda
             </button>
             <button class="tab-btn" id="tab-inventory" onclick="switchTab('inventory')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -104,11 +74,41 @@
                 </svg>
                 Proveedores
             </button>
-            <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
+            <button class="tab-btn" id="tab-batch" onclick="switchTab('batch')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
-                Órdenes
+                Planificador de Lotes
+            </button>
+            <button class="tab-btn" id="tab-optimization" onclick="switchTab('optimization')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Optimización Zero Waste
+            </button>
+            <button class="tab-btn" id="tab-scaling" onclick="switchTab('scaling')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                </svg>
+                Escalado de Patrones
+            </button>
+            <button class="tab-btn" id="tab-catalog" onclick="switchTab('catalog')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Catálogo de Fichas
+            </button>
+            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Registro e Historial
+            </button>
+            <button class="tab-btn" id="tab-trends" onclick="switchTab('trends')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Tendencias de Moda
             </button>
         </nav>
 
@@ -335,8 +335,8 @@
                     <!-- Tarjeta de Inventario y Producción -->
                     <div class="glass-card">
                         <div class="card-header">
-                            <h2 class="card-title">Stock del Taller & Producto</h2>
-                            <p class="card-desc">Registra el material disponible para calcular la producción óptima antes de que se agoten los recursos.</p>
+                            <h2 class="card-title">Simular Insumos para Cálculo</h2>
+                            <p class="card-desc">Ingresa el material disponible en el simulador para calcular la producción máxima posible.</p>
                         </div>
 
                         <form id="optimize-form" onsubmit="handleOptimize(event)">
