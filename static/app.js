@@ -7,6 +7,9 @@
 let backendAvailable = null;
 let backendCheckPromise = null;
 const originalFetch = window.fetch;
+// Base path for GitHub Pages (repository name) or empty for root
+const REPO_BASE = document.location.pathname.split('/')[1] || '';
+const BASE_PATH = document.location.hostname.includes('github.io') ? `/${REPO_BASE}` : '';
 
 // Constantes y Base de Datos Mock
 const DB_PREFIX = "t_db_";
@@ -441,7 +444,7 @@ async function ensureBackendChecked() {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 1200); // 1.2s timeout
-                const response = await originalFetch('/api/inventory', { signal: controller.signal });
+                const response = await originalFetch(`${BASE_PATH}/api/inventory`, { signal: controller.signal });
                 clearTimeout(timeoutId);
                 const contentType = response.headers.get('content-type');
                 if (response.ok && contentType && contentType.includes('application/json')) {
