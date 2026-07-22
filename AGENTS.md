@@ -13,6 +13,7 @@ Stack: FastAPI (`main.py`) + vanilla HTML/CSS/JS (`static/` and root copies) + J
 |----------|----------|
 | **Current release** | [`docs/PLAN_IMPLEMENTACION_PEDIDOS.md`](docs/PLAN_IMPLEMENTACION_PEDIDOS.md) — end-to-end orders (quote → deposit → status → stock deduct → WhatsApp ready) |
 | Docs index | [`docs/README.md`](docs/README.md) |
+| Brand / Instagram | [`docs/MARCA_TORMENTA.md`](docs/MARCA_TORMENTA.md) — align catalog & copy with [@tormenta_indumentaria](https://www.instagram.com/tormenta_indumentaria/) |
 
 If the user (or orchestrator) says “continue Bystorm / Tormenta / pedidos”, implement against that plan unless told otherwise.
 

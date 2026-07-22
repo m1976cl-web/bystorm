@@ -329,3 +329,253 @@ def test_overdue_orders_and_movements_flow():
     assert response.status_code == 400
     assert "Falta stock" in response.json()["detail"]
 
+
+# --- v2.1 pedidos-punta-a-punta (D1+) ---
+
+def test_t1_create_order_with_half_deposit():
+    """T1: Crear orden con seña 50% → payment_status seña y balance correcto."""
+    payload = {
+        "client_name": "Cliente Seña",
+        "product_key": "arnes_body",
+        "product_name": "Arnés Corporal Integral",
+        "quantity": 1,
+        "size": "L",
+        "quoted_price": 45000,
+        "deposit_amount": 22500,
+        "due_date": "2026-08-01",
+        "contact_phone": "5491100000000",
+        "materials_cost_snapshot": 12000,
+        "labor_cost_snapshot": 8000,
+    }
+    response = client.post("/api/orders", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["payment_status"] == "seña"
+    assert data["deposit_amount"] == 22500
+    assert data["amount_paid_total"] == 22500
+    assert data["balance_amount"] == 22500
+    assert data["stock_deducted"] is False
+    assert data["quantity"] == 1
+    assert data["retail_price_snapshot"] == 45000
+    order_id = data["id"]
+
+    # Cleanup
+    client.delete(f"/api/orders/{order_id}")
+
+
+def test_t9_legacy_orders_get_defaults():
+    """T9: Órdenes legacy sin campos nuevos no rompen GET/PUT (defaults suaves)."""
+    from main import _load_orders, _save_orders, ORDERS_FILE
+    import json
+    import os
+
+    # Insertar orden mínima al estilo pre-v2.1
+    legacy = {
+        "id": "legacy01",
+        "client_name": "Legacy Cliente",
+        "product_key": "arnes",
+        "product_name": "Arnés Base",
+        "size": "M",
+        "custom_notes": "nota vieja",
+        "quoted_price": 10000,
+        "due_date": "",
+        "status": "pendiente",
+        "created_at": "2026-01-01T00:00:00",
+        "updated_at": "2026-01-01T00:00:00",
+    }
+    orders = _load_orders()
+    # Guardar crudo sin normalizar al archivo
+    raw_path = ORDERS_FILE
+    existing = []
+    if os.path.exists(raw_path):
+        with open(raw_path, "r", encoding="utf-8") as f:
+            try:
+                existing = json.load(f)
+            except json.JSONDecodeError:
+                existing = []
+    existing.append(legacy)
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump(existing, f, ensure_ascii=False, indent=2)
+
+    try:
+        response = client.get("/api/orders")
+        assert response.status_code == 200
+        found = [o for o in response.json() if o["id"] == "legacy01"]
+        assert len(found) == 1
+        o = found[0]
+        assert o["quantity"] == 1
+        assert o["stock_deducted"] is False
+        assert o["payment_status"] in ("sin_pago", "seña", "pagado")
+        assert "balance_amount" in o
+        assert o.get("notes") == "nota vieja" or o.get("custom_notes") == "nota vieja"
+
+        # PUT no rompe
+        update = {
+            "client_name": "Legacy Cliente",
+            "product_key": "arnes",
+            "product_name": "Arnés Base",
+            "size": "L",
+            "quoted_price": 10000,
+            "status": "pendiente",
+        }
+        response = client.put("/api/orders/legacy01", json=update)
+        assert response.status_code == 200
+        assert response.json()["size"] == "L"
+        assert response.json()["stock_deducted"] is False
+    finally:
+        client.delete("/api/orders/legacy01")
+
+
+def test_create_order_full_payment_status():
+    """Seña total o paid == quoted → payment_status pagado."""
+    payload = {
+        "client_name": "Pagado Full",
+        "product_key": "choker_dring",
+        "product_name": "Choker",
+        "quoted_price": 8000,
+        "deposit_amount": 8000,
+    }
+    response = client.post("/api/orders", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["payment_status"] == "pagado"
+    assert data["balance_amount"] == 0
+    client.delete(f"/api/orders/{data['id']}")
+
+
+def _make_order(**overrides):
+    base = {
+        "client_name": "Cliente Flujo",
+        "product_key": "arnes",
+        "product_name": "Arnés Pechera Tormenta",
+        "quantity": 1,
+        "size": "M",
+        "quoted_price": 20000,
+        "deposit_amount": 10000,
+        "materials_cost_snapshot": 5000,
+        "labor_cost_snapshot": 3000,
+    }
+    base.update(overrides)
+    r = client.post("/api/orders", json=base)
+    assert r.status_code == 201
+    return r.json()
+
+
+def test_t3_pendiente_to_en_confeccion_no_stock_touch():
+    """T3: pendiente → en_confeccion no toca stock."""
+    order = _make_order()
+    oid = order["id"]
+
+    inv_before = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    r = client.put(f"/api/orders/{oid}/status", json={"status": "en_confeccion"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "en_confeccion"
+    assert r.json()["stock_deducted"] is False
+
+    inv_after = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    assert inv_before == inv_after
+
+    client.delete(f"/api/orders/{oid}")
+
+
+def test_t4_terminado_with_stock_ok():
+    """T4: → terminado con stock OK → stock baja, movement, stock_deducted, production."""
+    order = _make_order(product_key="arnes", product_name="Arnés Test T4")
+    oid = order["id"]
+
+    cinta_before = [
+        i["stock"] for i in client.get("/api/inventory").json() if i["item_key"] == "cinta"
+    ][0]
+    prod_before = len(client.get("/api/production").json())
+
+    client.put(f"/api/orders/{oid}/status", json={"status": "en_confeccion"})
+    r = client.put(f"/api/orders/{oid}/status", json={"status": "terminado"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "terminado"
+    assert data["stock_deducted"] is True
+    assert data["production_id"]
+
+    cinta_after = [
+        i["stock"] for i in client.get("/api/inventory").json() if i["item_key"] == "cinta"
+    ][0]
+    # BOM arnes: 2.5 m cinta
+    assert cinta_after == cinta_before - 2.5
+
+    movements = client.get("/api/inventory/movements").json()
+    assert any(
+        m["item_key"] == "cinta"
+        and m["quantity"] == -2.5
+        and m["movement_type"] == "produccion"
+        and oid in (m.get("reference") or "")
+        for m in movements
+    )
+
+    production = client.get("/api/production").json()
+    assert len(production) == prod_before + 1
+    linked = [p for p in production if p.get("order_id") == oid]
+    assert len(linked) == 1
+    assert linked[0]["id"] == data["production_id"]
+
+    client.delete(f"/api/orders/{oid}")
+
+
+def test_t5_terminado_without_stock():
+    """T5: → terminado sin stock → 400, estado no cambia, stock intacto."""
+    order = _make_order(
+        product_key="arnes",
+        product_name="Arnés Sin Stock",
+        quantity=1,
+    )
+    oid = order["id"]
+
+    # Vaciar cinta casi por completo dejando menos de 2.5
+    inv = client.get("/api/inventory").json()
+    cinta = [i for i in inv if i["item_key"] == "cinta"][0]
+    # Dejar 0.5 de cinta
+    client.put(
+        "/api/inventory/cinta",
+        json={"quantity": -(cinta["stock"] - 0.5), "reason": "ajuste"},
+    )
+
+    inv_before = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    r = client.put(f"/api/orders/{oid}/status", json={"status": "terminado"})
+    assert r.status_code == 400
+    assert "Falta stock" in r.json()["detail"]
+
+    # Estado intacto
+    listed = [o for o in client.get("/api/orders").json() if o["id"] == oid][0]
+    assert listed["status"] == "pendiente"
+    assert listed["stock_deducted"] is False
+
+    inv_after = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    assert inv_before == inv_after
+
+    # Restaurar cinta
+    client.put("/api/inventory/cinta", json={"quantity": 50.0, "reason": "compra"})
+    client.delete(f"/api/orders/{oid}")
+
+
+def test_t6_terminado_idempotent():
+    """T6: → terminado otra vez no descuenta de nuevo."""
+    order = _make_order(product_key="choker_dring", product_name="Choker T6")
+    oid = order["id"]
+
+    r1 = client.put(f"/api/orders/{oid}/status", json={"status": "terminado"})
+    assert r1.status_code == 200
+    assert r1.json()["stock_deducted"] is True
+
+    inv_mid = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    prod_mid = len(client.get("/api/production").json())
+
+    r2 = client.put(f"/api/orders/{oid}/status", json={"status": "terminado"})
+    assert r2.status_code == 200
+    assert r2.json()["stock_deducted"] is True
+    assert r2.json()["production_id"] == r1.json()["production_id"]
+
+    inv_end = {i["item_key"]: i["stock"] for i in client.get("/api/inventory").json()}
+    assert inv_mid == inv_end
+    assert len(client.get("/api/production").json()) == prod_mid
+
+    client.delete(f"/api/orders/{oid}")
+

@@ -1634,63 +1634,72 @@ async function exportToPDF(elementId, filename) {
 }
 
 // --- MANEJO DE PESTAÑAS (TABS) ---
-function switchTab(tabId) {
-    console.log("Cambiando a pestaña:", tabId);
-    
-    // Ocultar todas las pestañas y quitar clase activa
-    const allBtns = document.querySelectorAll('.tab-btn');
-    const allPanes = document.querySelectorAll('.tab-pane');
-    
-    allBtns.forEach(btn => btn.classList.remove('active'));
-    allPanes.forEach(pane => {
+// Cada módulo es un .tab-pane aislado. Solo uno visible a la vez.
+// No mezclar datos de Inventario/Zero Waste dentro de Clientes, etc.
+const TAB_LOADERS = {
+    dashboard: () => loadDashboard(),
+    orders: () => { loadOrders(); loadOrderFormDropdowns(); },
+    quote: () => loadCatalog(),
+    clients: () => loadClients(),
+    batch: () => loadCatalogForBatch(),
+    optimization: () => loadCatalog(),
+    scaling: () => {},
+    history: () => loadProductionHistory(),
+    inventory: () => loadInventory(),
+    catalog: () => loadCatalog(),
+    suppliers: () => { loadSuppliers(); loadPriceComparison(); },
+    trends: () => loadTrends(),
+};
+
+function hideAllTabPanes() {
+    document.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.remove('active');
+        pane.setAttribute('hidden', '');
+        pane.setAttribute('aria-hidden', 'true');
         pane.style.display = 'none';
     });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+    });
+}
+
+function switchTab(tabId) {
+    if (!tabId) return;
+
+    hideAllTabPanes();
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
     const activePane = document.getElementById(`pane-${tabId}`);
-    
+
     if (activeBtn) {
         activeBtn.classList.add('active');
+        activeBtn.setAttribute('aria-selected', 'true');
+        // Centrar pestaña activa en scroll horizontal (móvil)
+        try {
+            activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        } catch (_) { /* ignore */ }
     }
-    
+
     if (activePane) {
         activePane.classList.add('active');
+        activePane.removeAttribute('hidden');
+        activePane.setAttribute('aria-hidden', 'false');
         activePane.style.display = 'block';
     } else {
         console.warn(`No se encontró el panel con ID: pane-${tabId}`);
+        return;
     }
 
     try {
-        // Acciones al abrir pestañas específicas
-        if (tabId === 'trends') {
-            loadTrends();
-        } else if (tabId === 'history') {
-            loadProductionHistory();
-        } else if (tabId === 'batch') {
-            loadCatalogForBatch();
-        } else if (tabId === 'catalog') {
-            loadCatalog();
-        } else if (tabId === 'dashboard') {
-            loadDashboard();
-        } else if (tabId === 'inventory') {
-            loadInventory();
-        } else if (tabId === 'suppliers') {
-            loadSuppliers();
-            loadPriceComparison();
-        } else if (tabId === 'orders') {
-            loadOrders();
-            loadOrderFormDropdowns();
-        } else if (tabId === 'quote' || tabId === 'optimization') {
-            loadCatalog();
-        } else if (tabId === 'clients') {
-            loadClients();
-        }
+        const loader = TAB_LOADERS[tabId];
+        if (typeof loader === 'function') loader();
     } catch (e) {
-        console.error('Error al ejecutar acciones de la pestaña:', e);
+        console.error('Error al cargar datos de la pestaña:', tabId, e);
     }
 }
 window.switchTab = switchTab;
+window.hideAllTabPanes = hideAllTabPanes;
 
 // --- ACTUALIZACIONES DINÁMICAS EN FORMULARIOS ---
 function updateFactorText(val) {
@@ -2744,29 +2753,62 @@ async function loadCatalog() {
     }
 }
 
+const CATEGORY_LABELS = {
+    arneses: 'Arneses',
+    collares: 'Collares',
+    corseteria: 'Corsetería',
+    mascaras: 'Máscaras',
+    lenceria: 'Lencería',
+    portaligas: 'Portaligas',
+    accesorios: 'Accesorios',
+    cadenas: 'Cadenas',
+    general: 'General',
+};
+
 function renderCatalogList(catalog) {
     const listContainer = document.getElementById('catalog-items-list');
     if (!listContainer) return;
-    
+
     if (!catalog || Object.keys(catalog).length === 0) {
         listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted);">No hay productos registrados en el catálogo.</p>';
         return;
     }
-    
+
+    // Ordenar por categoría de marca Tormenta
+    const categoryOrder = ['arneses', 'mascaras', 'collares', 'corseteria', 'lenceria', 'portaligas', 'accesorios', 'cadenas', 'general'];
+    const entries = Object.entries(catalog).sort((a, b) => {
+        const ca = categoryOrder.indexOf(a[1].category || 'general');
+        const cb = categoryOrder.indexOf(b[1].category || 'general');
+        if (ca !== cb) return (ca === -1 ? 99 : ca) - (cb === -1 ? 99 : cb);
+        return (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'es');
+    });
+
     listContainer.innerHTML = '';
-    
-    for (const [key, prod] of Object.entries(catalog)) {
+    let lastCategory = null;
+
+    for (const [key, prod] of entries) {
+        const cat = prod.category || 'general';
+        if (cat !== lastCategory) {
+            lastCategory = cat;
+            const heading = document.createElement('div');
+            heading.className = 'catalog-category-heading';
+            heading.innerHTML = `<h3>${CATEGORY_LABELS[cat] || cat}</h3>`;
+            listContainer.appendChild(heading);
+        }
+
         const card = document.createElement('div');
-        card.className = 'client-card'; // Reusar clase tarjeta cliente por consistencia
-        
-        const isBase = ["arnes", "mascara", "corset"].includes(key);
-        const tagType = isBase ? 'Base' : 'Personalizado';
-        
+        card.className = 'client-card catalog-product-card';
+
+        const isCore = prod.core === true || ['arnes', 'arnes_body', 'mascara', 'corset_underbust'].includes(key);
+        const veganBadge = prod.vegan !== false ? '<span class="item-tag tag-vegan">Vegan</span>' : '';
+        const mtoBadge = prod.made_to_order !== false ? '<span class="item-tag tag-mto">A medida</span>' : '';
+        const coreBadge = isCore ? '<span class="item-tag">Base taller</span>' : '';
+
         let detailsHtml = `
             <ul>
                 ${prod.cinta > 0 ? `<li><strong>Cinta:</strong> ${prod.cinta} m</li>` : ''}
                 ${prod.cadenas > 0 ? `<li><strong>Cadenas:</strong> ${prod.cadenas} m</li>` : ''}
-                ${prod.panels_count > 0 ? `<li><strong>Paneles Cuero:</strong> ${prod.panels_count} de ${prod.panel_width}x${prod.panel_height}cm</li>` : ''}
+                ${prod.panels_count > 0 ? `<li><strong>Paneles cuerina:</strong> ${prod.panels_count} de ${prod.panel_width}x${prod.panel_height}cm</li>` : ''}
                 ${prod.argollas > 0 ? `<li><strong>Argollas:</strong> ${prod.argollas} uds</li>` : ''}
                 ${prod.hebillas > 0 ? `<li><strong>Hebillas:</strong> ${prod.hebillas} uds</li>` : ''}
                 ${prod.remaches > 0 ? `<li><strong>Remaches:</strong> ${prod.remaches} uds</li>` : ''}
@@ -2777,16 +2819,19 @@ function renderCatalogList(catalog) {
             </ul>
         `;
 
+        const safeName = (prod.name || key).replace(/'/g, "\\'");
         card.innerHTML = `
             <div class="client-card-header">
                 <div class="client-card-info">
-                    <span class="item-tag">${tagType}</span>
-                    <h4 style="margin-top: 0.3rem;">${prod.name}</h4>
-                    <div class="client-date">Identificador: <em>${key}</em></div>
+                    <div class="catalog-badges">${coreBadge}${veganBadge}${mtoBadge}</div>
+                    <h4 style="margin-top: 0.3rem;">${prod.name || key}</h4>
+                    <div class="client-date">Clave: <em>${key}</em></div>
+                    ${prod.description ? `<p class="catalog-product-desc">${prod.description}</p>` : ''}
+                    ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${prod.material}</p>` : ''}
                 </div>
                 <div class="client-card-actions">
-                    <button class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏ Editar</button>
-                    ${!isBase ? `<button class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${prod.name}')">✕ Borrar</button>` : ''}
+                    <button type="button" class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏ Editar</button>
+                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕ Borrar</button>` : ''}
                 </div>
             </div>
             <div class="catalog-item-bom" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.15); border-radius: 4px;">
@@ -2797,51 +2842,68 @@ function renderCatalogList(catalog) {
     }
 }
 
+function fillProductSelect(selectEl, catalog, { includeCustom = false, customLabel = '', placeholder = '' } = {}) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    if (placeholder) {
+        const ph = document.createElement('option');
+        ph.value = '';
+        ph.disabled = true;
+        ph.selected = true;
+        ph.textContent = placeholder;
+        selectEl.appendChild(ph);
+    }
+
+    // Agrupar por categoría (como en el feed de Tormenta: líneas de producto)
+    const byCat = {};
+    for (const [key, prod] of Object.entries(catalog || {})) {
+        const cat = prod.category || 'general';
+        if (!byCat[cat]) byCat[cat] = [];
+        byCat[cat].push([key, prod]);
+    }
+    const categoryOrder = ['arneses', 'mascaras', 'collares', 'corseteria', 'lenceria', 'portaligas', 'accesorios', 'cadenas', 'general'];
+    const cats = Object.keys(byCat).sort((a, b) => {
+        const ia = categoryOrder.indexOf(a);
+        const ib = categoryOrder.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+
+    for (const cat of cats) {
+        const group = document.createElement('optgroup');
+        group.label = CATEGORY_LABELS[cat] || cat;
+        byCat[cat]
+            .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'es'))
+            .forEach(([key, prod]) => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = prod.name || key;
+                group.appendChild(opt);
+            });
+        selectEl.appendChild(group);
+    }
+
+    if (includeCustom) {
+        const customOpt = document.createElement('option');
+        customOpt.value = 'custom';
+        customOpt.textContent = customLabel || 'Personalizado / BOM manual';
+        selectEl.appendChild(customOpt);
+    }
+}
+
 function updateProductDropdowns(catalog) {
-    // 1. Selector de optimizador común
-    const optSelect = document.getElementById('product_key');
-    if (optSelect) {
-        // Mantener opciones fijas y custom, pero rellenar dinámicamente el catálogo
-        optSelect.innerHTML = '';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            optSelect.appendChild(opt);
-        }
-        const customOpt = document.createElement('option');
-        customOpt.value = 'custom';
-        customOpt.textContent = 'Ficha de Insumos Personalizada (BOM Manual)';
-        optSelect.appendChild(customOpt);
-    }
-
-    // 2. Selector de cotizador
-    const quoteSelect = document.getElementById('quote_product');
-    if (quoteSelect) {
-        quoteSelect.innerHTML = '';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            quoteSelect.appendChild(opt);
-        }
-    }
-
-    // 3. Selector de registro de producción
-    const prodSelect = document.getElementById('prod_product_key');
-    if (prodSelect) {
-        prodSelect.innerHTML = '<option value="" disabled selected>-- Seleccionar Prenda --</option>';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            prodSelect.appendChild(opt);
-        }
-        const customOpt = document.createElement('option');
-        customOpt.value = 'custom';
-        customOpt.textContent = 'Prenda Personalizada / Sin Catálogo';
-        prodSelect.appendChild(customOpt);
-    }
+    fillProductSelect(document.getElementById('product_key'), catalog, {
+        includeCustom: true,
+        customLabel: 'Ficha de insumos personalizada (BOM manual)',
+    });
+    fillProductSelect(document.getElementById('quote_product'), catalog);
+    fillProductSelect(document.getElementById('prod_product_key'), catalog, {
+        includeCustom: true,
+        customLabel: 'Prenda personalizada / sin catálogo',
+        placeholder: '-- Seleccionar prenda Tormenta --',
+    });
+    fillProductSelect(document.getElementById('order_product'), catalog, {
+        placeholder: '-- Prenda del pedido --',
+    });
 }
 
 async function handleSaveProduct(event) {
@@ -4884,16 +4946,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
-    // Event listeners para pestañas de navegación (fail-safe)
+    // Aislar paneles al arrancar (evita sangrado si el HTML quedó mal anidado)
+    hideAllTabPanes();
+
+    // Listeners fail-safe (además de onclick inline)
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const tabId = btn.id.replace('tab-', '');
+            e.preventDefault();
+            const tabId = btn.dataset.tab || btn.id.replace(/^tab-/, '');
             if (tabId) switchTab(tabId);
         });
     });
 
-    // Load initial data
-    loadClients();
-    loadCatalog();
-    loadDashboard();
+    // Solo el módulo activo: Dashboard (no precargar inventario/clientes en todas las vistas)
+    switchTab('dashboard');
 });

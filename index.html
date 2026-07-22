@@ -19,7 +19,7 @@
     <header class="app-header">
         <div class="logo-container">
             <h1 class="brand-title">TORMENTA</h1>
-            <p class="brand-subtitle">INDUMENTARIA · SLOW FASHION WORKSHOP</p>
+            <p class="brand-subtitle">INDUMENTARIA DEL DESEO · VEGAN · SLOW FASHION · SCL</p>
         </div>
         <div class="header-status">
             <span class="status-indicator online"></span>
@@ -34,81 +34,88 @@
     </header>
 
     <main class="app-container">
-        <!-- Navegación de Pestañas -->
-        <nav class="tab-navigation">
-            <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
+        <!-- Navegación de módulos (un panel visible a la vez) -->
+        <nav class="tab-navigation" aria-label="Módulos del taller">
+            <span class="nav-group-label" aria-hidden="true">Comercial</span>
+            <button type="button" class="tab-btn active" id="tab-dashboard" data-tab="dashboard" onclick="switchTab('dashboard')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
                 </svg>
                 Dashboard
             </button>
-            <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
+            <button type="button" class="tab-btn" id="tab-orders" data-tab="orders" onclick="switchTab('orders')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
                 </svg>
                 Órdenes
             </button>
-            <button class="tab-btn" id="tab-quote" onclick="switchTab('quote')">
+            <button type="button" class="tab-btn" id="tab-quote" data-tab="quote" onclick="switchTab('quote')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
                 </svg>
                 Cotizador
             </button>
-            <button class="tab-btn" id="tab-clients" onclick="switchTab('clients')">
+            <button type="button" class="tab-btn" id="tab-clients" data-tab="clients" onclick="switchTab('clients')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
                     <path d="M23 21v-2a4 4 0 010 7.75"/>
                 </svg>
-                Fichas de Clientes
+                Clientes
             </button>
-            <button class="tab-btn" id="tab-inventory" onclick="switchTab('inventory')">
+
+            <span class="nav-group-label" aria-hidden="true">Taller</span>
+            <button type="button" class="tab-btn" id="tab-batch" data-tab="batch" onclick="switchTab('batch')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Lotes
+            </button>
+            <button type="button" class="tab-btn" id="tab-optimization" data-tab="optimization" onclick="switchTab('optimization')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Zero Waste
+            </button>
+            <button type="button" class="tab-btn" id="tab-scaling" data-tab="scaling" onclick="switchTab('scaling')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                </svg>
+                Escalado
+            </button>
+            <button type="button" class="tab-btn" id="tab-history" data-tab="history" onclick="switchTab('history')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Historial
+            </button>
+
+            <span class="nav-group-label" aria-hidden="true">Insumos</span>
+            <button type="button" class="tab-btn" id="tab-inventory" data-tab="inventory" onclick="switchTab('inventory')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
                 </svg>
                 Inventario
             </button>
-            <button class="tab-btn" id="tab-suppliers" onclick="switchTab('suppliers')">
+            <button type="button" class="tab-btn" id="tab-catalog" data-tab="catalog" onclick="switchTab('catalog')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Catálogo
+            </button>
+            <button type="button" class="tab-btn" id="tab-suppliers" data-tab="suppliers" onclick="switchTab('suppliers')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
                 </svg>
                 Proveedores
             </button>
-            <button class="tab-btn" id="tab-batch" onclick="switchTab('batch')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Planificador de Lotes
-            </button>
-            <button class="tab-btn" id="tab-optimization" onclick="switchTab('optimization')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                Optimización Zero Waste
-            </button>
-            <button class="tab-btn" id="tab-scaling" onclick="switchTab('scaling')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
-                </svg>
-                Escalado de Patrones
-            </button>
-            <button class="tab-btn" id="tab-catalog" onclick="switchTab('catalog')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
-                Catálogo de Fichas
-            </button>
-            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Registro e Historial
-            </button>
-            <button class="tab-btn" id="tab-trends" onclick="switchTab('trends')">
+
+            <span class="nav-group-label" aria-hidden="true">Más</span>
+            <button type="button" class="tab-btn" id="tab-trends" data-tab="trends" onclick="switchTab('trends')">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Tendencias de Moda
+                Tendencias
             </button>
         </nav>
 
@@ -319,7 +326,8 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 2: OPTIMIZ            <section class="tab-pane" id="pane-optimization">
+            <!-- PESTAÑA: OPTIMIZACIÓN ZERO WASTE -->
+            <section class="tab-pane" id="pane-optimization">
                 <!-- Sub-pestañas segmentadas -->
                 <div class="optimization-subtabs" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
                     <button class="subtab-btn active" id="subtab-panels" onclick="switchOptSubtab('panels')" style="background: none; border: none; color: var(--color-text-primary); font-family: var(--font-heading); font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid var(--accent-crimson); transition: var(--transition-fast);">

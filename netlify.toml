@@ -1,5 +1,6 @@
 [build]
-  publish = "."
+  # Frontend canónico: static/ (D1 — ver docs/PLAN_IMPLEMENTACION_PEDIDOS.md §9)
+  publish = "static"
 
 [[redirects]]
   from = "/*"
