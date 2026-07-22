@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.2.1">
+    <link rel="stylesheet" href="style.css?v=1.2.2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -818,35 +818,36 @@
                 <div class="grid-two-cols">
                     <div class="glass-card">
                         <div class="card-header">
-                            <h2 class="card-title">Presupuestador de Prenda</h2>
-                            <p class="card-desc">Ingresá los costos unitarios de tus insumos para generar un presupuesto con margen de ganancia sugerido.</p>
+                            <h2 class="card-title">Presupuestador de prenda</h2>
+                            <p class="card-desc">Armá un precio para responder un DM. Después podés pasar el presupuesto a una orden con adelanto.</p>
                         </div>
 
                         <form id="quote-form" onsubmit="handleQuote(event)">
-                            <h3 class="section-subtitle">1. Producto & Cliente</h3>
+                            <h3 class="section-subtitle">1. Producto y clienta</h3>
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="quote_product">Prenda / Accesorio</label>
+                                    <label for="quote_product">Prenda / accesorio</label>
                                     <select id="quote_product">
                                         <option value="" disabled selected>Cargando catálogo...</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="quote_client">Cliente (Opcional)</label>
+                                    <label for="quote_client">Clienta (opcional)</label>
                                     <select id="quote_client">
-                                        <option value="">-- Sin Cliente (Presupuesto Genérico) --</option>
+                                        <option value="">— Sin clienta (presupuesto genérico) —</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <h3 class="section-subtitle">2. Costos de Insumos ($ por unidad)</h3>
+                            <details class="quote-costs-panel" open>
+                            <summary class="section-subtitle quote-costs-summary">2. Costos de insumos ($ por unidad)</summary>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
                                     <label for="cost_cinta">Cinta/Correa ($/m)</label>
                                     <input type="number" id="cost_cinta" min="0" step="10" value="800">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cost_panel_m2">Cuero/Cuerina ($/m²)</label>
+                                    <label for="cost_panel_m2">Cuerina vegana ($/m²)</label>
                                     <input type="number" id="cost_panel_m2" min="0" step="100" value="5000">
                                 </div>
                                 <div class="form-group">
@@ -882,8 +883,9 @@
                                     <input type="number" id="cost_mosqueton" min="0" step="10" value="500">
                                 </div>
                             </div>
+                            </details>
 
-                            <h3 class="section-subtitle">3. Mano de Obra & Margen</h3>
+                            <h3 class="section-subtitle">3. Mano de obra y margen</h3>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
                                     <label for="labor_hours">Horas de Trabajo</label>
@@ -900,7 +902,7 @@
                             </div>
 
                             <button type="submit" class="btn-primary" id="btn-quote">
-                                <span class="btn-text">Generar Presupuesto</span>
+                                <span class="btn-text">Generar presupuesto</span>
                                 <div class="btn-loader"></div>
                             </button>
                         </form>
@@ -910,8 +912,8 @@
                     <div class="glass-card" id="quote-results-card">
                         <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
                             <div>
-                                <h2 class="card-title">Presupuesto Detallado</h2>
-                                <p class="card-desc">Desglose de costos y precio de venta sugerido.</p>
+                                <h2 class="card-title">Presupuesto detallado</h2>
+                                <p class="card-desc">Desglose de costos, precio sugerido y pasos siguientes (WhatsApp / orden).</p>
                             </div>
                             <button class="btn-export-pdf" onclick="exportToPDF('quote-results','presupuesto_tormenta.pdf')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -993,20 +995,27 @@
 
                             <!-- Precio final grande -->
                             <div class="price-final-badge">
-                                <span class="price-label">Precio de Venta Sugerido</span>
+                                <span class="price-label">Precio de venta sugerido</span>
                                 <div class="price-value" id="quote-final-price">$0</div>
-                                <span class="price-note">IVA no incluido</span>
+                                <span class="price-note">IVA no incluido · 50% adelanto sugerido al confirmar</span>
+                            </div>
+
+                            <div class="quote-next-actions" id="quote-next-actions">
+                                <button type="button" class="btn-primary" id="btn-quote-to-order" disabled>
+                                    Crear orden con este presupuesto
+                                </button>
+                                <p class="quote-next-hint">Generá el presupuesto primero. Luego podés abrir Órdenes con precio y adelanto 50% precargados.</p>
                             </div>
                             
                             <!-- Footer/Firmas del Presupuesto -->
                             <div class="budget-footer" style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color, #3a3a40); padding-top: 1rem; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-muted, #888);">
                                 <div>
-                                    <p style="margin: 0;"><strong>Condiciones:</strong> 50% de seña para comenzar, saldo contra entrega.</p>
+                                    <p style="margin: 0;"><strong>Condiciones:</strong> 50% de adelanto para comenzar, saldo contra entrega.</p>
                                     <p style="margin: 0.15rem 0 0 0;">Confección a medida, demora estimada: 7-10 días hábiles.</p>
                                 </div>
                                 <div style="text-align: right; font-style: italic;">
                                     <p style="margin: 0;">Tormenta Indumentaria</p>
-                                    <p style="margin: 0.15rem 0 0 0;">Buenos Aires, Argentina</p>
+                                    <p style="margin: 0.15rem 0 0 0;">Santiago, Chile</p>
                                 </div>
                             </div>
                         </div>
@@ -1050,29 +1059,36 @@
 
             <!-- PESTAÑA 5: FICHAS DE CLIENTES -->
             <section class="tab-pane" id="pane-clients">
+                <div class="clients-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="clients-search">Buscar clienta</label>
+                        <input type="search" id="clients-search" placeholder="Nombre, IG o teléfono…" autocomplete="off" oninput="filterClientsList()">
+                    </div>
+                    <button type="button" class="btn-secondary" id="btn-clients-new" onclick="focusNewClientForm()">+ Nueva ficha</button>
+                </div>
                 <div class="grid-two-cols">
                     <!-- Formulario de Cliente -->
-                    <div class="glass-card">
+                    <div class="glass-card" id="client-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="client-form-title">Registrar Nuevo Cliente</h2>
-                            <p class="card-desc">Guardá las medidas corporales de tus clientes para pedidos personalizados futuros.</p>
+                            <h2 class="card-title" id="client-form-title">Registrar nueva clienta</h2>
+                            <p class="card-desc">Solo medidas y contacto. El inventario del taller no se maneja acá.</p>
                         </div>
 
                         <form id="client-form" onsubmit="handleSaveClient(event)">
                             <input type="hidden" id="client_edit_id" value="">
 
-                            <h3 class="section-subtitle">👤 Identidad del Cliente & Fit</h3>
+                            <h3 class="section-subtitle">👤 Identidad y fit</h3>
                             <div class="inputs-grid compact">
                                 <div class="form-group">
                                     <label for="client_name">Nombre Completo *</label>
                                     <input type="text" id="client_name" required placeholder="Ej: María López">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_contact">Contacto (Tel / IG / Email)</label>
-                                    <input type="text" id="client_contact" placeholder="Ej: @maria_lopez">
+                                    <label for="client_contact">Contacto (WhatsApp / IG / email)</label>
+                                    <input type="text" id="client_contact" placeholder="Ej: @tormenta_clienta o +56 9…">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_gender">22. Género / Identidad de Talle</label>
+                                    <label for="client_gender">Género / identidad de talle</label>
                                     <select id="client_gender">
                                         <option value="Unisex" selected>Unisex</option>
                                         <option value="Femenino">Femenino</option>
@@ -1684,7 +1700,7 @@
                 <details class="orders-new-panel glass-card" id="orders-new-panel" open>
                     <summary class="orders-new-summary">
                         <span>+ Nueva orden de trabajo</span>
-                        <small>Cliente · prenda · seña · fecha</small>
+                        <small>Cliente · prenda · adelanto · fecha</small>
                     </summary>
                     <form id="order-form" onsubmit="handleCreateOrder(event)" class="orders-new-form">
                         <div class="inputs-grid compact cols-3">
@@ -1715,8 +1731,8 @@
                                 <input type="number" id="order_price" min="0" step="100" value="0" placeholder="Acordado con la clienta">
                             </div>
                             <div class="form-group">
-                                <label for="order_deposit">Seña cobrada ($)</label>
-                                <input type="number" id="order_deposit" min="0" step="100" value="0" placeholder="0 si aún no hay seña">
+                                <label for="order_deposit">Adelanto cobrado ($)</label>
+                                <input type="number" id="order_deposit" min="0" step="100" value="0" placeholder="0 si aún no hay adelanto">
                             </div>
                             <div class="form-group">
                                 <label for="order_due">Fecha de entrega</label>
@@ -1736,7 +1752,7 @@
                                 <span class="btn-text">Crear orden</span>
                                 <div class="btn-loader"></div>
                             </button>
-                            <p class="orders-form-hint">La seña y el saldo se muestran en cada tarjeta. Al pasar a <strong>Terminado</strong> se descuenta el BOM del inventario.</p>
+                            <p class="orders-form-hint">El adelanto y el saldo se muestran en cada tarjeta. Al pasar a <strong>Terminado</strong> se descuenta el BOM del inventario.</p>
                         </div>
                     </form>
                 </details>
@@ -1810,6 +1826,6 @@
         <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
     </footer>
 
-    <script src="app.js?v=1.2.1"></script>
+    <script src="app.js?v=1.2.2"></script>
 </body>
 </html>

@@ -1371,7 +1371,8 @@ def _save_suppliers(suppliers: List[dict]):
 ORDERS_FILE = os.path.join(os.path.dirname(__file__), "orders_data.json")
 
 VALID_ORDER_STATUSES = {"pendiente", "en_confeccion", "terminado", "entregado"}
-VALID_PAYMENT_STATUSES = {"sin_pago", "seña", "pagado"}
+# "adelanto" = uso Chile (antes "seña" en Argentina). Se aceptan ambos al leer.
+VALID_PAYMENT_STATUSES = {"sin_pago", "adelanto", "pagado", "seña"}
 
 
 class OrderCreate(BaseModel):
@@ -1443,11 +1444,15 @@ def _compute_payment_fields(
     elif quoted > 0 and paid + 0.009 >= quoted:
         status = "pagado"
     else:
-        status = "seña"
+        status = "adelanto"
 
     # Si el cliente forzó un status válido y montos son 0, respetar solo sin_pago
     if payment_status in VALID_PAYMENT_STATUSES and quoted <= 0 and paid <= 0:
         status = payment_status if payment_status == "sin_pago" else status
+
+    # Normalizar legacy argentino → chileno
+    if status == "seña":
+        status = "adelanto"
 
     return {
         "deposit_amount": round(deposit, 2),
@@ -1536,11 +1541,13 @@ def _order_from_create(order: OrderCreate, existing: Optional[dict] = None) -> d
     if data.get("retail_price_snapshot") is None and data.get("quoted_price"):
         data["retail_price_snapshot"] = data["quoted_price"]
 
-    # deposit_date automático si hay seña y no se envió fecha
+    # deposit_date automático si hay adelanto y no se envió fecha
     if data.get("deposit_amount", 0) > 0 and not data.get("deposit_date"):
         data["deposit_date"] = datetime.now().date().isoformat()
 
-    if data.get("payment_status") not in VALID_PAYMENT_STATUSES:
+    if data.get("payment_status") == "seña":
+        data["payment_status"] = "adelanto"
+    if data.get("payment_status") not in ("sin_pago", "adelanto", "pagado"):
         data["payment_status"] = "sin_pago"
     if data.get("status") not in VALID_ORDER_STATUSES:
         raise HTTPException(
@@ -1556,7 +1563,7 @@ def _order_from_create(order: OrderCreate, existing: Optional[dict] = None) -> d
             data["production_id"] = existing.get("production_id")
         if not data.get("whatsapp_ready_sent_at"):
             data["whatsapp_ready_sent_at"] = existing.get("whatsapp_ready_sent_at")
-        # Permitir subir seña sin resetear stock_deducted
+        # Permitir subir adelanto sin resetear stock_deducted
         data["stock_deducted"] = bool(existing.get("stock_deducted", False))
 
     return data
@@ -1768,7 +1775,7 @@ def list_orders(status: Optional[str] = None):
 
 @app.post("/api/orders", status_code=201)
 def create_order(order: OrderCreate):
-    """Crea un nuevo pedido de producción (campos de seña/stock con defaults suaves)."""
+    """Crea un nuevo pedido de producción (campos de adelanto/stock con defaults suaves)."""
     if order.status not in VALID_ORDER_STATUSES:
         raise HTTPException(
             status_code=400,

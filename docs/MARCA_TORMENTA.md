@@ -31,7 +31,7 @@ Ordenadas por encaje con lo que se ve y se menciona de la marca:
 ## Cómo se vende (flujo real)
 
 ```
-DM Instagram → medidas / talle → cotización → seña → confección a pedido → listo → entrega
+DM Instagram → medidas / talle → cotización → adelanto → confección a pedido → listo → entrega
 ```
 
 Eso es el norte del release `pedidos-punta-a-punta` (v2.1).  
@@ -43,7 +43,7 @@ Bystorm **no** es un e-commerce genérico: es el sistema del taller detrás del 
 |--------|----------|
 | Cuero (animal) | Cuerina / charol vegano / material vegano |
 | Stock masivo / fast fashion | Pedido a medida, slow fashion, ficha de cliente |
-| ERP / factura AFIP | Seña, saldo, WhatsApp listo, orden de confección |
+| ERP / factura AFIP | Adelanto, saldo, WhatsApp listo, orden de confección |
 | Inglés innecesario en UI | Términos en español; claves técnicas en inglés OK en código |
 
 ## Implicancias técnicas en Bystorm
