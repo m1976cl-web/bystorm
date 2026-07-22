@@ -285,7 +285,10 @@ def test_overdue_orders_and_movements_flow():
     client.put("/api/inventory/argollas", json={"quantity": -5.0, "reason": "ajuste"})
 
     # 3. Test production auto deduction
-    # Get current stock of cinta
+    # Ensure all materials have stock
+    for k in ["cinta", "argollas", "hebillas", "remaches", "ojalillos", "varillas", "cadenas", "tachas", "mosquetones", "cuerina_rollo"]:
+        client.put(f"/api/inventory/{k}", json={"quantity": 100.0, "reason": "setup"})
+
     response = client.get("/api/inventory")
     cinta_stock_initial = [i["stock"] for i in response.json() if i["item_key"] == "cinta"][0]
     
@@ -480,6 +483,9 @@ def test_t3_pendiente_to_en_confeccion_no_stock_touch():
 
 def test_t4_terminado_with_stock_ok():
     """T4: → terminado con stock OK → stock baja, movement, stock_deducted, production."""
+    for k in ["cinta", "argollas", "hebillas", "remaches", "ojalillos", "varillas", "cadenas", "tachas", "mosquetones", "cuerina_rollo"]:
+        client.put(f"/api/inventory/{k}", json={"quantity": 100.0, "reason": "setup"})
+
     order = _make_order(product_key="arnes", product_name="Arnés Test T4")
     oid = order["id"]
 
@@ -558,6 +564,9 @@ def test_t5_terminado_without_stock():
 
 def test_t6_terminado_idempotent():
     """T6: → terminado otra vez no descuenta de nuevo."""
+    for k in ["cinta", "argollas", "hebillas", "remaches", "ojalillos", "varillas", "cadenas", "tachas", "mosquetones", "cuerina_rollo"]:
+        client.put(f"/api/inventory/{k}", json={"quantity": 100.0, "reason": "setup"})
+
     order = _make_order(product_key="choker_dring", product_name="Choker T6")
     oid = order["id"]
 
