@@ -780,9 +780,61 @@ async function mockApiHandler(resource, options) {
         if (!VALID_ORDER_STATUSES.includes(body.status)) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
+        const oldStatus = orders[idx].status;
         orders[idx].status = body.status;
         orders[idx].status_updated_at = body.status_updated_at || new Date().toISOString();
         orders[idx].updated_at = new Date().toISOString();
+
+        // Si cambia a estado 'terminado' por primera vez, deducir BOM del inventario en modo Offline/Jamstack
+        if (body.status === 'terminado' && oldStatus !== 'terminado' && !orders[idx].bom_deducted) {
+            const products = getMockData('products') || {};
+            const productKey = orders[idx].product_key;
+            const bom = products[productKey] || DEFAULT_PRODUCTS[productKey];
+            const qty = orders[idx].quantity || 1;
+
+            if (bom) {
+                const inventory = getMockData('inventory') || [];
+                const movements = getMockData('movements') || [];
+                const inventoryDict = {};
+                inventory.forEach(item => { inventoryDict[item.item_key] = item; });
+
+                const needed = {
+                    cinta: Math.round((bom.cinta || 0) * qty * 100) / 100,
+                    cadenas: Math.round((bom.cadenas || 0) * qty * 100) / 100,
+                    argollas: (bom.argollas || 0) * qty,
+                    hebillas: (bom.hebillas || 0) * qty,
+                    remaches: (bom.remaches || 0) * qty,
+                    ojalillos: (bom.ojalillos || 0) * qty,
+                    varillas: (bom.varillas || 0) * qty,
+                    tachas: (bom.tachas || 0) * qty,
+                    mosquetones: (bom.mosquetones || 0) * qty
+                };
+
+                if (bom.panels_count > 0 && bom.panel_width > 0 && bom.panel_height > 0) {
+                    needed.cuerina_rollo = jsCalculateCuerinaConsumedM(
+                        bom.panel_width, bom.panel_height, bom.panels_count * qty
+                    );
+                }
+
+                for (const [k, v] of Object.entries(needed)) {
+                    if (v > 0 && inventoryDict[k]) {
+                        inventoryDict[k].stock = Math.round((inventoryDict[k].stock - v) * 100) / 100;
+                        movements.push({
+                            id: Math.random().toString(36).substring(2, 10),
+                            item_key: k,
+                            quantity: -v,
+                            movement_type: "orden_terminada",
+                            reference: `Orden #${orders[idx].id.substring(0,6)} (${orders[idx].product_name})`,
+                            date: new Date().toISOString()
+                        });
+                    }
+                }
+                setMockData('inventory', Object.values(inventoryDict));
+                setMockData('movements', movements);
+                orders[idx].bom_deducted = true;
+            }
+        }
+
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
     }
