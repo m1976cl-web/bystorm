@@ -1680,12 +1680,12 @@ const TAB_META = {
     inventory: {
         group: 'Insumos',
         title: 'Inventario',
-        blurb: 'Stock real de herrajes y cuerina. Ajustes, alertas y movimientos.',
+        blurb: 'Stock real del taller. Filtrá críticos, tocá un insumo y ajustá. No es el simulador Zero Waste.',
     },
     catalog: {
         group: 'Insumos',
         title: 'Catálogo de prendas (BOM)',
-        blurb: 'Fichas técnicas Tormenta: materiales por prenda (vegan / a medida).',
+        blurb: 'Fichas Tormenta por línea. Desde acá cotizás o armás una orden con esa prenda.',
     },
     suppliers: {
         group: 'Insumos',
@@ -2996,7 +2996,7 @@ async function loadCatalog() {
     try {
         const response = await fetch('/api/products');
         productsCatalog = await response.json();
-        renderCatalogList(productsCatalog);
+        filterCatalogView();
         updateProductDropdowns(productsCatalog);
     } catch (error) {
         console.error('Error loading products catalog:', error);
@@ -3015,12 +3015,68 @@ const CATEGORY_LABELS = {
     general: 'General',
 };
 
+function filterCatalogView() {
+    const q = (document.getElementById('catalog-search')?.value || '').trim().toLowerCase();
+    const catFilter = document.getElementById('catalog-cat-filter')?.value || '';
+    let entries = Object.entries(productsCatalog || {});
+    if (catFilter) {
+        entries = entries.filter(([, p]) => (p.category || 'general') === catFilter);
+    }
+    if (q) {
+        entries = entries.filter(([key, p]) => {
+            const blob = `${key} ${p.name || ''} ${p.description || ''} ${p.category || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderCatalogList(Object.fromEntries(entries));
+}
+window.filterCatalogView = filterCatalogView;
+
+function focusNewCatalogForm() {
+    const form = document.getElementById('catalog-form');
+    form?.reset();
+    const keyEl = document.getElementById('cat_key');
+    if (keyEl) keyEl.disabled = false;
+    const title = document.getElementById('catalog-form-title');
+    if (title) title.textContent = 'Ficha de prenda (BOM)';
+    document.querySelector('.cat-panel-dim')?.classList.add('hidden');
+    document.getElementById('catalog-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    keyEl?.focus();
+}
+window.focusNewCatalogForm = focusNewCatalogForm;
+
+function useProductInQuote(key) {
+    switchTab('quote');
+    setTimeout(() => {
+        const sel = document.getElementById('quote_product');
+        if (sel) {
+            sel.value = key;
+            showToast('Prenda cargada en el cotizador', 'success');
+        }
+    }, 200);
+}
+window.useProductInQuote = useProductInQuote;
+
+function useProductInOrder(key) {
+    switchTab('orders');
+    setTimeout(() => {
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        const sel = document.getElementById('order_product');
+        if (sel) {
+            sel.value = key;
+            showToast('Prenda precargada en la orden', 'success');
+        }
+    }, 250);
+}
+window.useProductInOrder = useProductInOrder;
+
 function renderCatalogList(catalog) {
     const listContainer = document.getElementById('catalog-items-list');
     if (!listContainer) return;
 
     if (!catalog || Object.keys(catalog).length === 0) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted);">No hay productos registrados en el catálogo.</p>';
+        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted);">No hay prendas con este filtro.</p>';
         return;
     }
 
@@ -3080,8 +3136,10 @@ function renderCatalogList(catalog) {
                     ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${prod.material}</p>` : ''}
                 </div>
                 <div class="client-card-actions">
-                    <button type="button" class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏ Editar</button>
-                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕ Borrar</button>` : ''}
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${key}')" title="Usar en orden">📋</button>
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${key}')" title="Usar en cotizador">💰</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏</button>
+                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕</button>` : ''}
                 </div>
             </div>
             <div class="catalog-item-bom" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.15); border-radius: 4px;">
@@ -3165,25 +3223,22 @@ async function handleSaveProduct(event) {
 
     const key = document.getElementById('cat_key').value.trim();
     const name = document.getElementById('cat_name').value.trim();
+    const category = document.getElementById('cat_category')?.value || 'general';
     const panelsCount = parseInt(document.getElementById('cat_panels').value) || 0;
 
-    const payload = {
-        key: key,
-        name: name,
-        bom: {
-            cinta: parseFloat(document.getElementById('cat_cinta').value) || 0.0,
-            argollas: parseInt(document.getElementById('cat_argollas').value) || 0,
-            hebillas: parseInt(document.getElementById('cat_hebillas').value) || 0,
-            remaches: parseInt(document.getElementById('cat_remaches').value) || 0,
-            ojalillos: parseInt(document.getElementById('cat_ojalillos').value) || 0,
-            varillas: parseInt(document.getElementById('cat_varillas').value) || 0,
-            cadenas: parseFloat(document.getElementById('cat_cadenas').value) || 0.0,
-            tachas: parseInt(document.getElementById('cat_tachas').value) || 0,
-            mosquetones: parseInt(document.getElementById('cat_mosquetones').value) || 0,
-            panels_count: panelsCount,
-            panel_width: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_w').value) || 0.0) : 0.0,
-            panel_height: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_h').value) || 0.0) : 0.0
-        }
+    const bom = {
+        cinta: parseFloat(document.getElementById('cat_cinta').value) || 0.0,
+        argollas: parseInt(document.getElementById('cat_argollas').value) || 0,
+        hebillas: parseInt(document.getElementById('cat_hebillas').value) || 0,
+        remaches: parseInt(document.getElementById('cat_remaches').value) || 0,
+        ojalillos: parseInt(document.getElementById('cat_ojalillos').value) || 0,
+        varillas: parseInt(document.getElementById('cat_varillas').value) || 0,
+        cadenas: parseFloat(document.getElementById('cat_cadenas').value) || 0.0,
+        tachas: parseInt(document.getElementById('cat_tachas').value) || 0,
+        mosquetones: parseInt(document.getElementById('cat_mosquetones').value) || 0,
+        panels_count: panelsCount,
+        panel_width: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_w').value) || 0.0) : 0.0,
+        panel_height: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_h').value) || 0.0) : 0.0
     };
 
     const isEditMode = document.getElementById('cat_key').disabled;
@@ -3191,18 +3246,23 @@ async function handleSaveProduct(event) {
     try {
         let response;
         if (isEditMode) {
-            // Edición: PUT a /api/products/{key} enviando solo el BOM
             response = await fetch(`/api/products/${key}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload.bom)
+                body: JSON.stringify({ name, category, ...bom })
             });
         } else {
-            // Creación: POST a /api/products
             response = await fetch('/api/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    key,
+                    name,
+                    category,
+                    vegan: true,
+                    made_to_order: true,
+                    bom,
+                })
             });
         }
 
@@ -3211,10 +3271,11 @@ async function handleSaveProduct(event) {
             throw new Error(err.detail || 'Error al guardar el producto');
         }
 
+        showToast(isEditMode ? 'Ficha actualizada' : 'Ficha creada', 'success');
         document.getElementById('catalog-form').reset();
         document.getElementById('cat_key').disabled = false;
-        document.getElementById('catalog-form-title').textContent = 'Registrar Ficha de Prenda (BOM)';
-        document.querySelector('.cat-panel-dim').classList.add('hidden');
+        document.getElementById('catalog-form-title').textContent = 'Ficha de prenda (BOM)';
+        document.querySelector('.cat-panel-dim')?.classList.add('hidden');
         
         await loadCatalog();
 
@@ -3231,8 +3292,10 @@ async function editProduct(key) {
     if (!prod) return;
 
     document.getElementById('cat_key').value = key;
-    document.getElementById('cat_key').disabled = true; // No permitir cambiar clave en edición
+    document.getElementById('cat_key').disabled = true;
     document.getElementById('cat_name').value = prod.name;
+    const catSel = document.getElementById('cat_category');
+    if (catSel) catSel.value = prod.category || 'general';
     document.getElementById('cat_cinta').value = prod.cinta;
     document.getElementById('cat_cadenas').value = prod.cadenas;
     document.getElementById('cat_panels').value = prod.panels_count;
@@ -3245,15 +3308,15 @@ async function editProduct(key) {
     document.getElementById('cat_mosquetones').value = prod.mosquetones;
 
     if (prod.panels_count > 0) {
-        document.querySelector('.cat-panel-dim').classList.remove('hidden');
+        document.querySelector('.cat-panel-dim')?.classList.remove('hidden');
         document.getElementById('cat_panel_w').value = prod.panel_width;
         document.getElementById('cat_panel_h').value = prod.panel_height;
     } else {
-        document.querySelector('.cat-panel-dim').classList.add('hidden');
+        document.querySelector('.cat-panel-dim')?.classList.add('hidden');
     }
 
-    document.getElementById('catalog-form-title').textContent = `Editando BOM: ${prod.name}`;
-    document.getElementById('catalog-form').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('catalog-form-title').textContent = `Editando: ${prod.name}`;
+    document.getElementById('catalog-form-card')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function deleteProduct(key, name) {
@@ -4329,55 +4392,130 @@ function renderRestockPredictions() {
 }
 
 // --- MÓDULO: INVENTARIO ---
+let inventoryCache = [];
+let inventoryFilter = 'todos';
+
+function stockLevel(item) {
+    if (item.stock <= item.min_stock) return 'critico';
+    if (item.stock <= item.min_stock * 2) return 'bajo';
+    return 'ok';
+}
+
+function setInventoryFilter(filter) {
+    inventoryFilter = filter;
+    document.querySelectorAll('[data-inv-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-inv-filter') === filter);
+    });
+    filterInventoryView();
+}
+window.setInventoryFilter = setInventoryFilter;
+
+function setInvQuickQty(n) {
+    const el = document.getElementById('inv_quantity');
+    if (el) el.value = n;
+}
+window.setInvQuickQty = setInvQuickQty;
+
+function selectInventoryItem(itemKey) {
+    const sel = document.getElementById('inv_item');
+    if (sel) sel.value = itemKey;
+    document.getElementById('inventory-adjust-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('inv_quantity')?.focus();
+}
+window.selectInventoryItem = selectInventoryItem;
+
+function filterInventoryView() {
+    const q = (document.getElementById('inv-search')?.value || '').trim().toLowerCase();
+    let items = inventoryCache.slice();
+    if (inventoryFilter !== 'todos') {
+        items = items.filter(i => stockLevel(i) === inventoryFilter);
+    }
+    if (q) {
+        items = items.filter(i => `${i.name} ${i.item_key}`.toLowerCase().includes(q));
+    }
+    renderInventoryItems(items);
+}
+window.filterInventoryView = filterInventoryView;
+
+function renderInventoryItems(items) {
+    const tableBody = document.getElementById('inventory-table-body');
+    const cards = document.getElementById('inventory-cards');
+    const select = document.getElementById('inv_item');
+    if (!tableBody) return;
+
+    const prevSelect = select?.value;
+    tableBody.innerHTML = '';
+    if (cards) cards.innerHTML = '';
+    if (select) select.innerHTML = '';
+
+    if (!items.length) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);">Sin insumos con este filtro.</td></tr>';
+    }
+
+    // Select siempre con catálogo completo
+    (inventoryCache || []).forEach(item => {
+        if (select) {
+            const opt = document.createElement('option');
+            opt.value = item.item_key;
+            opt.textContent = item.name;
+            select.appendChild(opt);
+        }
+    });
+    if (select && prevSelect) select.value = prevSelect;
+
+    items.forEach(item => {
+        const level = stockLevel(item);
+        const statusClass = level === 'critico' ? 'stock-critical' : level === 'bajo' ? 'stock-low' : 'stock-ok';
+        const statusText = level === 'critico' ? 'Crítico' : level === 'bajo' ? 'Bajo' : 'OK';
+
+        const tr = document.createElement('tr');
+        tr.className = 'inv-row-clickable';
+        tr.title = 'Clic para ajustar este insumo';
+        tr.onclick = () => selectInventoryItem(item.item_key);
+        tr.innerHTML = `
+            <td><strong>${item.name}</strong></td>
+            <td>${item.stock}</td>
+            <td>${item.min_stock}</td>
+            <td>${item.unit}</td>
+            <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
+        `;
+        tableBody.appendChild(tr);
+
+        if (cards) {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `inv-card level-${level}`;
+            card.onclick = () => selectInventoryItem(item.item_key);
+            card.innerHTML = `
+                <span class="inv-card-name">${item.name}</span>
+                <span class="inv-card-stock">${item.stock} <small>${item.unit}</small></span>
+                <span class="stock-badge ${statusClass}">${statusText}</span>
+                <span class="inv-card-min">mín. ${item.min_stock}</span>
+            `;
+            cards.appendChild(card);
+        }
+    });
+}
+
 async function loadInventory() {
     try {
         const response = await fetch('/api/inventory');
-        const items = await response.json();
-        const tableBody = document.getElementById('inventory-table-body');
+        inventoryCache = await response.json();
         const banner = document.getElementById('inventory-alert-banner');
         const bannerText = document.getElementById('inventory-alert-text');
-        const select = document.getElementById('inv_item');
-        if (!tableBody) return;
+        const alertCount = inventoryCache.filter(i => stockLevel(i) === 'critico').length;
 
-        tableBody.innerHTML = '';
-        if (select) select.innerHTML = '';
-        let alertCount = 0;
-
-        items.forEach(item => {
-            let statusClass = 'stock-ok';
-            let statusText = 'OK';
-            if (item.stock <= item.min_stock) {
-                statusClass = 'stock-critical'; statusText = 'Crítico'; alertCount++;
-            } else if (item.stock <= item.min_stock * 2) {
-                statusClass = 'stock-low'; statusText = 'Bajo';
+        if (banner && bannerText) {
+            if (alertCount > 0) {
+                banner.className = 'inventory-alert-banner';
+                bannerText.textContent = `⚠ ${alertCount} insumo(s) bajo el mínimo. Tocá un ítem crítico para reponer.`;
+            } else {
+                banner.className = 'inventory-alert-banner ok';
+                bannerText.textContent = '✓ Todos los insumos están dentro de los niveles seguros.';
             }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${item.name}</strong></td>
-                <td>${item.stock}</td>
-                <td>${item.min_stock}</td>
-                <td>${item.unit}</td>
-                <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
-            `;
-            tableBody.appendChild(tr);
-
-            if (select) {
-                const opt = document.createElement('option');
-                opt.value = item.item_key;
-                opt.textContent = item.name;
-                select.appendChild(opt);
-            }
-        });
-
-        if (alertCount > 0) {
-            banner.className = 'inventory-alert-banner';
-            bannerText.textContent = `⚠ ${alertCount} insumo(s) por debajo del stock mínimo.`;
-        } else {
-            banner.className = 'inventory-alert-banner ok';
-            bannerText.textContent = '✓ Todos los insumos están dentro de los niveles seguros.';
         }
-        
+
+        filterInventoryView();
         await loadInventoryMovements();
     } catch (error) {
         console.error('Error loading inventory:', error);
@@ -4396,17 +4534,20 @@ async function loadInventoryMovements() {
             return;
         }
 
+        const nameByKey = Object.fromEntries((inventoryCache || []).map(i => [i.item_key, i.name]));
         const ITEM_NAMES = {
-            argollas: "Argollas metálicas",
-            hebillas: "Hebillas reguladoras",
-            remaches: "Remaches de unión",
-            ojalillos: "Ojalillos metálicos",
-            varillas: "Varillas de soporte",
-            cadenas: "Cadenas metálicas",
-            tachas: "Tachas decorativas",
-            mosquetones: "Mosquetones de enganche",
-            cinta: "Cinta/Correa",
-            cuerina_rollo: "Cuerina en rollo"
+            argollas: 'Argollas metálicas',
+            hebillas: 'Hebillas reguladoras',
+            remaches: 'Remaches de unión',
+            ojalillos: 'Ojalillos metálicos',
+            varillas: 'Varillas de soporte',
+            cadenas: 'Cadenas metálicas',
+            tachas: 'Tachas decorativas',
+            mosquetones: 'Mosquetones de enganche',
+            cinta: 'Cinta/Correa',
+            cuerina_rollo: 'Cuerina vegana en rollo',
+            charol_rollo: 'Charol vegano en rollo',
+            ...nameByKey,
         };
 
         const typeTranslations = {
@@ -4418,10 +4559,11 @@ async function loadInventoryMovements() {
         };
 
         tableBody.innerHTML = '';
-        movements.forEach(m => {
-            const dateStr = new Date(m.date).toLocaleString('es-AR');
+        // Mostrar los 40 más recientes
+        movements.slice(0, 40).forEach(m => {
+            const dateStr = new Date(m.date).toLocaleString('es-CL');
             const opClass = m.quantity >= 0 ? 'stock-ok' : 'stock-critical';
-            const opText = m.quantity >= 0 ? 'Suma (+)' : 'Resta (-)';
+            const opText = m.quantity >= 0 ? '+' : '−';
             const qtyText = Math.abs(m.quantity);
             const typeText = typeTranslations[m.movement_type] || m.movement_type;
             const itemName = ITEM_NAMES[m.item_key] || m.item_key;
@@ -4448,7 +4590,10 @@ async function handleUpdateInventory(event) {
     let quantity = parseFloat(document.getElementById('inv_quantity').value) || 0;
     const operation = document.getElementById('inv_operation').value;
     const reason = document.getElementById('inv_reason').value;
-    if (!itemKey || quantity <= 0) { showToast('Selecciona un insumo y cantidad válida', 'warning'); return; }
+    if (!itemKey || quantity <= 0) {
+        showToast('Elegí un insumo y una cantidad válida', 'warning');
+        return;
+    }
 
     if (operation === 'restar') {
         quantity = -quantity;
@@ -4461,9 +4606,12 @@ async function handleUpdateInventory(event) {
             body: JSON.stringify({ quantity, reason })
         });
         if (response.ok) {
-            showToast('Stock actualizado exitosamente', 'success');
+            showToast('Stock actualizado', 'success');
+            const keepItem = itemKey;
             document.getElementById('inventory-form').reset();
             await loadInventory();
+            const sel = document.getElementById('inv_item');
+            if (sel) sel.value = keepItem;
         } else {
             const err = await response.json();
             showToast(err.detail || 'Error al actualizar', 'error');

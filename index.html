@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.2.2">
+    <link rel="stylesheet" href="style.css?v=1.2.3">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -707,32 +707,68 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 3: CATALOGO DE FICHAS DE INSUMOS -->
+            <!-- PESTAÑA 3: CATALOGO DE PRENDAS / BOM -->
             <section class="tab-pane" id="pane-catalog">
+                <div class="catalog-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="catalog-search">Buscar prenda</label>
+                        <input type="search" id="catalog-search" placeholder="Arnés, máscara, clave…" autocomplete="off" oninput="filterCatalogView()">
+                    </div>
+                    <div class="form-group" style="min-width:140px;margin:0;">
+                        <label for="catalog-cat-filter">Línea</label>
+                        <select id="catalog-cat-filter" onchange="filterCatalogView()">
+                            <option value="">Todas las líneas</option>
+                            <option value="arneses">Arneses</option>
+                            <option value="mascaras">Máscaras</option>
+                            <option value="collares">Collares</option>
+                            <option value="corseteria">Corsetería</option>
+                            <option value="lenceria">Lencería</option>
+                            <option value="portaligas">Portaligas</option>
+                            <option value="accesorios">Accesorios</option>
+                            <option value="cadenas">Cadenas</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="focusNewCatalogForm()">+ Nueva ficha BOM</button>
+                </div>
                 <div class="grid-two-cols">
                     <!-- Formulario de Ficha Técnica -->
-                    <div class="glass-card">
+                    <div class="glass-card" id="catalog-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="catalog-form-title">Registrar Ficha de Prenda (BOM)</h2>
-                            <p class="card-desc">Define la cantidad de materiales estándar consumidos por esta prenda en tu catálogo.</p>
+                            <h2 class="card-title" id="catalog-form-title">Ficha de prenda (BOM)</h2>
+                            <p class="card-desc">Materiales por prenda Tormenta (vegan / a medida). Se usa al cotizar y al descontar stock.</p>
                         </div>
                         
                         <form id="catalog-form" onsubmit="handleSaveProduct(event)">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="cat_key">Clave del Producto (única)</label>
-                                    <input type="text" id="cat_key" required placeholder="Ej: gargantilla_cadenas">
+                                    <label for="cat_key">Clave única</label>
+                                    <input type="text" id="cat_key" required placeholder="Ej: arnes_cabeza">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cat_name">Nombre Comercial</label>
-                                    <input type="text" id="cat_name" required placeholder="Ej: Gargantilla con Cadenas">
+                                    <label for="cat_name">Nombre comercial</label>
+                                    <input type="text" id="cat_name" required placeholder="Ej: Arnés de cabeza charol">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_category">Línea de catálogo</label>
+                                    <select id="cat_category">
+                                        <option value="arneses">Arneses</option>
+                                        <option value="mascaras">Máscaras</option>
+                                        <option value="collares">Collares</option>
+                                        <option value="corseteria">Corsetería</option>
+                                        <option value="lenceria">Lencería</option>
+                                        <option value="portaligas">Portaligas</option>
+                                        <option value="accesorios">Accesorios</option>
+                                        <option value="cadenas">Cadenas</option>
+                                        <option value="general">General</option>
+                                    </select>
                                 </div>
                             </div>
                             
-                            <h3 class="section-subtitle">Insumos Lineales y Paneles</h3>
+                            <h3 class="section-subtitle">Insumos lineales y paneles</h3>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
-                                    <label for="cat_cinta">Cinta/Correa (m)</label>
+                                    <label for="cat_cinta">Cinta/correa (m)</label>
                                     <input type="number" id="cat_cinta" min="0" step="0.1" value="0.0">
                                 </div>
                                 <div class="form-group">
@@ -740,7 +776,7 @@
                                     <input type="number" id="cat_cadenas" min="0" step="0.1" value="0.0">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cat_panels">Paneles Cuero (uds)</label>
+                                    <label for="cat_panels">Paneles cuerina (uds)</label>
                                     <input type="number" id="cat_panels" min="0" value="0" onchange="toggleCatalogPanelDims(this.value)">
                                 </div>
                             </div>
@@ -1539,89 +1575,110 @@
 
             <!-- PESTAÑA: INVENTARIO -->
             <section class="tab-pane" id="pane-inventory">
-                <div id="inventory-alert-banner" class="inventory-alert-banner ok">
+                <div id="inventory-alert-banner" class="inventory-alert-banner ok" role="status">
                     <span>✓</span> <span id="inventory-alert-text">Todos los insumos están dentro de los niveles seguros.</span>
                 </div>
+
+                <div class="inv-toolbar">
+                    <div class="form-group inv-search-group">
+                        <label for="inv-search">Buscar insumo</label>
+                        <input type="search" id="inv-search" placeholder="Argollas, cuerina…" autocomplete="off" oninput="filterInventoryView()">
+                    </div>
+                    <div class="orders-filters" role="group" aria-label="Filtrar por estado de stock">
+                        <button type="button" class="orders-filter-btn active" data-inv-filter="todos" onclick="setInventoryFilter('todos')">Todos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="critico" onclick="setInventoryFilter('critico')">Críticos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="bajo" onclick="setInventoryFilter('bajo')">Bajos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="ok" onclick="setInventoryFilter('ok')">OK</button>
+                    </div>
+                </div>
+
                 <div class="grid-two-cols">
                     <div class="glass-card">
                         <div class="card-header">
-                            <h2 class="card-title">Estado del Inventario</h2>
-                            <p class="card-desc">Stock actual de todos los insumos del taller.</p>
+                            <h2 class="card-title">Estado del inventario</h2>
+                            <p class="card-desc">Tocá una fila para ajustar ese insumo. Stock real del taller (no el simulador Zero Waste).</p>
                         </div>
-                        <div class="results-table-container">
+                        <div id="inventory-cards" class="inv-cards" aria-live="polite"></div>
+                        <div class="results-table-container inv-table-wrap">
                             <table class="data-table small">
                                 <thead>
-                                    <tr><th>Insumo</th><th>Stock</th><th>Mínimo</th><th>Unidad</th><th>Estado</th></tr>
+                                    <tr><th>Insumo</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Estado</th></tr>
                                 </thead>
                                 <tbody id="inventory-table-body"><!-- Dinámico --></tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="glass-card">
+                    <div class="glass-card" id="inventory-adjust-card">
                         <div class="card-header">
-                            <h2 class="card-title">Actualizar Stock</h2>
-                            <p class="card-desc">Registra entradas, mermas o ajustes manuales de stock para tus insumos.</p>
+                            <h2 class="card-title">Ajustar stock</h2>
+                            <p class="card-desc">Compras, mermas o ajustes. Atajos rápidos debajo.</p>
                         </div>
                         <form id="inventory-form" onsubmit="handleUpdateInventory(event)">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
                                     <label for="inv_item">Insumo</label>
-                                    <select id="inv_item"><!-- Dinámico --></select>
+                                    <select id="inv_item" required><!-- Dinámico --></select>
                                 </div>
                                 <div class="form-group">
                                     <label for="inv_operation">Operación</label>
                                     <select id="inv_operation">
                                         <option value="sumar">Sumar (+)</option>
-                                        <option value="restar">Restar (-)</option>
+                                        <option value="restar">Restar (−)</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="inputs-grid compact" style="margin-top: 0.5rem;">
                                 <div class="form-group">
                                     <label for="inv_quantity">Cantidad</label>
-                                    <input type="number" id="inv_quantity" min="1" value="10" required>
+                                    <input type="number" id="inv_quantity" min="0.1" step="0.1" value="10" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="inv_reason">Motivo</label>
                                     <select id="inv_reason">
                                         <option value="compra">Compra</option>
                                         <option value="donacion">Donación</option>
-                                        <option value="ajuste">Ajuste de Inventario</option>
-                                        <option value="merma">Merma / Desperdicio</option>
+                                        <option value="ajuste">Ajuste de inventario</option>
+                                        <option value="merma">Merma / desperdicio</option>
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-primary" style="margin-top:1.5rem;">
-                                <span class="btn-text">Actualizar Stock</span>
+                            <div class="inv-quick-qty" aria-label="Cantidades rápidas">
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(1)">1</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(5)">5</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(10)">10</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(50)">50</button>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:1rem;min-height:48px;width:100%;">
+                                <span class="btn-text">Actualizar stock</span>
                                 <div class="btn-loader"></div>
                             </button>
                         </form>
                     </div>
                 </div>
                 
-                <div class="glass-card" style="margin-top: 2rem;">
-                    <div class="card-header">
-                        <h2 class="card-title">Historial de Movimientos (Trazabilidad)</h2>
-                        <p class="card-desc">Historial cronológico de consumos por producción, compras, mermas y ajustes.</p>
-                    </div>
-                    <div class="results-table-container">
+                <details class="glass-card inv-movements-panel" style="margin-top: 1.5rem;" open>
+                    <summary class="card-header inv-movements-summary">
+                        <h2 class="card-title">Historial de movimientos</h2>
+                        <p class="card-desc">Compras, producción, mermas y ajustes (trazabilidad).</p>
+                    </summary>
+                    <div class="results-table-container" style="padding: 0 1rem 1rem;">
                         <table class="data-table small">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Insumo</th>
-                                    <th>Operación</th>
-                                    <th>Cantidad</th>
+                                    <th>Op.</th>
+                                    <th>Cant.</th>
                                     <th>Motivo</th>
-                                    <th>Detalle / Referencia</th>
+                                    <th>Referencia</th>
                                 </tr>
                             </thead>
                             <tbody id="inventory-movements-table-body">
-                                <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Cargando historial de movimientos...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Cargando…</td></tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </details>
             </section>
 
             <!-- PESTAÑA: PROVEEDORES -->
@@ -1826,6 +1883,6 @@
         <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
     </footer>
 
-    <script src="app.js?v=1.2.2"></script>
+    <script src="app.js?v=1.2.3"></script>
 </body>
 </html>

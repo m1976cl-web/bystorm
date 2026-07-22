@@ -652,6 +652,36 @@ class ProductCreate(BaseModel):
     key: str = Field(..., description="Clave única del producto")
     name: str = Field(..., description="Nombre del producto")
     bom: BOMItem
+    category: str = "general"
+    description: str = ""
+    material: str = "Cuerina/cinta vegana + herrajes"
+    vegan: bool = True
+    made_to_order: bool = True
+    core: bool = False
+
+
+class ProductUpdate(BaseModel):
+    """Actualización de ficha: BOM + metadatos de marca (campos opcionales)."""
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    material: Optional[str] = None
+    vegan: Optional[bool] = None
+    made_to_order: Optional[bool] = None
+    # BOM fields (mismo shape que BOMItem; opcionales para no forzar todo)
+    cinta: Optional[float] = None
+    argollas: Optional[int] = None
+    hebillas: Optional[int] = None
+    remaches: Optional[int] = None
+    ojalillos: Optional[int] = None
+    varillas: Optional[int] = None
+    cadenas: Optional[float] = None
+    tachas: Optional[int] = None
+    mosquetones: Optional[int] = None
+    panels_count: Optional[int] = None
+    panel_width: Optional[float] = None
+    panel_height: Optional[float] = None
+
 
 @app.get("/api/products")
 def list_products():
@@ -665,22 +695,41 @@ def create_product(product: ProductCreate):
     
     products[product.key] = {
         "name": product.name,
-        **product.bom.model_dump()
+        "category": product.category or "general",
+        "description": product.description or "",
+        "material": product.material or "",
+        "vegan": product.vegan,
+        "made_to_order": product.made_to_order,
+        "core": product.core,
+        **product.bom.model_dump(),
     }
     _save_products(products)
     return {"key": product.key, **products[product.key]}
 
 @app.put("/api/products/{product_key}")
-def update_product(product_key: str, product: BOMItem):
+def update_product(product_key: str, product: dict):
+    """Acepta BOM plano (legacy) o ProductUpdate con metadatos de marca."""
     products = _load_products()
     if product_key not in products:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")
-    
-    name = products[product_key].get("name", product_key)
-    products[product_key] = {
-        "name": name,
-        **product.model_dump()
-    }
+
+    existing = dict(products[product_key])
+    # Si viene envuelto como { bom: {...}, name, category } del frontend nuevo
+    if isinstance(product.get("bom"), dict):
+        bom_data = product["bom"]
+        meta = {k: product[k] for k in ("name", "category", "description", "material", "vegan", "made_to_order", "core") if k in product}
+        merged = {**existing, **meta, **bom_data}
+    else:
+        # Plano: puede ser solo BOM o campos mezclados
+        merged = {**existing, **product}
+        if "name" not in product:
+            merged["name"] = existing.get("name", product_key)
+
+    # Conservar core si ya era base
+    if existing.get("core"):
+        merged["core"] = True
+
+    products[product_key] = merged
     _save_products(products)
     return {"key": product_key, **products[product_key]}
 
