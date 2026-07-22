@@ -13,7 +13,7 @@ import uuid
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -99,6 +99,7 @@ class ClientCreate(BaseModel):
     notes: str = Field("", description="Notas del taller")
     preferred_size: str = Field("M")
     gender: str = Field("Unisex", description="Género / Identidad de talle")
+    pin: str = Field(..., min_length=4, max_length=8, regex="^[0-9]{4,8}$", description="PIN de acceso al perfil")
     
     # 22 Medidas Corporales (cm) - Gráfico de Referencia EuroCatLatex / Tormenta
     forehead: float = Field(0.0, ge=0)
@@ -754,6 +755,14 @@ def delete_product(product_key: str):
 @app.get("/api/clients")
 def list_clients():
     return _load_clients()
+
+@app.get("/api/clients/pin/{pin}")
+def get_client_by_pin(pin: str = Path(..., min_length=4, max_length=8, regex=r"^[0-9]{4,8}$")):
+    clients = _load_clients()
+    for c in clients:
+        if c.get("pin") == pin:
+            return c
+    raise HTTPException(status_code=404, detail="Cliente no encontrado.")
 
 @app.post("/api/clients", status_code=201)
 def create_client(client: ClientCreate):
