@@ -1638,7 +1638,7 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.remove('active');
-        pane.style.display = 'none';
+        pane.style.display = '';
     });
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
@@ -1648,6 +1648,11 @@ function switchTab(tabId) {
         activeBtn.classList.add('active');
         activePane.classList.add('active');
         activePane.style.display = 'block';
+        
+        // Auto-desplazar la barra de navegación para enfocar la pestaña activa si queda fuera de vista
+        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     try {
