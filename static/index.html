@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.1.1">
+    <link rel="stylesheet" href="style.css?v=1.2.4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -19,7 +19,7 @@
     <header class="app-header">
         <div class="logo-container">
             <h1 class="brand-title">TORMENTA</h1>
-            <p class="brand-subtitle">INDUMENTARIA · SLOW FASHION WORKSHOP</p>
+            <p class="brand-subtitle">INDUMENTARIA DEL DESEO · VEGAN · SLOW FASHION · SCL</p>
         </div>
         <div class="header-status">
             <span class="status-indicator online"></span>
@@ -34,91 +34,145 @@
     </header>
 
     <main class="app-container">
-        <!-- Navegación de Pestañas -->
-        <nav class="tab-navigation">
-            <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
-                </svg>
-                Dashboard
-            </button>
-            <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
-                </svg>
-                Órdenes
-            </button>
-            <button class="tab-btn" id="tab-quote" onclick="switchTab('quote')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-                </svg>
-                Cotizador
-            </button>
-            <button class="tab-btn" id="tab-clients" onclick="switchTab('clients')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 010 7.75"/>
-                </svg>
-                Fichas de Clientes
-            </button>
-            <button class="tab-btn" id="tab-inventory" onclick="switchTab('inventory')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-                Inventario
-            </button>
-            <button class="tab-btn" id="tab-suppliers" onclick="switchTab('suppliers')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                </svg>
-                Proveedores
-            </button>
-            <button class="tab-btn" id="tab-batch" onclick="switchTab('batch')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Planificador de Lotes
-            </button>
-            <button class="tab-btn" id="tab-optimization" onclick="switchTab('optimization')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                Optimización Zero Waste
-            </button>
-            <button class="tab-btn" id="tab-scaling" onclick="switchTab('scaling')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
-                </svg>
-                Escalado de Patrones
-            </button>
-            <button class="tab-btn" id="tab-catalog" onclick="switchTab('catalog')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
-                Catálogo de Fichas
-            </button>
-            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Registro e Historial
-            </button>
-            <button class="tab-btn" id="tab-trends" onclick="switchTab('trends')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Tendencias de Moda
-            </button>
+        <!-- Navegación por flujo de taller: un módulo visible a la vez -->
+        <nav class="tab-navigation" id="main-tab-nav" aria-label="Módulos del taller" role="tablist">
+            <div class="nav-group" data-group="comercial">
+                <span class="nav-group-label">Comercial</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn active" role="tab" id="tab-dashboard" data-tab="dashboard" aria-controls="pane-dashboard" aria-selected="true" onclick="switchTab('dashboard')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+                        </svg>
+                        <span class="tab-label">Dashboard</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-orders" data-tab="orders" aria-controls="pane-orders" aria-selected="false" onclick="switchTab('orders')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
+                        </svg>
+                        <span class="tab-label">Órdenes</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-quote" data-tab="quote" aria-controls="pane-quote" aria-selected="false" onclick="switchTab('quote')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                        </svg>
+                        <span class="tab-label">Cotizador</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-clients" data-tab="clients" aria-controls="pane-clients" aria-selected="false" onclick="switchTab('clients')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 010 7.75"/>
+                        </svg>
+                        <span class="tab-label">Clientes</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="nav-group" data-group="taller">
+                <span class="nav-group-label">Taller</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-batch" data-tab="batch" aria-controls="pane-batch" aria-selected="false" onclick="switchTab('batch')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <span class="tab-label">Lotes</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-optimization" data-tab="optimization" aria-controls="pane-optimization" aria-selected="false" onclick="switchTab('optimization')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <span class="tab-label">Zero Waste</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-scaling" data-tab="scaling" aria-controls="pane-scaling" aria-selected="false" onclick="switchTab('scaling')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                        </svg>
+                        <span class="tab-label">Escalado</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-history" data-tab="history" aria-controls="pane-history" aria-selected="false" onclick="switchTab('history')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="tab-label">Historial</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="nav-group" data-group="insumos">
+                <span class="nav-group-label">Insumos</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-inventory" data-tab="inventory" aria-controls="pane-inventory" aria-selected="false" onclick="switchTab('inventory')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                        <span class="tab-label">Inventario</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-catalog" data-tab="catalog" aria-controls="pane-catalog" aria-selected="false" onclick="switchTab('catalog')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span class="tab-label">Catálogo</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-suppliers" data-tab="suppliers" aria-controls="pane-suppliers" aria-selected="false" onclick="switchTab('suppliers')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                        <span class="tab-label">Proveedores</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="nav-group" data-group="mas">
+                <span class="nav-group-label">Más</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-trends" data-tab="trends" aria-controls="pane-trends" aria-selected="false" onclick="switchTab('trends')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="tab-label">Tendencias</span>
+                    </button>
+                </div>
+            </div>
         </nav>
 
         <!-- Contenido de las Pestañas -->
         <div class="tab-content-wrapper">
 
             <!-- PESTAÑA: DASHBOARD -->
-            <section class="tab-pane active" id="pane-dashboard">
+            <section class="tab-pane active" id="pane-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+                <div class="module-page-header" data-module-header>
+                    <div>
+                        <p class="module-group-chip">Comercial</p>
+                        <h2 class="module-page-title">Dashboard del taller</h2>
+                        <p class="module-page-blurb">Resumen del día. Desde acá entrá al flujo de pedidos sin pasar por pantallas de stock o moldería.</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions" aria-label="Accesos rápidos del taller">
+                    <button type="button" class="quick-action-card" onclick="switchTab('orders')">
+                        <span class="qa-icon" aria-hidden="true">📋</span>
+                        <strong>Órdenes</strong>
+                        <small>Pedidos en curso y estados</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('quote')">
+                        <span class="qa-icon" aria-hidden="true">💰</span>
+                        <strong>Cotizar</strong>
+                        <small>Presupuesto para un DM</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('clients')">
+                        <span class="qa-icon" aria-hidden="true">👤</span>
+                        <strong>Clientes</strong>
+                        <small>Medidas y fichas (sin stock)</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('inventory')">
+                        <span class="qa-icon" aria-hidden="true">📦</span>
+                        <strong>Inventario</strong>
+                        <small>Herrajes y cuerina</small>
+                    </button>
+                </div>
+
                 <div class="kpi-grid">
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('history')" onkeydown="if(event.key==='Enter')switchTab('history')" title="Ver historial de producción">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-garments">0</span>
                             <span class="kpi-label">Prendas Este Mes</span>
@@ -132,21 +186,21 @@
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('inventory')" onkeydown="if(event.key==='Enter')switchTab('inventory')" title="Ir a inventario">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-alerts">0</span>
                             <span class="kpi-label">Alertas de Stock</span>
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('orders')" onkeydown="if(event.key==='Enter')switchTab('orders')" title="Ir a órdenes">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-orders">0</span>
                             <span class="kpi-label">Órdenes Pendientes</span>
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
                     </div>
-                    <div class="kpi-card" id="kpi-overdue-card">
+                    <div class="kpi-card kpi-clickable" id="kpi-overdue-card" role="button" tabindex="0" onclick="switchTab('orders')" onkeydown="if(event.key==='Enter')switchTab('orders')" title="Ver órdenes atrasadas">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-overdue" style="color: #e57373;">0</span>
                             <span class="kpi-label">Órdenes Atrasadas</span>
@@ -319,7 +373,8 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 2: OPTIMIZ            <section class="tab-pane" id="pane-optimization">
+            <!-- PESTAÑA: OPTIMIZACIÓN ZERO WASTE -->
+            <section class="tab-pane" id="pane-optimization">
                 <!-- Sub-pestañas segmentadas -->
                 <div class="optimization-subtabs" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
                     <button class="subtab-btn active" id="subtab-panels" onclick="switchOptSubtab('panels')" style="background: none; border: none; color: var(--color-text-primary); font-family: var(--font-heading); font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid var(--accent-crimson); transition: var(--transition-fast);">
@@ -652,32 +707,68 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 3: CATALOGO DE FICHAS DE INSUMOS -->
+            <!-- PESTAÑA 3: CATALOGO DE PRENDAS / BOM -->
             <section class="tab-pane" id="pane-catalog">
+                <div class="catalog-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="catalog-search">Buscar prenda</label>
+                        <input type="search" id="catalog-search" placeholder="Arnés, máscara, clave…" autocomplete="off" oninput="filterCatalogView()">
+                    </div>
+                    <div class="form-group" style="min-width:140px;margin:0;">
+                        <label for="catalog-cat-filter">Línea</label>
+                        <select id="catalog-cat-filter" onchange="filterCatalogView()">
+                            <option value="">Todas las líneas</option>
+                            <option value="arneses">Arneses</option>
+                            <option value="mascaras">Máscaras</option>
+                            <option value="collares">Collares</option>
+                            <option value="corseteria">Corsetería</option>
+                            <option value="lenceria">Lencería</option>
+                            <option value="portaligas">Portaligas</option>
+                            <option value="accesorios">Accesorios</option>
+                            <option value="cadenas">Cadenas</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="focusNewCatalogForm()">+ Nueva ficha BOM</button>
+                </div>
                 <div class="grid-two-cols">
                     <!-- Formulario de Ficha Técnica -->
-                    <div class="glass-card">
+                    <div class="glass-card" id="catalog-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="catalog-form-title">Registrar Ficha de Prenda (BOM)</h2>
-                            <p class="card-desc">Define la cantidad de materiales estándar consumidos por esta prenda en tu catálogo.</p>
+                            <h2 class="card-title" id="catalog-form-title">Ficha de prenda (BOM)</h2>
+                            <p class="card-desc">Materiales por prenda Tormenta (vegan / a medida). Se usa al cotizar y al descontar stock.</p>
                         </div>
                         
                         <form id="catalog-form" onsubmit="handleSaveProduct(event)">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="cat_key">Clave del Producto (única)</label>
-                                    <input type="text" id="cat_key" required placeholder="Ej: gargantilla_cadenas">
+                                    <label for="cat_key">Clave única</label>
+                                    <input type="text" id="cat_key" required placeholder="Ej: arnes_cabeza">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cat_name">Nombre Comercial</label>
-                                    <input type="text" id="cat_name" required placeholder="Ej: Gargantilla con Cadenas">
+                                    <label for="cat_name">Nombre comercial</label>
+                                    <input type="text" id="cat_name" required placeholder="Ej: Arnés de cabeza charol">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cat_category">Línea de catálogo</label>
+                                    <select id="cat_category">
+                                        <option value="arneses">Arneses</option>
+                                        <option value="mascaras">Máscaras</option>
+                                        <option value="collares">Collares</option>
+                                        <option value="corseteria">Corsetería</option>
+                                        <option value="lenceria">Lencería</option>
+                                        <option value="portaligas">Portaligas</option>
+                                        <option value="accesorios">Accesorios</option>
+                                        <option value="cadenas">Cadenas</option>
+                                        <option value="general">General</option>
+                                    </select>
                                 </div>
                             </div>
                             
-                            <h3 class="section-subtitle">Insumos Lineales y Paneles</h3>
+                            <h3 class="section-subtitle">Insumos lineales y paneles</h3>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
-                                    <label for="cat_cinta">Cinta/Correa (m)</label>
+                                    <label for="cat_cinta">Cinta/correa (m)</label>
                                     <input type="number" id="cat_cinta" min="0" step="0.1" value="0.0">
                                 </div>
                                 <div class="form-group">
@@ -685,7 +776,7 @@
                                     <input type="number" id="cat_cadenas" min="0" step="0.1" value="0.0">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cat_panels">Paneles Cuero (uds)</label>
+                                    <label for="cat_panels">Paneles cuerina (uds)</label>
                                     <input type="number" id="cat_panels" min="0" value="0" onchange="toggleCatalogPanelDims(this.value)">
                                 </div>
                             </div>
@@ -763,35 +854,36 @@
                 <div class="grid-two-cols">
                     <div class="glass-card">
                         <div class="card-header">
-                            <h2 class="card-title">Presupuestador de Prenda</h2>
-                            <p class="card-desc">Ingresá los costos unitarios de tus insumos para generar un presupuesto con margen de ganancia sugerido.</p>
+                            <h2 class="card-title">Presupuestador de prenda</h2>
+                            <p class="card-desc">Armá un precio para responder un DM. Después podés pasar el presupuesto a una orden con adelanto.</p>
                         </div>
 
                         <form id="quote-form" onsubmit="handleQuote(event)">
-                            <h3 class="section-subtitle">1. Producto & Cliente</h3>
+                            <h3 class="section-subtitle">1. Producto y clienta</h3>
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="quote_product">Prenda / Accesorio</label>
+                                    <label for="quote_product">Prenda / accesorio</label>
                                     <select id="quote_product">
                                         <option value="" disabled selected>Cargando catálogo...</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="quote_client">Cliente (Opcional)</label>
+                                    <label for="quote_client">Clienta (opcional)</label>
                                     <select id="quote_client">
-                                        <option value="">-- Sin Cliente (Presupuesto Genérico) --</option>
+                                        <option value="">— Sin clienta (presupuesto genérico) —</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <h3 class="section-subtitle">2. Costos de Insumos ($ por unidad)</h3>
+                            <details class="quote-costs-panel" open>
+                            <summary class="section-subtitle quote-costs-summary">2. Costos de insumos ($ por unidad)</summary>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
                                     <label for="cost_cinta">Cinta/Correa ($/m)</label>
                                     <input type="number" id="cost_cinta" min="0" step="10" value="800">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cost_panel_m2">Cuero/Cuerina ($/m²)</label>
+                                    <label for="cost_panel_m2">Cuerina vegana ($/m²)</label>
                                     <input type="number" id="cost_panel_m2" min="0" step="100" value="5000">
                                 </div>
                                 <div class="form-group">
@@ -827,8 +919,9 @@
                                     <input type="number" id="cost_mosqueton" min="0" step="10" value="500">
                                 </div>
                             </div>
+                            </details>
 
-                            <h3 class="section-subtitle">3. Mano de Obra & Margen</h3>
+                            <h3 class="section-subtitle">3. Mano de obra y margen</h3>
                             <div class="inputs-grid compact cols-3">
                                 <div class="form-group">
                                     <label for="labor_hours">Horas de Trabajo</label>
@@ -845,7 +938,7 @@
                             </div>
 
                             <button type="submit" class="btn-primary" id="btn-quote">
-                                <span class="btn-text">Generar Presupuesto</span>
+                                <span class="btn-text">Generar presupuesto</span>
                                 <div class="btn-loader"></div>
                             </button>
                         </form>
@@ -855,8 +948,8 @@
                     <div class="glass-card" id="quote-results-card">
                         <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
                             <div>
-                                <h2 class="card-title">Presupuesto Detallado</h2>
-                                <p class="card-desc">Desglose de costos y precio de venta sugerido.</p>
+                                <h2 class="card-title">Presupuesto detallado</h2>
+                                <p class="card-desc">Desglose de costos, precio sugerido y pasos siguientes (WhatsApp / orden).</p>
                             </div>
                             <button class="btn-export-pdf" onclick="exportToPDF('quote-results','presupuesto_tormenta.pdf')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -938,20 +1031,27 @@
 
                             <!-- Precio final grande -->
                             <div class="price-final-badge">
-                                <span class="price-label">Precio de Venta Sugerido</span>
+                                <span class="price-label">Precio de venta sugerido</span>
                                 <div class="price-value" id="quote-final-price">$0</div>
-                                <span class="price-note">IVA no incluido</span>
+                                <span class="price-note">IVA no incluido · 50% adelanto sugerido al confirmar</span>
+                            </div>
+
+                            <div class="quote-next-actions" id="quote-next-actions">
+                                <button type="button" class="btn-primary" id="btn-quote-to-order" disabled>
+                                    Crear orden con este presupuesto
+                                </button>
+                                <p class="quote-next-hint">Generá el presupuesto primero. Luego podés abrir Órdenes con precio y adelanto 50% precargados.</p>
                             </div>
                             
                             <!-- Footer/Firmas del Presupuesto -->
                             <div class="budget-footer" style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color, #3a3a40); padding-top: 1rem; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-muted, #888);">
                                 <div>
-                                    <p style="margin: 0;"><strong>Condiciones:</strong> 50% de seña para comenzar, saldo contra entrega.</p>
+                                    <p style="margin: 0;"><strong>Condiciones:</strong> 50% de adelanto para comenzar, saldo contra entrega.</p>
                                     <p style="margin: 0.15rem 0 0 0;">Confección a medida, demora estimada: 7-10 días hábiles.</p>
                                 </div>
                                 <div style="text-align: right; font-style: italic;">
                                     <p style="margin: 0;">Tormenta Indumentaria</p>
-                                    <p style="margin: 0.15rem 0 0 0;">Buenos Aires, Argentina</p>
+                                    <p style="margin: 0.15rem 0 0 0;">Santiago, Chile</p>
                                 </div>
                             </div>
                         </div>
@@ -995,29 +1095,36 @@
 
             <!-- PESTAÑA 5: FICHAS DE CLIENTES -->
             <section class="tab-pane" id="pane-clients">
+                <div class="clients-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="clients-search">Buscar clienta</label>
+                        <input type="search" id="clients-search" placeholder="Nombre, IG o teléfono…" autocomplete="off" oninput="filterClientsList()">
+                    </div>
+                    <button type="button" class="btn-secondary" id="btn-clients-new" onclick="focusNewClientForm()">+ Nueva ficha</button>
+                </div>
                 <div class="grid-two-cols">
                     <!-- Formulario de Cliente -->
-                    <div class="glass-card">
+                    <div class="glass-card" id="client-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="client-form-title">Registrar Nuevo Cliente</h2>
-                            <p class="card-desc">Guardá las medidas corporales de tus clientes para pedidos personalizados futuros.</p>
+                            <h2 class="card-title" id="client-form-title">Registrar nueva clienta</h2>
+                            <p class="card-desc">Solo medidas y contacto. El inventario del taller no se maneja acá.</p>
                         </div>
 
                         <form id="client-form" onsubmit="handleSaveClient(event)">
                             <input type="hidden" id="client_edit_id" value="">
 
-                            <h3 class="section-subtitle">👤 Identidad del Cliente & Fit</h3>
+                            <h3 class="section-subtitle">👤 Identidad y fit</h3>
                             <div class="inputs-grid compact">
                                 <div class="form-group">
                                     <label for="client_name">Nombre Completo *</label>
                                     <input type="text" id="client_name" required placeholder="Ej: María López">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_contact">Contacto (Tel / IG / Email)</label>
-                                    <input type="text" id="client_contact" placeholder="Ej: @maria_lopez">
+                                    <label for="client_contact">Contacto (WhatsApp / IG / email)</label>
+                                    <input type="text" id="client_contact" placeholder="Ej: @tormenta_clienta o +56 9…">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_gender">22. Género / Identidad de Talle</label>
+                                    <label for="client_gender">Género / identidad de talle</label>
                                     <select id="client_gender">
                                         <option value="Unisex" selected>Unisex</option>
                                         <option value="Femenino">Femenino</option>
@@ -1468,224 +1575,305 @@
 
             <!-- PESTAÑA: INVENTARIO -->
             <section class="tab-pane" id="pane-inventory">
-                <div id="inventory-alert-banner" class="inventory-alert-banner ok">
+                <div id="inventory-alert-banner" class="inventory-alert-banner ok" role="status">
                     <span>✓</span> <span id="inventory-alert-text">Todos los insumos están dentro de los niveles seguros.</span>
                 </div>
+
+                <div class="inv-toolbar">
+                    <div class="form-group inv-search-group">
+                        <label for="inv-search">Buscar insumo</label>
+                        <input type="search" id="inv-search" placeholder="Argollas, cuerina…" autocomplete="off" oninput="filterInventoryView()">
+                    </div>
+                    <div class="orders-filters" role="group" aria-label="Filtrar por estado de stock">
+                        <button type="button" class="orders-filter-btn active" data-inv-filter="todos" onclick="setInventoryFilter('todos')">Todos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="critico" onclick="setInventoryFilter('critico')">Críticos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="bajo" onclick="setInventoryFilter('bajo')">Bajos</button>
+                        <button type="button" class="orders-filter-btn" data-inv-filter="ok" onclick="setInventoryFilter('ok')">OK</button>
+                    </div>
+                </div>
+
                 <div class="grid-two-cols">
                     <div class="glass-card">
                         <div class="card-header">
-                            <h2 class="card-title">Estado del Inventario</h2>
-                            <p class="card-desc">Stock actual de todos los insumos del taller.</p>
+                            <h2 class="card-title">Estado del inventario</h2>
+                            <p class="card-desc">Tocá una fila para ajustar ese insumo. Stock real del taller (no el simulador Zero Waste).</p>
                         </div>
-                        <div class="results-table-container">
+                        <div id="inventory-cards" class="inv-cards" aria-live="polite"></div>
+                        <div class="results-table-container inv-table-wrap">
                             <table class="data-table small">
                                 <thead>
-                                    <tr><th>Insumo</th><th>Stock</th><th>Mínimo</th><th>Unidad</th><th>Estado</th></tr>
+                                    <tr><th>Insumo</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th>Estado</th></tr>
                                 </thead>
                                 <tbody id="inventory-table-body"><!-- Dinámico --></tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="glass-card">
+                    <div class="glass-card" id="inventory-adjust-card">
                         <div class="card-header">
-                            <h2 class="card-title">Actualizar Stock</h2>
-                            <p class="card-desc">Registra entradas, mermas o ajustes manuales de stock para tus insumos.</p>
+                            <h2 class="card-title">Ajustar stock</h2>
+                            <p class="card-desc">Compras, mermas o ajustes. Atajos rápidos debajo.</p>
                         </div>
                         <form id="inventory-form" onsubmit="handleUpdateInventory(event)">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
                                     <label for="inv_item">Insumo</label>
-                                    <select id="inv_item"><!-- Dinámico --></select>
+                                    <select id="inv_item" required><!-- Dinámico --></select>
                                 </div>
                                 <div class="form-group">
                                     <label for="inv_operation">Operación</label>
                                     <select id="inv_operation">
                                         <option value="sumar">Sumar (+)</option>
-                                        <option value="restar">Restar (-)</option>
+                                        <option value="restar">Restar (−)</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="inputs-grid compact" style="margin-top: 0.5rem;">
                                 <div class="form-group">
                                     <label for="inv_quantity">Cantidad</label>
-                                    <input type="number" id="inv_quantity" min="1" value="10" required>
+                                    <input type="number" id="inv_quantity" min="0.1" step="0.1" value="10" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="inv_reason">Motivo</label>
                                     <select id="inv_reason">
                                         <option value="compra">Compra</option>
                                         <option value="donacion">Donación</option>
-                                        <option value="ajuste">Ajuste de Inventario</option>
-                                        <option value="merma">Merma / Desperdicio</option>
+                                        <option value="ajuste">Ajuste de inventario</option>
+                                        <option value="merma">Merma / desperdicio</option>
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-primary" style="margin-top:1.5rem;">
-                                <span class="btn-text">Actualizar Stock</span>
+                            <div class="inv-quick-qty" aria-label="Cantidades rápidas">
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(1)">1</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(5)">5</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(10)">10</button>
+                                <button type="button" class="orders-filter-btn" onclick="setInvQuickQty(50)">50</button>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:1rem;min-height:48px;width:100%;">
+                                <span class="btn-text">Actualizar stock</span>
                                 <div class="btn-loader"></div>
                             </button>
                         </form>
                     </div>
                 </div>
                 
-                <div class="glass-card" style="margin-top: 2rem;">
-                    <div class="card-header">
-                        <h2 class="card-title">Historial de Movimientos (Trazabilidad)</h2>
-                        <p class="card-desc">Historial cronológico de consumos por producción, compras, mermas y ajustes.</p>
-                    </div>
-                    <div class="results-table-container">
+                <details class="glass-card inv-movements-panel" style="margin-top: 1.5rem;" open>
+                    <summary class="card-header inv-movements-summary">
+                        <h2 class="card-title">Historial de movimientos</h2>
+                        <p class="card-desc">Compras, producción, mermas y ajustes (trazabilidad).</p>
+                    </summary>
+                    <div class="results-table-container" style="padding: 0 1rem 1rem;">
                         <table class="data-table small">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Insumo</th>
-                                    <th>Operación</th>
-                                    <th>Cantidad</th>
+                                    <th>Op.</th>
+                                    <th>Cant.</th>
                                     <th>Motivo</th>
-                                    <th>Detalle / Referencia</th>
+                                    <th>Referencia</th>
                                 </tr>
                             </thead>
                             <tbody id="inventory-movements-table-body">
-                                <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Cargando historial de movimientos...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Cargando…</td></tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </details>
             </section>
 
             <!-- PESTAÑA: PROVEEDORES -->
             <section class="tab-pane" id="pane-suppliers">
+                <div class="suppliers-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="suppliers-search">Buscar proveedor</label>
+                        <input type="search" id="suppliers-search" placeholder="Nombre, contacto o nota…" autocomplete="off" oninput="filterSuppliersList()">
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="focusNewSupplierForm()">+ Nuevo proveedor</button>
+                </div>
+
+                <div id="suppliers-best-prices" class="suppliers-best-grid" aria-live="polite"></div>
+
                 <div class="grid-two-cols">
-                    <div class="glass-card">
+                    <div class="glass-card" id="supplier-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="supplier-form-title">Registrar Proveedor</h2>
-                            <p class="card-desc">Datos de contacto y lista de precios por insumo.</p>
+                            <h2 class="card-title" id="supplier-form-title">Registrar proveedor</h2>
+                            <p class="card-desc">Contacto y precios de insumos (cuerina, herrajes). El más barato se resalta en la comparación.</p>
                         </div>
                         <form id="supplier-form" onsubmit="handleSaveSupplier(event)">
                             <input type="hidden" id="supplier_edit_id" value="">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="sup_name">Nombre / Razón Social</label>
-                                    <input type="text" id="sup_name" required placeholder="Ej: Cueros del Sur S.A.">
+                                    <label for="sup_name">Nombre / razón social</label>
+                                    <input type="text" id="sup_name" required placeholder="Ej: Herrajes Centro, Cuerina SCL…">
                                 </div>
                                 <div class="form-group">
-                                    <label for="sup_contact">Contacto</label>
-                                    <input type="text" id="sup_contact" placeholder="Tel / Email / Web">
+                                    <label for="sup_contact">Contacto (WhatsApp / web / email)</label>
+                                    <input type="text" id="sup_contact" placeholder="+56 9… · @tienda · correo">
                                 </div>
                             </div>
                             <div class="form-group" style="margin-top:0.5rem;">
                                 <label for="sup_notes">Notas</label>
-                                <textarea id="sup_notes" rows="2" placeholder="Envíos, condiciones, etc."></textarea>
+                                <textarea id="sup_notes" rows="2" placeholder="Envíos a Santiago, mínimo de compra, plazos…"></textarea>
                             </div>
-                            <h3 class="section-subtitle">Precios por Insumo ($ por unidad)</h3>
-                            <div class="inputs-grid compact cols-3">
-                                <div class="form-group"><label for="sup_p_cinta">Cinta ($/m)</label><input type="number" id="sup_p_cinta" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_argollas">Argollas ($/ud)</label><input type="number" id="sup_p_argollas" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_hebillas">Hebillas ($/ud)</label><input type="number" id="sup_p_hebillas" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_remaches">Remaches ($/ud)</label><input type="number" id="sup_p_remaches" min="0" step="5" value="0"></div>
-                                <div class="form-group"><label for="sup_p_ojalillos">Ojalillos ($/ud)</label><input type="number" id="sup_p_ojalillos" min="0" step="5" value="0"></div>
-                                <div class="form-group"><label for="sup_p_cadenas">Cadenas ($/m)</label><input type="number" id="sup_p_cadenas" min="0" step="10" value="0"></div>
+                            <details class="sup-prices-panel" open>
+                                <summary class="section-subtitle sup-prices-summary">Precios por insumo ($ por unidad)</summary>
+                                <div class="inputs-grid compact cols-3" style="margin-top:0.75rem;">
+                                    <div class="form-group"><label for="sup_p_cinta">Cinta ($/m)</label><input type="number" id="sup_p_cinta" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_cuerina">Cuerina ($/m)</label><input type="number" id="sup_p_cuerina" min="0" step="100" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_cadenas">Cadenas ($/m)</label><input type="number" id="sup_p_cadenas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_argollas">Argollas ($/ud)</label><input type="number" id="sup_p_argollas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_hebillas">Hebillas ($/ud)</label><input type="number" id="sup_p_hebillas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_remaches">Remaches ($/ud)</label><input type="number" id="sup_p_remaches" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_ojalillos">Ojalillos ($/ud)</label><input type="number" id="sup_p_ojalillos" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_varillas">Varillas ($/ud)</label><input type="number" id="sup_p_varillas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_tachas">Tachas ($/ud)</label><input type="number" id="sup_p_tachas" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_mosquetones">Mosquetones ($/ud)</label><input type="number" id="sup_p_mosquetones" min="0" step="10" value="0"></div>
+                                </div>
+                            </details>
+                            <div class="sup-form-actions">
+                                <button type="submit" class="btn-primary" id="btn-save-supplier">
+                                    <span class="btn-text">Guardar proveedor</span>
+                                    <div class="btn-loader"></div>
+                                </button>
+                                <button type="button" class="btn-secondary" id="btn-cancel-supplier" onclick="focusNewSupplierForm()" style="display:none;">Cancelar edición</button>
                             </div>
-                            <button type="submit" class="btn-primary" id="btn-save-supplier" style="margin-top:1.5rem;">
-                                <span class="btn-text">Guardar Proveedor</span>
-                                <div class="btn-loader"></div>
-                            </button>
                         </form>
                     </div>
                     <div class="glass-card" style="display:flex;flex-direction:column;">
                         <div class="card-header">
-                            <h2 class="card-title">Proveedores Registrados</h2>
-                            <p class="card-desc">Listado y comparación de precios entre proveedores.</p>
+                            <h2 class="card-title">Proveedores del taller</h2>
+                            <p class="card-desc">Listado. El precio más bajo de cada insumo se marca en verde en la tabla de abajo.</p>
                         </div>
                         <div class="suppliers-list" id="suppliers-list"><!-- Dinámico --></div>
-                        <div class="divider"></div>
-                        <div class="card-header" style="margin-bottom:0.5rem;">
-                            <h2 class="card-title" style="font-size:1rem;">Comparación de Precios</h2>
-                        </div>
-                        <div class="results-table-container">
-                            <table class="data-table small">
-                                <thead id="compare-thead"><tr><th>Insumo</th></tr></thead>
-                                <tbody id="compare-tbody"><!-- Dinámico --></tbody>
-                            </table>
-                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top:1.25rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Comparación de precios</h2>
+                        <p class="card-desc">Una fila por insumo; columnas por proveedor. Verde = mejor precio.</p>
+                    </div>
+                    <div class="results-table-container sup-compare-wrap">
+                        <table class="data-table small" id="sup-compare-table">
+                            <thead id="compare-thead"><tr><th>Insumo</th></tr></thead>
+                            <tbody id="compare-tbody"><!-- Dinámico --></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
             <!-- PESTAÑA: ÓRDENES -->
             <section class="tab-pane" id="pane-orders">
-                <div class="glass-card" style="margin-bottom:1.5rem;">
-                    <div class="card-header">
-                        <h2 class="card-title">Nueva Orden de Trabajo</h2>
-                        <p class="card-desc">Crea una orden asociada a un cliente y producto del catálogo.</p>
+                <div class="orders-toolbar">
+                    <div class="orders-filters" role="group" aria-label="Filtrar órdenes">
+                        <button type="button" class="orders-filter-btn active" data-orders-filter="activas" onclick="setOrdersFilter('activas')">Activas</button>
+                        <button type="button" class="orders-filter-btn" data-orders-filter="atrasadas" onclick="setOrdersFilter('atrasadas')">Atrasadas</button>
+                        <button type="button" class="orders-filter-btn" data-orders-filter="todas" onclick="setOrdersFilter('todas')">Todas</button>
                     </div>
-                    <form id="order-form" onsubmit="handleCreateOrder(event)">
+                    <div class="orders-view-toggle" role="group" aria-label="Vista de órdenes">
+                        <button type="button" class="orders-view-btn active" data-orders-view="kanban" onclick="setOrdersView('kanban')">Kanban</button>
+                        <button type="button" class="orders-view-btn" data-orders-view="lista" onclick="setOrdersView('lista')">Lista</button>
+                    </div>
+                </div>
+
+                <details class="orders-new-panel glass-card" id="orders-new-panel" open>
+                    <summary class="orders-new-summary">
+                        <span>+ Nueva orden de trabajo</span>
+                        <small>Cliente · prenda · adelanto · fecha</small>
+                    </summary>
+                    <form id="order-form" onsubmit="handleCreateOrder(event)" class="orders-new-form">
                         <div class="inputs-grid compact cols-3">
                             <div class="form-group">
                                 <label for="order_client">Cliente</label>
-                                <select id="order_client"><!-- Dinámico --></select>
+                                <select id="order_client" required><!-- Dinámico --></select>
                             </div>
                             <div class="form-group">
-                                <label for="order_product">Producto</label>
-                                <select id="order_product"><!-- Dinámico --></select>
+                                <label for="order_product">Prenda (catálogo)</label>
+                                <select id="order_product" required><!-- Dinámico --></select>
                             </div>
                             <div class="form-group">
-                                <label for="order_size">Talla</label>
+                                <label for="order_size">Talle</label>
                                 <select id="order_size">
-                                    <option value="S">S</option><option value="M" selected>M</option><option value="L">L</option><option value="XL">XL</option>
+                                    <option value="S">S</option>
+                                    <option value="M" selected>M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="a medida">A medida</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="order_price">Precio Cotizado ($)</label>
-                                <input type="number" id="order_price" min="0" step="100" value="5000">
+                                <label for="order_qty">Cantidad</label>
+                                <input type="number" id="order_qty" min="1" step="1" value="1">
                             </div>
                             <div class="form-group">
-                                <label for="order_due">Fecha de Entrega</label>
+                                <label for="order_price">Precio total ($)</label>
+                                <input type="number" id="order_price" min="0" step="100" value="0" placeholder="Acordado con la clienta">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_deposit">Adelanto cobrado ($)</label>
+                                <input type="number" id="order_deposit" min="0" step="100" value="0" placeholder="0 si aún no hay adelanto">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_due">Fecha de entrega</label>
                                 <input type="date" id="order_due" required>
                             </div>
                             <div class="form-group">
-                                <label for="order_notes">Notas</label>
-                                <input type="text" id="order_notes" placeholder="Detalles especiales">
+                                <label for="order_phone">WhatsApp / teléfono</label>
+                                <input type="text" id="order_phone" placeholder="Ej: 54911… (opcional)">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="order_notes">Notas del pedido</label>
+                                <input type="text" id="order_notes" placeholder="Hebillas negras, sin níquel, color…">
                             </div>
                         </div>
-                        <button type="submit" class="btn-primary" id="btn-create-order" style="margin-top:1rem;">
-                            <span class="btn-text">Crear Orden</span>
-                            <div class="btn-loader"></div>
-                        </button>
+                        <div class="orders-form-actions">
+                            <button type="submit" class="btn-primary" id="btn-create-order">
+                                <span class="btn-text">Crear orden</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                            <p class="orders-form-hint">El adelanto y el saldo se muestran en cada tarjeta. Al pasar a <strong>Terminado</strong> se descuenta el BOM del inventario.</p>
+                        </div>
                     </form>
+                </details>
+
+                <div id="orders-list-view" class="orders-list-view hidden" aria-live="polite"></div>
+
+                <div id="orders-kanban-wrap">
+                    <h3 class="section-subtitle orders-section-title">Tablero de estados</h3>
+                    <p class="orders-section-hint">Deslizá horizontal en el celu. Cada tarjeta tiene el próximo paso grande.</p>
+                    <div class="kanban-board" id="kanban-board">
+                        <div class="kanban-col" data-status="pendiente">
+                            <div class="kanban-col-header">Pendiente <span class="col-count" id="count-pendiente">0</span></div>
+                            <div id="kanban-pendiente" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="en_confeccion">
+                            <div class="kanban-col-header">En confección <span class="col-count" id="count-en_confeccion">0</span></div>
+                            <div id="kanban-en_confeccion" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="terminado">
+                            <div class="kanban-col-header">Terminado <span class="col-count" id="count-terminado">0</span></div>
+                            <div id="kanban-terminado" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="entregado">
+                            <div class="kanban-col-header">Entregado <span class="col-count" id="count-entregado">0</span></div>
+                            <div id="kanban-entregado" class="kanban-col-body"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <h3 class="section-subtitle" style="margin-bottom:1rem;">Tablero Kanban</h3>
-                <div class="kanban-board" id="kanban-board">
-                    <div class="kanban-col" data-status="pendiente">
-                        <div class="kanban-col-header">Pendiente <span class="col-count" id="count-pendiente">0</span></div>
-                        <div id="kanban-pendiente"></div>
+                <details class="orders-calendar-panel">
+                    <summary class="section-subtitle" style="cursor:pointer;">Calendario de entregas</summary>
+                    <div class="calendar-container">
+                        <div class="calendar-nav">
+                            <button type="button" onclick="changeCalendarMonth(-1)">← Anterior</button>
+                            <span class="calendar-month-label" id="calendar-month-label"></span>
+                            <button type="button" onclick="changeCalendarMonth(1)">Siguiente →</button>
+                        </div>
+                        <div class="calendar-grid-wrap">
+                            <div class="calendar-grid" id="calendar-grid"><!-- Dinámico --></div>
+                        </div>
                     </div>
-                    <div class="kanban-col" data-status="en_confeccion">
-                        <div class="kanban-col-header">En Confección <span class="col-count" id="count-en_confeccion">0</span></div>
-                        <div id="kanban-en_confeccion"></div>
-                    </div>
-                    <div class="kanban-col" data-status="terminado">
-                        <div class="kanban-col-header">Terminado <span class="col-count" id="count-terminado">0</span></div>
-                        <div id="kanban-terminado"></div>
-                    </div>
-                    <div class="kanban-col" data-status="entregado">
-                        <div class="kanban-col-header">Entregado <span class="col-count" id="count-entregado">0</span></div>
-                        <div id="kanban-entregado"></div>
-                    </div>
-                </div>
-
-                <h3 class="section-subtitle" style="margin-bottom:1rem;">Calendario de Entregas</h3>
-                <div class="calendar-container">
-                    <div class="calendar-nav">
-                        <button onclick="changeCalendarMonth(-1)">← Anterior</button>
-                        <span class="calendar-month-label" id="calendar-month-label"></span>
-                        <button onclick="changeCalendarMonth(1)">Siguiente →</button>
-                    </div>
-                    <div class="calendar-grid-wrap">
-                        <div class="calendar-grid" id="calendar-grid"><!-- Dinámico --></div>
-                    </div>
-                </div>
+                </details>
             </section>
 
         </div>
@@ -1717,6 +1905,6 @@
         <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
     </footer>
 
-    <script src="app.js?v=1.1.1"></script>
+    <script src="app.js?v=1.2.4"></script>
 </body>
 </html>
