@@ -2382,13 +2382,92 @@ html[data-theme="light"] .article-title {
 /* =============================================================
    SUPPLIERS TAB
    ============================================================= */
+.suppliers-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.suppliers-toolbar .btn-secondary {
+    min-height: 44px;
+}
+
+.suppliers-best-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.55rem;
+    margin-bottom: 1.1rem;
+}
+
+.sup-best-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, 0.08);
+}
+
+.sup-best-item {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sup-best-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #81c784;
+}
+
+.sup-best-name {
+    font-size: 0.78rem;
+    color: var(--color-text-primary);
+}
+
+.sup-best-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0.5rem 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.sup-prices-panel {
+    margin-top: 0.75rem;
+}
+
+.sup-prices-summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.sup-prices-summary::-webkit-details-marker { display: none; }
+
+.sup-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+    align-items: center;
+}
+
+.sup-form-actions .btn-primary {
+    min-height: 48px;
+}
+
 .supplier-card {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.2rem;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
     transition: var(--transition-smooth);
     animation: fadeIn 0.3s ease-out;
+    margin-bottom: 0.65rem;
 }
 
 .supplier-card:hover {
@@ -2396,23 +2475,64 @@ html[data-theme="light"] .article-title {
     border-color: var(--border-glow);
 }
 
+.supplier-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.supplier-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
 .supplier-card h4 {
     font-family: var(--font-heading);
     font-size: 1rem;
     color: var(--color-text-primary);
-    margin-bottom: 0.3rem;
+    margin: 0 0 0.3rem;
 }
 
 .supplier-contact {
     font-size: 0.8rem;
     color: var(--accent-gold);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 
 .supplier-notes {
     font-size: 0.8rem;
     color: var(--color-text-secondary);
     font-style: italic;
+}
+
+.sup-price-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+}
+
+.sup-price-chip {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    color: var(--color-text-secondary);
+}
+
+.sup-no-prices {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+}
+
+.sup-compare-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .price-highlight {

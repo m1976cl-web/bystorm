@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.2.3">
+    <link rel="stylesheet" href="style.css?v=1.2.4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -1683,59 +1683,81 @@
 
             <!-- PESTAÑA: PROVEEDORES -->
             <section class="tab-pane" id="pane-suppliers">
+                <div class="suppliers-toolbar">
+                    <div class="form-group clients-search-group">
+                        <label for="suppliers-search">Buscar proveedor</label>
+                        <input type="search" id="suppliers-search" placeholder="Nombre, contacto o nota…" autocomplete="off" oninput="filterSuppliersList()">
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="focusNewSupplierForm()">+ Nuevo proveedor</button>
+                </div>
+
+                <div id="suppliers-best-prices" class="suppliers-best-grid" aria-live="polite"></div>
+
                 <div class="grid-two-cols">
-                    <div class="glass-card">
+                    <div class="glass-card" id="supplier-form-card">
                         <div class="card-header">
-                            <h2 class="card-title" id="supplier-form-title">Registrar Proveedor</h2>
-                            <p class="card-desc">Datos de contacto y lista de precios por insumo.</p>
+                            <h2 class="card-title" id="supplier-form-title">Registrar proveedor</h2>
+                            <p class="card-desc">Contacto y precios de insumos (cuerina, herrajes). El más barato se resalta en la comparación.</p>
                         </div>
                         <form id="supplier-form" onsubmit="handleSaveSupplier(event)">
                             <input type="hidden" id="supplier_edit_id" value="">
                             <div class="inputs-grid compact">
                                 <div class="form-group">
-                                    <label for="sup_name">Nombre / Razón Social</label>
-                                    <input type="text" id="sup_name" required placeholder="Ej: Cueros del Sur S.A.">
+                                    <label for="sup_name">Nombre / razón social</label>
+                                    <input type="text" id="sup_name" required placeholder="Ej: Herrajes Centro, Cuerina SCL…">
                                 </div>
                                 <div class="form-group">
-                                    <label for="sup_contact">Contacto</label>
-                                    <input type="text" id="sup_contact" placeholder="Tel / Email / Web">
+                                    <label for="sup_contact">Contacto (WhatsApp / web / email)</label>
+                                    <input type="text" id="sup_contact" placeholder="+56 9… · @tienda · correo">
                                 </div>
                             </div>
                             <div class="form-group" style="margin-top:0.5rem;">
                                 <label for="sup_notes">Notas</label>
-                                <textarea id="sup_notes" rows="2" placeholder="Envíos, condiciones, etc."></textarea>
+                                <textarea id="sup_notes" rows="2" placeholder="Envíos a Santiago, mínimo de compra, plazos…"></textarea>
                             </div>
-                            <h3 class="section-subtitle">Precios por Insumo ($ por unidad)</h3>
-                            <div class="inputs-grid compact cols-3">
-                                <div class="form-group"><label for="sup_p_cinta">Cinta ($/m)</label><input type="number" id="sup_p_cinta" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_argollas">Argollas ($/ud)</label><input type="number" id="sup_p_argollas" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_hebillas">Hebillas ($/ud)</label><input type="number" id="sup_p_hebillas" min="0" step="10" value="0"></div>
-                                <div class="form-group"><label for="sup_p_remaches">Remaches ($/ud)</label><input type="number" id="sup_p_remaches" min="0" step="5" value="0"></div>
-                                <div class="form-group"><label for="sup_p_ojalillos">Ojalillos ($/ud)</label><input type="number" id="sup_p_ojalillos" min="0" step="5" value="0"></div>
-                                <div class="form-group"><label for="sup_p_cadenas">Cadenas ($/m)</label><input type="number" id="sup_p_cadenas" min="0" step="10" value="0"></div>
+                            <details class="sup-prices-panel" open>
+                                <summary class="section-subtitle sup-prices-summary">Precios por insumo ($ por unidad)</summary>
+                                <div class="inputs-grid compact cols-3" style="margin-top:0.75rem;">
+                                    <div class="form-group"><label for="sup_p_cinta">Cinta ($/m)</label><input type="number" id="sup_p_cinta" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_cuerina">Cuerina ($/m)</label><input type="number" id="sup_p_cuerina" min="0" step="100" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_cadenas">Cadenas ($/m)</label><input type="number" id="sup_p_cadenas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_argollas">Argollas ($/ud)</label><input type="number" id="sup_p_argollas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_hebillas">Hebillas ($/ud)</label><input type="number" id="sup_p_hebillas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_remaches">Remaches ($/ud)</label><input type="number" id="sup_p_remaches" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_ojalillos">Ojalillos ($/ud)</label><input type="number" id="sup_p_ojalillos" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_varillas">Varillas ($/ud)</label><input type="number" id="sup_p_varillas" min="0" step="10" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_tachas">Tachas ($/ud)</label><input type="number" id="sup_p_tachas" min="0" step="5" value="0"></div>
+                                    <div class="form-group"><label for="sup_p_mosquetones">Mosquetones ($/ud)</label><input type="number" id="sup_p_mosquetones" min="0" step="10" value="0"></div>
+                                </div>
+                            </details>
+                            <div class="sup-form-actions">
+                                <button type="submit" class="btn-primary" id="btn-save-supplier">
+                                    <span class="btn-text">Guardar proveedor</span>
+                                    <div class="btn-loader"></div>
+                                </button>
+                                <button type="button" class="btn-secondary" id="btn-cancel-supplier" onclick="focusNewSupplierForm()" style="display:none;">Cancelar edición</button>
                             </div>
-                            <button type="submit" class="btn-primary" id="btn-save-supplier" style="margin-top:1.5rem;">
-                                <span class="btn-text">Guardar Proveedor</span>
-                                <div class="btn-loader"></div>
-                            </button>
                         </form>
                     </div>
                     <div class="glass-card" style="display:flex;flex-direction:column;">
                         <div class="card-header">
-                            <h2 class="card-title">Proveedores Registrados</h2>
-                            <p class="card-desc">Listado y comparación de precios entre proveedores.</p>
+                            <h2 class="card-title">Proveedores del taller</h2>
+                            <p class="card-desc">Listado. El precio más bajo de cada insumo se marca en verde en la tabla de abajo.</p>
                         </div>
                         <div class="suppliers-list" id="suppliers-list"><!-- Dinámico --></div>
-                        <div class="divider"></div>
-                        <div class="card-header" style="margin-bottom:0.5rem;">
-                            <h2 class="card-title" style="font-size:1rem;">Comparación de Precios</h2>
-                        </div>
-                        <div class="results-table-container">
-                            <table class="data-table small">
-                                <thead id="compare-thead"><tr><th>Insumo</th></tr></thead>
-                                <tbody id="compare-tbody"><!-- Dinámico --></tbody>
-                            </table>
-                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top:1.25rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Comparación de precios</h2>
+                        <p class="card-desc">Una fila por insumo; columnas por proveedor. Verde = mejor precio.</p>
+                    </div>
+                    <div class="results-table-container sup-compare-wrap">
+                        <table class="data-table small" id="sup-compare-table">
+                            <thead id="compare-thead"><tr><th>Insumo</th></tr></thead>
+                            <tbody id="compare-tbody"><!-- Dinámico --></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -1883,6 +1905,6 @@
         <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
     </footer>
 
-    <script src="app.js?v=1.2.3"></script>
+    <script src="app.js?v=1.2.4"></script>
 </body>
 </html>
