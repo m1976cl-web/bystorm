@@ -1690,7 +1690,7 @@ const TAB_META = {
     suppliers: {
         group: 'Insumos',
         title: 'Proveedores',
-        blurb: 'Contactos y comparación de precios de insumos.',
+        blurb: 'Contactos, precios por insumo y comparación (el más barato en verde).',
     },
     trends: {
         group: 'Más',
@@ -4622,42 +4622,138 @@ async function handleUpdateInventory(event) {
 }
 
 // --- MÓDULO: PROVEEDORES ---
+let suppliersCache = [];
+
+const SUPPLIER_PRICE_KEYS = [
+    'cinta', 'cuerina', 'cadenas', 'argollas', 'hebillas',
+    'remaches', 'ojalillos', 'varillas', 'tachas', 'mosquetones',
+];
+
+const SUPPLIER_PRICE_LABELS = {
+    cinta: 'Cinta ($/m)',
+    cuerina: 'Cuerina ($/m)',
+    cadenas: 'Cadenas ($/m)',
+    argollas: 'Argollas',
+    hebillas: 'Hebillas',
+    remaches: 'Remaches',
+    ojalillos: 'Ojalillos',
+    varillas: 'Varillas',
+    tachas: 'Tachas',
+    mosquetones: 'Mosquetones',
+};
+
+function readSupplierPricesFromForm() {
+    const prices = {};
+    SUPPLIER_PRICE_KEYS.forEach(k => {
+        const el = document.getElementById(`sup_p_${k}`);
+        prices[k] = el ? (parseFloat(el.value) || 0) : 0;
+    });
+    return prices;
+}
+
+function fillSupplierPricesForm(prices = {}) {
+    SUPPLIER_PRICE_KEYS.forEach(k => {
+        const el = document.getElementById(`sup_p_${k}`);
+        if (el) el.value = prices[k] || 0;
+    });
+}
+
+function focusNewSupplierForm() {
+    document.getElementById('supplier-form')?.reset();
+    document.getElementById('supplier_edit_id').value = '';
+    fillSupplierPricesForm({});
+    document.getElementById('supplier-form-title').textContent = 'Registrar proveedor';
+    const cancelBtn = document.getElementById('btn-cancel-supplier');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    document.getElementById('supplier-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('sup_name')?.focus();
+}
+window.focusNewSupplierForm = focusNewSupplierForm;
+
+function filterSuppliersList() {
+    const q = (document.getElementById('suppliers-search')?.value || '').trim().toLowerCase();
+    let list = suppliersCache || [];
+    if (q) {
+        list = list.filter(s => {
+            const blob = `${s.name || ''} ${s.contact || ''} ${s.notes || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderSuppliersList(list);
+}
+window.filterSuppliersList = filterSuppliersList;
+
+function renderSuppliersBestPrices(comparison) {
+    const el = document.getElementById('suppliers-best-prices');
+    if (!el) return;
+    // comparison: { item_key: [{supplier, price}, ...] } sorted ascending
+    const cards = [];
+    Object.entries(comparison || {}).forEach(([itemKey, rows]) => {
+        const withPrice = (rows || []).filter(r => r.price > 0);
+        if (!withPrice.length) return;
+        const best = withPrice[0];
+        cards.push(`
+            <div class="sup-best-card">
+                <span class="sup-best-item">${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</span>
+                <span class="sup-best-price">$${Number(best.price).toLocaleString('es-CL')}</span>
+                <span class="sup-best-name">${best.supplier}</span>
+            </div>
+        `);
+    });
+    el.innerHTML = cards.length
+        ? cards.join('')
+        : '<p class="sup-best-empty">Cargá precios en al menos un proveedor para ver el mejor valor por insumo.</p>';
+}
+
+function renderSuppliersList(suppliers) {
+    const list = document.getElementById('suppliers-list');
+    if (!list) return;
+
+    if (!suppliers || suppliers.length === 0) {
+        const q = (document.getElementById('suppliers-search')?.value || '').trim();
+        list.innerHTML = `<p style="text-align:center;color:var(--color-text-muted);padding:1rem;">${
+            q ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores. Usá el formulario de la izquierda.'
+        }</p>`;
+        return;
+    }
+
+    list.innerHTML = '';
+    suppliers.forEach(sup => {
+        const card = document.createElement('div');
+        card.className = 'supplier-card';
+        const pricesHtml = sup.prices
+            ? Object.entries(sup.prices)
+                .filter(([, v]) => v > 0)
+                .map(([k, v]) => `<span class="sup-price-chip">${SUPPLIER_PRICE_LABELS[k] || k}: $${Number(v).toLocaleString('es-CL')}</span>`)
+                .join('')
+            : '';
+        const safeName = (sup.name || '').replace(/'/g, "\\'");
+        const contact = sup.contact || '';
+        const waDigits = contact.replace(/\D/g, '');
+        card.innerHTML = `
+            <div class="supplier-card-top">
+                <div>
+                    <h4>${sup.name}</h4>
+                    ${contact ? `<div class="supplier-contact">${contact}</div>` : ''}
+                    ${sup.notes ? `<div class="supplier-notes">${sup.notes}</div>` : ''}
+                </div>
+                <div class="supplier-card-actions">
+                    ${waDigits.length > 8 ? `<button type="button" class="client-action-btn load-btn" onclick="window.open('https://wa.me/${waDigits}','_blank')" title="WhatsApp">📱</button>` : ''}
+                    <button type="button" class="client-action-btn edit-btn" onclick="editSupplier('${sup.id}')">✏</button>
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteSupplier('${sup.id}','${safeName}')">✕</button>
+                </div>
+            </div>
+            ${pricesHtml ? `<div class="sup-price-chips">${pricesHtml}</div>` : '<p class="sup-no-prices">Sin precios cargados</p>'}
+        `;
+        list.appendChild(card);
+    });
+}
+
 async function loadSuppliers() {
     try {
         const response = await fetch('/api/suppliers');
-        const suppliers = await response.json();
-        const list = document.getElementById('suppliers-list');
-        if (!list) return;
-
-        if (!suppliers || suppliers.length === 0) {
-            list.innerHTML = '<p style="text-align:center;color:var(--color-text-muted);">No hay proveedores registrados.</p>';
-            return;
-        }
-
-        list.innerHTML = '';
-        suppliers.forEach(sup => {
-            const card = document.createElement('div');
-            card.className = 'supplier-card';
-            const pricesHtml = sup.prices ? Object.entries(sup.prices)
-                .filter(([k,v]) => v > 0)
-                .map(([k,v]) => `<span style="font-size:0.75rem;color:var(--accent-steel);">${k}: $${v}</span>`)
-                .join(' · ') : '';
-            card.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
-                        <h4>${sup.name}</h4>
-                        ${sup.contact ? `<div class="supplier-contact">${sup.contact}</div>` : ''}
-                        ${sup.notes ? `<div class="supplier-notes">${sup.notes}</div>` : ''}
-                        ${pricesHtml ? `<div style="margin-top:0.5rem;">${pricesHtml}</div>` : ''}
-                    </div>
-                    <div style="display:flex;gap:0.3rem;flex-shrink:0;">
-                        <button class="client-action-btn edit-btn" onclick="editSupplier('${sup.id}')">✏ Editar</button>
-                        <button class="client-action-btn delete-btn" onclick="deleteSupplier('${sup.id}','${sup.name}')">✕ Borrar</button>
-                    </div>
-                </div>
-            `;
-            list.appendChild(card);
-        });
+        suppliersCache = await response.json();
+        filterSuppliersList();
     } catch (error) {
         console.error('Error loading suppliers:', error);
     }
@@ -4666,18 +4762,16 @@ async function loadSuppliers() {
 async function handleSaveSupplier(event) {
     event.preventDefault();
     const editId = document.getElementById('supplier_edit_id').value;
+    const name = document.getElementById('sup_name').value.trim();
+    if (!name) {
+        showToast('Ingresá el nombre del proveedor', 'warning');
+        return;
+    }
     const payload = {
-        name: document.getElementById('sup_name').value.trim(),
+        name,
         contact: document.getElementById('sup_contact').value.trim(),
         notes: document.getElementById('sup_notes').value.trim(),
-        prices: {
-            cinta: parseFloat(document.getElementById('sup_p_cinta').value) || 0,
-            argollas: parseFloat(document.getElementById('sup_p_argollas').value) || 0,
-            hebillas: parseFloat(document.getElementById('sup_p_hebillas').value) || 0,
-            remaches: parseFloat(document.getElementById('sup_p_remaches').value) || 0,
-            ojalillos: parseFloat(document.getElementById('sup_p_ojalillos').value) || 0,
-            cadenas: parseFloat(document.getElementById('sup_p_cadenas').value) || 0
-        }
+        prices: readSupplierPricesFromForm(),
     };
 
     try {
@@ -4688,12 +4782,13 @@ async function handleSaveSupplier(event) {
         const response = await fetch(url, {
             method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
-        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error'); }
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Error al guardar');
+        }
 
-        document.getElementById('supplier-form').reset();
-        document.getElementById('supplier_edit_id').value = '';
-        document.getElementById('supplier-form-title').textContent = 'Registrar Proveedor';
-        showToast('Proveedor guardado exitosamente', 'success');
+        focusNewSupplierForm();
+        showToast(editId ? 'Proveedor actualizado' : 'Proveedor guardado', 'success');
         await loadSuppliers();
         await loadPriceComparison();
     } catch (error) {
@@ -4703,25 +4798,19 @@ async function handleSaveSupplier(event) {
 
 async function editSupplier(id) {
     try {
-        const response = await fetch('/api/suppliers');
-        const suppliers = await response.json();
-        const sup = suppliers.find(s => s.id === id);
+        const sup = (suppliersCache || []).find(s => s.id === id)
+            || (await (await fetch('/api/suppliers')).json()).find(s => s.id === id);
         if (!sup) return;
 
         document.getElementById('supplier_edit_id').value = sup.id;
         document.getElementById('sup_name').value = sup.name;
         document.getElementById('sup_contact').value = sup.contact || '';
         document.getElementById('sup_notes').value = sup.notes || '';
-        if (sup.prices) {
-            document.getElementById('sup_p_cinta').value = sup.prices.cinta || 0;
-            document.getElementById('sup_p_argollas').value = sup.prices.argollas || 0;
-            document.getElementById('sup_p_hebillas').value = sup.prices.hebillas || 0;
-            document.getElementById('sup_p_remaches').value = sup.prices.remaches || 0;
-            document.getElementById('sup_p_ojalillos').value = sup.prices.ojalillos || 0;
-            document.getElementById('sup_p_cadenas').value = sup.prices.cadenas || 0;
-        }
+        fillSupplierPricesForm(sup.prices || {});
         document.getElementById('supplier-form-title').textContent = `Editando: ${sup.name}`;
-        document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth' });
+        const cancelBtn = document.getElementById('btn-cancel-supplier');
+        if (cancelBtn) cancelBtn.style.display = '';
+        document.getElementById('supplier-form-card')?.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
         showToast('Error al cargar proveedor', 'error');
     }
@@ -4743,34 +4832,51 @@ async function deleteSupplier(id, name) {
 async function loadPriceComparison() {
     try {
         const response = await fetch('/api/suppliers/compare');
-        const data = await response.json();
+        // API real: { item_key: [ { supplier, price }, ... ] } ordenado por precio
+        const comparison = await response.json();
         const thead = document.getElementById('compare-thead');
         const tbody = document.getElementById('compare-tbody');
         if (!thead || !tbody) return;
 
-        if (!data.suppliers || data.suppliers.length === 0) {
+        renderSuppliersBestPrices(comparison);
+
+        const supplierNames = [];
+        Object.values(comparison || {}).forEach(rows => {
+            (rows || []).forEach(r => {
+                if (r.supplier && !supplierNames.includes(r.supplier)) supplierNames.push(r.supplier);
+            });
+        });
+
+        if (!supplierNames.length) {
             thead.innerHTML = '<tr><th>Insumo</th></tr>';
-            tbody.innerHTML = '<tr><td style="color:var(--color-text-muted);text-align:center;">Agrega proveedores para comparar</td></tr>';
+            tbody.innerHTML = '<tr><td style="color:var(--color-text-muted);text-align:center;">Agregá proveedores con precios para comparar</td></tr>';
             return;
         }
 
         let headRow = '<th>Insumo</th>';
-        data.suppliers.forEach(s => { headRow += `<th>${s}</th>`; });
+        supplierNames.forEach(s => { headRow += `<th>${s}</th>`; });
         thead.innerHTML = `<tr>${headRow}</tr>`;
 
         tbody.innerHTML = '';
-        if (data.items) {
-            for (const [item, prices] of Object.entries(data.items)) {
-                const minPrice = Math.min(...Object.values(prices).filter(v => v > 0));
-                let row = `<td><strong>${item}</strong></td>`;
-                data.suppliers.forEach(s => {
-                    const val = prices[s] || 0;
-                    const cls = (val > 0 && val === minPrice) ? ' class="price-highlight"' : '';
-                    row += `<td${cls}>${val > 0 ? '$' + val.toLocaleString() : '—'}</td>`;
-                });
-                tbody.innerHTML += `<tr>${row}</tr>`;
-            }
-        }
+        const itemKeys = Object.keys(comparison || {}).sort((a, b) =>
+            (SUPPLIER_PRICE_LABELS[a] || a).localeCompare(SUPPLIER_PRICE_LABELS[b] || b, 'es')
+        );
+
+        itemKeys.forEach(itemKey => {
+            const rows = comparison[itemKey] || [];
+            const byName = {};
+            rows.forEach(r => { byName[r.supplier] = r.price; });
+            const positive = rows.filter(r => r.price > 0).map(r => r.price);
+            const minPrice = positive.length ? Math.min(...positive) : null;
+
+            let row = `<td><strong>${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</strong></td>`;
+            supplierNames.forEach(s => {
+                const val = byName[s] || 0;
+                const cls = (val > 0 && minPrice != null && val === minPrice) ? ' class="price-highlight"' : '';
+                row += `<td${cls}>${val > 0 ? '$' + Number(val).toLocaleString('es-CL') : '—'}</td>`;
+            });
+            tbody.innerHTML += `<tr>${row}</tr>`;
+        });
     } catch (error) {
         console.error('Error loading price comparison:', error);
     }
