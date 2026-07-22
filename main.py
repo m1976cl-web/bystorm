@@ -1739,6 +1739,66 @@ def get_inventory_movements():
     return movements
 
 
+@app.get("/api/inventory/supplier-order-list")
+def get_supplier_order_list():
+    """Calcula la lista consolidada de insumos a pedir a proveedores según las órdenes activas."""
+    orders = [o for o in _load_orders() if o.get("status") in ("pendiente", "en_confeccion")]
+    needed_totals: Dict[str, float] = {}
+
+    for order in orders:
+        product_key = order.get("product_key")
+        qty = int(order.get("quantity") or 1)
+        bom = DEFAULT_BOMS.get(product_key)
+        if not bom:
+            continue
+        order_needed = {
+            "argollas": bom.argollas * qty,
+            "hebillas": bom.hebillas * qty,
+            "remaches": bom.remaches * qty,
+            "ojalillos": bom.ojalillos * qty,
+            "varillas": bom.varillas * qty,
+            "cadenas": bom.cadenas * qty,
+            "tachas": bom.tachas * qty,
+            "mosquetones": bom.mosquetones * qty,
+            "cinta": bom.cinta * qty,
+        }
+        for k, v in order_needed.items():
+            if v > 0:
+                needed_totals[k] = needed_totals.get(k, 0.0) + v
+
+    inventory = {i["item_key"]: i for i in _load_inventory()}
+    missing_items = []
+    text_lines = ["📦 *PEDIDO DE INSUMOS - TORMENTA INDUMENTARIA*", "━━━━━━━━━━━━━━━━━━━━━━━"]
+
+    for key, total_needed in needed_totals.items():
+        inv_item = inventory.get(key, {"name": key, "stock": 0.0, "unit": "uds"})
+        current_stock = float(inv_item.get("stock", 0.0))
+        shortage = round(max(0.0, total_needed - current_stock), 2)
+        if shortage > 0:
+            missing_items.append({
+                "item_key": key,
+                "name": inv_item.get("name", key),
+                "total_needed": total_needed,
+                "current_stock": current_stock,
+                "shortage": shortage,
+                "unit": inv_item.get("unit", "uds")
+            })
+            text_lines.append(f"• {inv_item.get('name', key)}: {shortage} {inv_item.get('unit', 'uds')}")
+
+    if not missing_items:
+        text_message = "✅ ¡Stock suficiente! No hay insumos faltantes para las órdenes activas del taller."
+    else:
+        text_lines.append("━━━━━━━━━━━━━━━━━━━━━━━")
+        text_lines.append("📌 Favor confirmar disponibilidad y tiempos de despacho.")
+        text_message = "\n".join(text_lines)
+
+    return {
+        "active_orders_count": len(orders),
+        "missing_items": missing_items,
+        "text_message": text_message
+    }
+
+
 
 # --- ENDPOINTS DE PROVEEDORES ---
 

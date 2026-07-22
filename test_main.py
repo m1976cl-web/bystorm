@@ -588,3 +588,13 @@ def test_t6_terminado_idempotent():
 
     client.delete(f"/api/orders/{oid}")
 
+
+def test_supplier_order_list():
+    """Prueba la generación de lista de compras para proveedores."""
+    r = client.get("/api/inventory/supplier-order-list")
+    assert r.status_code == 200
+    data = r.json()
+    assert "active_orders_count" in data
+    assert "missing_items" in data
+    assert "text_message" in data
+

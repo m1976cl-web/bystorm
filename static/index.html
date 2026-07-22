@@ -23,7 +23,13 @@
         </div>
         <div class="header-status">
             <span class="status-indicator online"></span>
-            <span class="status-text">Taller Conectado</span>
+            <span class="status-text hide-mobile">Taller Conectado</span>
+            <button class="workshop-mode-btn" id="btn-workshop-toggle" onclick="toggleWorkshopMode()" title="Activar Modo Taller (medidas grandes, sin montos)" style="background:rgba(197,160,89,0.2);border:1px solid #c5a059;color:#c5a059;border-radius:6px;padding:4px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                <span>✂️</span> <span>Modo Taller</span>
+            </button>
+            <button class="search-modal-btn" onclick="openGlobalSearch()" title="Buscar en todo el taller (Ctrl + K)" style="background:rgba(255,255,255,0.08);border:1px solid var(--border-color);color:var(--color-text-main);border-radius:6px;padding:4px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                <span>🔍</span> <span class="hide-mobile">Ctrl + K</span>
+            </button>
             <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
                 <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             </button>
@@ -1590,6 +1596,9 @@
                         <button type="button" class="orders-filter-btn" data-inv-filter="bajo" onclick="setInventoryFilter('bajo')">Bajos</button>
                         <button type="button" class="orders-filter-btn" data-inv-filter="ok" onclick="setInventoryFilter('ok')">OK</button>
                     </div>
+                    <button type="button" class="btn-secondary" onclick="generateSupplierOrderList()" style="display:inline-flex;align-items:center;gap:6px;padding:0.5rem 0.9rem;font-size:0.85rem;">
+                        <span>📦</span> <span>Generar Lista de Compras</span>
+                    </button>
                 </div>
 
                 <div class="grid-two-cols">
@@ -1895,6 +1904,20 @@
                 </div>
             </div>
             <button class="backup-close-btn" onclick="toggleBackupModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal Buscador Global (Ctrl + K) -->
+    <div id="global-search-modal" class="modal-backdrop hidden" onclick="closeGlobalSearch(event)">
+        <div class="modal-card" style="max-width:550px;margin-top:10vh;background:rgba(20,20,25,0.95);backdrop-filter:blur(15px);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;" onclick="event.stopPropagation()">
+            <div style="display:flex;gap:0.75rem;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:0.8rem;margin-bottom:1rem;">
+                <span style="font-size:1.3rem;">🔍</span>
+                <input type="text" id="global-search-input" placeholder="Buscar clientes, prendas, órdenes, insumos... (ESC para cerrar)" style="flex:1;background:transparent;border:none;outline:none;font-size:1.1rem;color:var(--color-text-main);" oninput="handleGlobalSearch(this.value)">
+                <button type="button" onclick="closeGlobalSearch()" style="background:none;border:none;color:var(--color-text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+            </div>
+            <div id="global-search-results" style="max-height:350px;overflow-y:auto;display:flex;flex-direction:column;gap:0.4rem;">
+                <div style="color:var(--color-text-muted);font-size:0.85rem;text-align:center;padding:1.5rem 0;">Escribe para buscar en todo Bystorm...</div>
+            </div>
         </div>
     </div>
 
