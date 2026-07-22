@@ -3174,7 +3174,7 @@ function renderCatalogList(catalog) {
                 <div class="client-card-actions">
                     <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${key}')" title="Usar en orden">📋</button>
                     <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${key}')" title="Usar en cotizador">💰</button>
-                    <button type="button" class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="openBOMEditModal('${key}')" title="Editar Ficha Técnica BOM">✏️ BOM</button>
                     ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕</button>` : ''}
                 </div>
             </div>
@@ -5759,6 +5759,140 @@ async function generateSupplierOrderList() {
         });
         
         alert(`📦 LISTA DE COMPRAS A PROVEEDORES\n(Basada en ${data.active_orders_count} órdenes activas del taller)\n\n${data.text_message}`);
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+// --- OPTION A: EXPORTAR PATRONES EN PDF (A4 / PLÓTER 1:1) ---
+function exportScaledPatternsToPDF(mode = 'a4') {
+    const table = document.querySelector('#scaling-results table');
+    if (!table) {
+        showToast('Primero calculá el escalado de moldería', 'warning');
+        return;
+    }
+
+    const baseSize = document.getElementById('base_size')?.value || 'M';
+    const contourInc = document.getElementById('contour_increment')?.value || '4.0';
+    const neckInc = document.getElementById('neck_increment')?.value || '1.5';
+    const factor = document.getElementById('scaling_factor')?.value || '1.0';
+
+    const isPlotter = mode === 'plotter';
+    const titleText = isPlotter 
+        ? "🖨️ TRAZADO PARA PLÓTER A TAMAÑO REAL 1:1 (ROLLO CONTINUO WIDE-FORMAT 90CM)" 
+        : "📄 FICHA DE GRADUACIÓN Y PATRONES (FORMATO A4 / CARTA IMPRESIÓN CASERA)";
+
+    const printWin = window.open('', '_blank');
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Tormenta Indumentaria - Patrones Moldería ${isPlotter ? 'Plóter 1:1' : 'A4'}</title>
+            <style>
+                body { font-family: 'Outfit', sans-serif; padding: 25px; color: #111; ${isPlotter ? 'width: 950px; background: #fff;' : 'background: #fff;'} }
+                h1 { margin-bottom: 2px; font-size: 1.5rem; letter-spacing: 2px; }
+                h2 { color: #555; font-size: 0.9rem; margin-top: 0; font-weight: normal; }
+                .meta-box { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 0.85rem; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                th, td { border: 1px solid #888; padding: 8px 12px; text-align: center; font-size: 0.9rem; }
+                th { background: #eee; }
+                .scale-check { border: 2px dashed #111; display: inline-block; padding: 15px; margin-top: 25px; text-align: center; font-size: 0.85rem; background: #fff; border-radius: 6px; }
+                .box-10cm { width: 378px; height: 40px; border: 2px solid #000; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; background: #fafafa; }
+            </style>
+        </head>
+        <body>
+            <h1>TORMENTA INDUMENTARIA</h1>
+            <h2>${titleText}</h2>
+            <div class="meta-box">
+                <strong>Parámetros de Escalado:</strong> Prototipo Base: <b>Talla ${baseSize}</b> · Incremento Contornos: <b>${contourInc} cm</b> · Incremento Cuello: <b>${neckInc} cm</b> · Factor Ajuste: <b>${factor}x</b><br>
+                <em>Fecha de Generación: ${new Date().toLocaleDateString('es-CL')} ${new Date().toLocaleTimeString('es-CL')}</em>
+            </div>
+            ${table.outerHTML}
+            <div class="scale-check">
+                <strong>📏 REGLA FÍSICA DE COMPROBACIÓN ESCALA TAMAÑO REAL 1:1:</strong><br>
+                ${isPlotter ? 'Regla vectorial de calibración continua plóter: debe medir exactamente 10 cm reales.' : 'Verificar con una regla física que el rectángulo de abajo mida exactamente 10 cm de ancho al imprimir.'}
+                <div class="box-10cm">◄ 10 cm EXACTOS (1:1 REAL) ►</div>
+                <span>Impresión plóter/impresora: Seleccionar "Tamaño Real / Escala 100%" (Sin ajustar a página).</span>
+            </div>
+            <script>
+                window.onload = function() { window.print(); };
+            </script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
+}
+
+// --- OPTION C: EDICIÓN VISUAL DE BOM (CATÁLOGO) ---
+async function openBOMEditModal(productKey) {
+    let products = {};
+    try {
+        const res = await fetch('/api/products');
+        if (res.ok) products = await res.json();
+    } catch (e) {
+        products = getMockData('products') || {};
+    }
+
+    const prod = products[productKey] || {};
+    const modal = document.getElementById('bom-edit-modal');
+    if (!modal) return;
+
+    document.getElementById('bom_edit_product_key').value = productKey;
+    document.getElementById('bom-modal-title').textContent = `✏️ Editar Ficha Técnica: ${prod.name || productKey}`;
+
+    document.getElementById('bom_edit_cinta').value = prod.cinta || 0;
+    document.getElementById('bom_edit_argollas').value = prod.argollas || 0;
+    document.getElementById('bom_edit_hebillas').value = prod.hebillas || 0;
+    document.getElementById('bom_edit_remaches').value = prod.remaches || 0;
+    document.getElementById('bom_edit_ojalillos').value = prod.ojalillos || 0;
+    document.getElementById('bom_edit_varillas').value = prod.varillas || 0;
+    document.getElementById('bom_edit_cadenas').value = prod.cadenas || 0;
+    document.getElementById('bom_edit_tachas').value = prod.tachas || 0;
+    document.getElementById('bom_edit_mosquetones').value = prod.mosquetones || 0;
+    document.getElementById('bom_edit_panels_count').value = prod.panels_count || 0;
+
+    modal.classList.remove('hidden');
+    triggerHaptic('light');
+}
+
+function closeBOMEditModal(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('bom-edit-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handleSaveBOMEdit(e) {
+    e.preventDefault();
+    const productKey = document.getElementById('bom_edit_product_key').value;
+    if (!productKey) return;
+
+    const payload = {
+        bom: {
+            cinta: parseFloat(document.getElementById('bom_edit_cinta').value || 0),
+            argollas: parseInt(document.getElementById('bom_edit_argollas').value || 0),
+            hebillas: parseInt(document.getElementById('bom_edit_hebillas').value || 0),
+            remaches: parseInt(document.getElementById('bom_edit_remaches').value || 0),
+            ojalillos: parseInt(document.getElementById('bom_edit_ojalillos').value || 0),
+            varillas: parseInt(document.getElementById('bom_edit_varillas').value || 0),
+            cadenas: parseFloat(document.getElementById('bom_edit_cadenas').value || 0),
+            tachas: parseInt(document.getElementById('bom_edit_tachas').value || 0),
+            mosquetones: parseInt(document.getElementById('bom_edit_mosquetones').value || 0),
+            panels_count: parseInt(document.getElementById('bom_edit_panels_count').value || 0),
+        }
+    };
+
+    try {
+        const response = await fetch(`/api/products/${productKey}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Error al actualizar ficha BOM');
+
+        showToast('¡Ficha técnica BOM actualizada con éxito!', 'success');
+        closeBOMEditModal();
+        if (typeof loadCatalog === 'function') await loadCatalog();
     } catch (error) {
         showToast(error.message, 'error');
     }
