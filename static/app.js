@@ -1518,6 +1518,9 @@ let chartInstances = {};
 
 // --- TOAST NOTIFICATION SYSTEM ---
 function showToast(message, type = 'info') {
+    if (typeof triggerHaptic === 'function') {
+        triggerHaptic(type === 'error' ? 'error' : (type === 'success' ? 'success' : 'light'));
+    }
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
@@ -1753,7 +1756,21 @@ function ensureModuleHeaders() {
     });
 }
 
+function triggerHaptic(type = 'light') {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+            if (type === 'light') navigator.vibrate(20);
+            else if (type === 'medium') navigator.vibrate(40);
+            else if (type === 'success') navigator.vibrate([30, 30, 50]);
+            else if (type === 'error') navigator.vibrate([50, 40, 50, 40, 50]);
+        } catch (e) {
+            // Ignore
+        }
+    }
+}
+
 function switchTab(tabId, options = {}) {
+    triggerHaptic('light');
     if (!tabId || !document.getElementById(`pane-${tabId}`)) {
         console.warn(`No se encontró el panel con ID: pane-${tabId}`);
         return;

@@ -3765,3 +3765,40 @@ input[type="date"]:focus {
     }
 }
 
+/* --- MEJORAS DE ERGONOMÍA TOUCH Y MÓVIL (#5) --- */
+@media (max-width: 768px) {
+    /* Auto-zoom prevent on iOS */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Target táctil cómodo */
+    .tab-btn,
+    .btn-primary,
+    .btn-secondary,
+    .kanban-advance-btn,
+    .kanban-wa-btn,
+    .kanban-delete-btn,
+    .client-action-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    /* Feedback visual inmediato al presionar */
+    button:active,
+    .tab-btn:active,
+    .kanban-card:active {
+        transform: scale(0.96) !important;
+        transition: transform 0.08s ease;
+    }
+}
+
