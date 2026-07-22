@@ -909,6 +909,73 @@ def optimize_batch(request: BatchProductionRequest):
     }
 
 
+def deduct_bom_for_product(product_key: str, quantity: int, reference_text: str) -> dict:
+    """
+    Verifica y descuenta el stock de inventario para una prenda según su BOM.
+    Retorna los requerimientos descontados. Lanza HTTPException(400) si falta stock.
+    """
+    if not product_key or product_key == "custom":
+        return {}
+        
+    products = _load_products()
+    if product_key not in products:
+        return {}
+        
+    prod_data = products[product_key]
+    bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
+    
+    needed = {
+        "cinta": round(bom.cinta * quantity, 2),
+        "cadenas": round(bom.cadenas * quantity, 2),
+        "argollas": bom.argollas * quantity,
+        "hebillas": bom.hebillas * quantity,
+        "remaches": bom.remaches * quantity,
+        "ojalillos": bom.ojalillos * quantity,
+        "varillas": bom.varillas * quantity,
+        "tachas": bom.tachas * quantity,
+        "mosquetones": bom.mosquetones * quantity,
+    }
+    
+    if bom.panels_count > 0 and bom.panel_width > 0 and bom.panel_height > 0:
+        needed["cuerina_rollo"] = calculate_cuerina_consumed_m(
+            bom.panel_width, bom.panel_height, bom.panels_count * quantity
+        )
+        
+    needed = {k: v for k, v in needed.items() if v > 0}
+    if not needed:
+        return {}
+        
+    inventory = _load_inventory()
+    inventory_dict = {item["item_key"]: item for item in inventory}
+    shortages = []
+    for key, qty in needed.items():
+        inv_item = inventory_dict.get(key)
+        if not inv_item:
+            shortages.append(f"Insumo '{key}' no encontrado en inventario")
+        elif inv_item["stock"] < qty:
+            shortages.append(
+                f"{inv_item['name']} (falta {round(qty - inv_item['stock'], 2)} {inv_item['unit']})"
+            )
+            
+    if shortages:
+        raise HTTPException(
+            status_code=400,
+            detail="Falta stock de materiales: " + ", ".join(shortages)
+        )
+        
+    for key, qty in needed.items():
+        inventory_dict[key]["stock"] = round(inventory_dict[key]["stock"] - qty, 2)
+        _log_movement(
+            item_key=key,
+            quantity=-qty,
+            movement_type="produccion",
+            reference=reference_text
+        )
+        
+    _save_inventory(list(inventory_dict.values()))
+    return needed
+
+
 @app.get("/api/production")
 def get_production_history():
     """Retorna el historial de producción."""
@@ -918,66 +985,12 @@ def get_production_history():
 @app.post("/api/production", status_code=201)
 def add_production_record(record: ProductionRecord):
     """Agrega un registro de producción al historial y descuenta automáticamente del inventario."""
-    # 1. Validar y descontar stock de inventario si product_key está presente y es válido
-    if record.product_key and record.product_key != "custom":
-        products = _load_products()
-        if record.product_key in products:
-            prod_data = products[record.product_key]
-            bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
-            
-            # Calcular requerimientos
-            needed = {
-                "cinta": round(bom.cinta * record.quantity, 2),
-                "cadenas": round(bom.cadenas * record.quantity, 2),
-                "argollas": bom.argollas * record.quantity,
-                "hebillas": bom.hebillas * record.quantity,
-                "remaches": bom.remaches * record.quantity,
-                "ojalillos": bom.ojalillos * record.quantity,
-                "varillas": bom.varillas * record.quantity,
-                "tachas": bom.tachas * record.quantity,
-                "mosquetones": bom.mosquetones * record.quantity,
-            }
-            
-            if bom.panels_count > 0 and bom.panel_width > 0 and bom.panel_height > 0:
-                needed["cuerina_rollo"] = calculate_cuerina_consumed_m(
-                    bom.panel_width, bom.panel_height, bom.panels_count * record.quantity
-                )
-                
-            needed = {k: v for k, v in needed.items() if v > 0}
-            
-            # Verificar stock disponible
-            inventory = _load_inventory()
-            inventory_dict = {item["item_key"]: item for item in inventory}
-            shortages = []
-            for key, qty in needed.items():
-                inv_item = inventory_dict.get(key)
-                if not inv_item:
-                    shortages.append(f"Insumo '{key}' no encontrado en inventario")
-                elif inv_item["stock"] < qty:
-                    shortages.append(
-                        f"{inv_item['name']} (falta {round(qty - inv_item['stock'], 2)} {inv_item['unit']})"
-                    )
-                    
-            if shortages:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Falta stock de materiales: " + ", ".join(shortages)
-                )
-                
-            # Todo OK. Descontar y loggear
-            for key, qty in needed.items():
-                inventory_dict[key]["stock"] = round(inventory_dict[key]["stock"] - qty, 2)
-                _log_movement(
-                    item_key=key,
-                    quantity=-qty,
-                    movement_type="produccion",
-                    reference=f"Confección de {record.quantity}x {record.product_name}"
-                )
-                
-            # Guardar inventario actualizado
-            _save_inventory(list(inventory_dict.values()))
+    deduct_bom_for_product(
+        product_key=record.product_key,
+        quantity=record.quantity,
+        reference_text=f"Confección de {record.quantity}x {record.product_name}"
+    )
 
-    # 2. Guardar registro de producción
     records = _load_production()
     new_record = {
         "id": str(uuid.uuid4())[:8],
@@ -1250,18 +1263,31 @@ VALID_ORDER_STATUSES = {"pendiente", "en_confeccion", "terminado", "entregado"}
 
 class OrderCreate(BaseModel):
     client_id: str = ""
-    client_name: str
+    client_name: str = ""
     product_key: str
-    product_name: str
+    product_name: str = ""
+    quantity: int = 1
     size: str = "M"
     custom_notes: str = ""
-    quoted_price: float = 0
+    quoted_price: float = 0.0
+    deposit_amount: float = 0.0
+    deposit_date: Optional[str] = None
     due_date: str = ""
     status: str = "pendiente"
+    materials_cost_snapshot: Optional[float] = None
+    labor_cost_snapshot: Optional[float] = None
+    retail_price_snapshot: Optional[float] = None
+    stock_deducted: bool = False
+    production_id: Optional[str] = None
+    contact_phone: str = ""
+    status_updated_at: Optional[str] = None
 
 
 class OrderResponse(OrderCreate):
     id: str
+    amount_paid_total: float = 0.0
+    balance_amount: float = 0.0
+    payment_status: str = "sin_pago"
     created_at: str
     updated_at: str
 
@@ -1270,12 +1296,58 @@ class OrderStatusUpdate(BaseModel):
     status: str
 
 
+class OrderFromQuoteRequest(BaseModel):
+    client_id: str = ""
+    client_name: str = ""
+    product_key: str
+    product_name: str = ""
+    quantity: int = 1
+    size: str = "M"
+    quoted_price: float = 0.0
+    deposit_amount: float = 0.0
+    due_date: str = ""
+    materials_cost_snapshot: Optional[float] = None
+    labor_cost_snapshot: Optional[float] = None
+    retail_price_snapshot: Optional[float] = None
+    notes: str = ""
+    contact_phone: str = ""
+
+
+def compute_order_fields(order_dict: dict) -> dict:
+    quoted_price = float(order_dict.get("quoted_price") or order_dict.get("retail_price_snapshot") or 0.0)
+    deposit_amount = float(order_dict.get("deposit_amount") or 0.0)
+    amount_paid_total = float(order_dict.get("amount_paid_total") if order_dict.get("amount_paid_total") is not None else deposit_amount)
+    
+    balance_amount = max(0.0, quoted_price - amount_paid_total)
+    
+    if quoted_price > 0 and amount_paid_total >= quoted_price:
+        payment_status = "pagado"
+    elif amount_paid_total > 0:
+        payment_status = "seña"
+    else:
+        payment_status = "sin_pago"
+
+    order_dict["quoted_price"] = quoted_price
+    order_dict["deposit_amount"] = deposit_amount
+    order_dict["amount_paid_total"] = amount_paid_total
+    order_dict["balance_amount"] = balance_amount
+    order_dict["payment_status"] = payment_status
+    if "stock_deducted" not in order_dict:
+        order_dict["stock_deducted"] = False
+    if "quantity" not in order_dict or not order_dict["quantity"]:
+        order_dict["quantity"] = 1
+    if "size" not in order_dict or not order_dict["size"]:
+        order_dict["size"] = "M"
+    return order_dict
+
+
 def _load_orders() -> List[dict]:
     if not os.path.exists(ORDERS_FILE):
         return []
     try:
         with open(ORDERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            raw_orders = json.load(f)
+            return [compute_order_fields(o) for o in raw_orders]
     except (json.JSONDecodeError, IOError):
         return []
 
@@ -1472,11 +1544,52 @@ def create_order(order: OrderCreate):
         "id": str(uuid.uuid4())[:8],
         **order.model_dump(),
         "created_at": now,
-        "updated_at": now
+        "updated_at": now,
+        "status_updated_at": now
     }
+    new_order = compute_order_fields(new_order)
     orders.append(new_order)
     _save_orders(orders)
     return new_order
+
+
+@app.post("/api/orders/from-quote", status_code=201)
+def create_order_from_quote(quote_req: OrderFromQuoteRequest):
+    """Crea un pedido de producción a partir de una cotización del taller."""
+    orders = _load_orders()
+    now = datetime.now().isoformat()
+    
+    quoted_price = quote_req.quoted_price or quote_req.retail_price_snapshot or 0.0
+    deposit_amount = quote_req.deposit_amount or 0.0
+    
+    order_dict = {
+        "id": str(uuid.uuid4())[:8],
+        "client_id": quote_req.client_id,
+        "client_name": quote_req.client_name or "Cliente Cotización",
+        "product_key": quote_req.product_key,
+        "product_name": quote_req.product_name or quote_req.product_key,
+        "quantity": quote_req.quantity,
+        "size": quote_req.size,
+        "custom_notes": quote_req.notes,
+        "quoted_price": quoted_price,
+        "deposit_amount": deposit_amount,
+        "deposit_date": now if deposit_amount > 0 else None,
+        "due_date": quote_req.due_date,
+        "status": "pendiente",
+        "status_updated_at": now,
+        "materials_cost_snapshot": quote_req.materials_cost_snapshot,
+        "labor_cost_snapshot": quote_req.labor_cost_snapshot,
+        "retail_price_snapshot": quote_req.retail_price_snapshot,
+        "stock_deducted": False,
+        "production_id": None,
+        "contact_phone": quote_req.contact_phone,
+        "created_at": now,
+        "updated_at": now
+    }
+    order_dict = compute_order_fields(order_dict)
+    orders.append(order_dict)
+    _save_orders(orders)
+    return order_dict
 
 
 @app.put("/api/orders/{order_id}")
@@ -1487,11 +1600,13 @@ def update_order(order_id: str, order: OrderCreate):
     orders = _load_orders()
     for i, o in enumerate(orders):
         if o["id"] == order_id:
-            orders[i] = {
+            updated = {
                 **o,
                 **order.model_dump(),
                 "updated_at": datetime.now().isoformat()
             }
+            updated = compute_order_fields(updated)
+            orders[i] = updated
             _save_orders(orders)
             return orders[i]
     raise HTTPException(status_code=404, detail="Pedido no encontrado.")
@@ -1499,16 +1614,103 @@ def update_order(order_id: str, order: OrderCreate):
 
 @app.put("/api/orders/{order_id}/status")
 def update_order_status(order_id: str, body: OrderStatusUpdate):
-    """Actualiza solo el estado de un pedido (pendiente → en_confeccion → terminado → entregado)."""
+    """
+    Actualiza solo el estado de un pedido.
+    Al pasar a 'terminado', descuenta automáticamente el BOM del inventario y genera el registro de producción (idempotente).
+    """
     if body.status not in VALID_ORDER_STATUSES:
         raise HTTPException(status_code=400, detail=f"Estado no válido. Opciones: {', '.join(VALID_ORDER_STATUSES)}")
     orders = _load_orders()
     for i, o in enumerate(orders):
         if o["id"] == order_id:
-            orders[i]["status"] = body.status
-            orders[i]["updated_at"] = datetime.now().isoformat()
+            now = datetime.now().isoformat()
+            new_status = body.status
+            
+            # Orquestación de descuento de stock al pasar a terminado
+            if new_status == "terminado" and not o.get("stock_deducted"):
+                prod_key = o.get("product_key", "")
+                qty = o.get("quantity", 1)
+                prod_name = o.get("product_name") or prod_key
+                
+                # 1. Descontar inventario (lanza HTTP 400 si falta stock)
+                deduct_bom_for_product(
+                    product_key=prod_key,
+                    quantity=qty,
+                    reference_text=f"Pedido #{order_id} - {prod_name}"
+                )
+                
+                # 2. Registrar producción automáticamente
+                prod_id = str(uuid.uuid4())[:8]
+                mat_cost = float(o.get("materials_cost_snapshot") or 0.0)
+                labor_cost = float(o.get("labor_cost_snapshot") or 0.0)
+                quoted_price = float(o.get("quoted_price") or o.get("retail_price_snapshot") or 0.0)
+                profit = quoted_price - (mat_cost + labor_cost)
+                
+                prod_record = {
+                    "id": prod_id,
+                    "date": now,
+                    "product_name": prod_name,
+                    "quantity": qty,
+                    "materials_cost": mat_cost,
+                    "labor_cost": labor_cost,
+                    "retail_price": quoted_price,
+                    "profit": round(profit, 2),
+                    "product_key": prod_key,
+                    "order_id": order_id
+                }
+                prods = _load_production()
+                prods.append(prod_record)
+                _save_production(prods)
+                
+                orders[i]["stock_deducted"] = True
+                orders[i]["production_id"] = prod_id
+
+            orders[i]["status"] = new_status
+            orders[i]["status_updated_at"] = now
+            orders[i]["updated_at"] = now
+            orders[i] = compute_order_fields(orders[i])
             _save_orders(orders)
             return orders[i]
+    raise HTTPException(status_code=404, detail="Pedido no encontrado.")
+
+
+@app.get("/api/orders/{order_id}/whatsapp-ready")
+def get_whatsapp_ready(order_id: str):
+    """Genera el mensaje y enlace wa.me para avisar que un pedido está listo."""
+    orders = _load_orders()
+    for o in orders:
+        if o["id"] == order_id:
+            client_name = o.get("client_name") or "Cliente"
+            prod_name = o.get("product_name") or o.get("product_key") or "Prenda"
+            qty = o.get("quantity", 1)
+            size = o.get("size", "M")
+            price = o.get("quoted_price", 0)
+            balance = o.get("balance_amount", 0)
+            phone = str(o.get("contact_phone") or "").strip()
+            
+            text = (
+                f"Hola {client_name}! ⚡\n"
+                f"Tu pedido de Tormenta Indumentaria ya está listo:\n"
+                f"• {prod_name} × {qty} (talle {size})\n"
+                f"• Total: ${price:,.0f}\n"
+                f"• Saldo pendiente: ${balance:,.0f}\n"
+                f"Podés retirar o coordinamos el envío cuando quieras.\n"
+                f"¡Muchas gracias por confiar en Tormenta! 🖤"
+            )
+            
+            wa_url = None
+            clean_phone = "".join(filter(str.isdigit, phone))
+            if clean_phone:
+                import urllib.parse
+                wa_url = f"https://wa.me/{clean_phone}?text={urllib.parse.quote(text)}"
+                
+            return {
+                "order_id": order_id,
+                "client_name": client_name,
+                "phone": phone,
+                "text": text,
+                "wa_url": wa_url
+            }
     raise HTTPException(status_code=404, detail="Pedido no encontrado.")
 
 

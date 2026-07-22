@@ -735,30 +735,103 @@ async function mockApiHandler(resource, options) {
 
     // --- RUTA: PEDIDOS / ORDENES ---
     if (path === '/api/orders' && method === 'GET') {
-        const orders = getMockData('orders') || [];
+        const orders = (getMockData('orders') || []).map(computeMockOrderFields);
         return makeResponse(orders);
     }
 
     if (path === '/api/orders' && method === 'POST') {
         const orders = getMockData('orders') || [];
-        const newOrder = {
+        const now = new Date().toISOString();
+        let newOrder = {
             id: Math.random().toString(36).substring(2, 10),
             client_id: body.client_id || "",
-            client_name: body.client_name,
+            client_name: body.client_name || "Cliente",
             product_key: body.product_key,
-            product_name: body.product_name,
+            product_name: body.product_name || body.product_key,
+            quantity: parseInt(body.quantity) || 1,
             size: body.size || "M",
             custom_notes: body.custom_notes || "",
             quoted_price: parseFloat(body.quoted_price) || 0.0,
+            deposit_amount: parseFloat(body.deposit_amount) || 0.0,
+            deposit_date: body.deposit_amount > 0 ? now : null,
             due_date: body.due_date || "",
             status: body.status || "pendiente",
-            status_updated_at: body.status_updated_at || new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            status_updated_at: now,
+            materials_cost_snapshot: body.materials_cost_snapshot || null,
+            labor_cost_snapshot: body.labor_cost_snapshot || null,
+            retail_price_snapshot: body.retail_price_snapshot || null,
+            stock_deducted: false,
+            production_id: null,
+            contact_phone: body.contact_phone || "",
+            created_at: now,
+            updated_at: now
         };
+        newOrder = computeMockOrderFields(newOrder);
         orders.push(newOrder);
         setMockData('orders', orders);
         return makeResponse(newOrder, 201);
+    }
+
+    if (path === '/api/orders/from-quote' && method === 'POST') {
+        const orders = getMockData('orders') || [];
+        const now = new Date().toISOString();
+        const quotedPrice = parseFloat(body.quoted_price || body.retail_price_snapshot || 0);
+        const depositAmount = parseFloat(body.deposit_amount || 0);
+
+        let newOrder = {
+            id: Math.random().toString(36).substring(2, 10),
+            client_id: body.client_id || "",
+            client_name: body.client_name || "Cliente Cotización",
+            product_key: body.product_key,
+            product_name: body.product_name || body.product_key,
+            quantity: parseInt(body.quantity) || 1,
+            size: body.size || "M",
+            custom_notes: body.notes || "",
+            quoted_price: quotedPrice,
+            deposit_amount: depositAmount,
+            deposit_date: depositAmount > 0 ? now : null,
+            due_date: body.due_date || "",
+            status: "pendiente",
+            status_updated_at: now,
+            materials_cost_snapshot: body.materials_cost_snapshot || null,
+            labor_cost_snapshot: body.labor_cost_snapshot || null,
+            retail_price_snapshot: body.retail_price_snapshot || null,
+            stock_deducted: false,
+            production_id: null,
+            contact_phone: body.contact_phone || "",
+            created_at: now,
+            updated_at: now
+        };
+        newOrder = computeMockOrderFields(newOrder);
+        orders.push(newOrder);
+        setMockData('orders', orders);
+        return makeResponse(newOrder, 201);
+    }
+
+    const orderWaMatch = path.match(/^\/api\/orders\/([^/]+)\/whatsapp-ready$/);
+    if (orderWaMatch && method === 'GET') {
+        const orderId = orderWaMatch[1];
+        const orders = getMockData('orders') || [];
+        const order = orders.find(o => o.id === orderId);
+        if (!order) {
+            return makeResponse({ detail: "Pedido no encontrado." }, 404);
+        }
+        const normalized = computeMockOrderFields(order);
+        const clientName = normalized.client_name || "Cliente";
+        const prodName = normalized.product_name || normalized.product_key;
+        const phone = (normalized.contact_phone || "").trim();
+        const text = `Hola ${clientName}! ⚡\nTu pedido de Tormenta Indumentaria ya está listo:\n• ${prodName} × ${normalized.quantity} (talle ${normalized.size})\n• Total: $${normalized.quoted_price.toLocaleString('es-AR')}\n• Saldo pendiente: $${normalized.balance_amount.toLocaleString('es-AR')}\nPodés retirar o coordinamos el envío cuando quieras.\n¡Muchas gracias por confiar en Tormenta! 🖤`;
+        
+        const cleanPhone = phone.replace(/\D/g, '');
+        const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : null;
+
+        return makeResponse({
+            order_id: orderId,
+            client_name: clientName,
+            phone: phone,
+            text: text,
+            wa_url: waUrl
+        });
     }
 
     const orderStatusMatch = path.match(/^\/api\/orders\/([^/]+)\/status$/);
@@ -773,9 +846,94 @@ async function mockApiHandler(resource, options) {
         if (!VALID_ORDER_STATUSES.includes(body.status)) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
-        orders[idx].status = body.status;
-        orders[idx].status_updated_at = body.status_updated_at || new Date().toISOString();
-        orders[idx].updated_at = new Date().toISOString();
+        
+        const now = new Date().toISOString();
+        const order = orders[idx];
+
+        if (body.status === "terminado" && !order.stock_deducted) {
+            // Descontar inventario mock
+            const products = getMockData('products') || {};
+            const prodKey = order.product_key;
+            if (prodKey && prodKey !== 'custom' && products[prodKey]) {
+                const bom = products[prodKey];
+                const qty = parseInt(order.quantity) || 1;
+                const needed = {
+                    cinta: (bom.cinta || 0) * qty,
+                    cadenas: (bom.cadenas || 0) * qty,
+                    argollas: (bom.argollas || 0) * qty,
+                    hebillas: (bom.hebillas || 0) * qty,
+                    remaches: (bom.remaches || 0) * qty,
+                    ojalillos: (bom.ojalillos || 0) * qty,
+                    varillas: (bom.varillas || 0) * qty,
+                    tachas: (bom.tachas || 0) * qty,
+                    mosquetones: (bom.mosquetones || 0) * qty
+                };
+
+                const inventory = getMockData('inventory') || [];
+                const shortages = [];
+                for (const [k, reqQty] of Object.entries(needed)) {
+                    if (reqQty > 0) {
+                        const invItem = inventory.find(i => i.item_key === k);
+                        if (!invItem || invItem.stock < reqQty) {
+                            const name = invItem ? invItem.name : k;
+                            const curStock = invItem ? invItem.stock : 0;
+                            shortages.push(`${name} (falta ${(reqQty - curStock).toFixed(2)})`);
+                        }
+                    }
+                }
+
+                if (shortages.length > 0) {
+                    return makeResponse({ detail: "Falta stock de materiales: " + shortages.join(", ") }, 400);
+                }
+
+                // Descontar stock
+                const movements = getMockData('movements') || [];
+                for (const [k, reqQty] of Object.entries(needed)) {
+                    if (reqQty > 0) {
+                        const invItem = inventory.find(i => i.item_key === k);
+                        invItem.stock = Math.round((invItem.stock - reqQty) * 100) / 100;
+                        movements.push({
+                            id: Math.random().toString(36).substring(2, 10),
+                            item_key: k,
+                            quantity: -reqQty,
+                            movement_type: 'produccion',
+                            reference: `Pedido #${orderId} - ${order.product_name || prodKey}`,
+                            date: now
+                        });
+                    }
+                }
+                setMockData('inventory', inventory);
+                setMockData('movements', movements);
+
+                // Crear producción record
+                const production = getMockData('production') || [];
+                const prodId = Math.random().toString(36).substring(2, 10);
+                const matCost = parseFloat(order.materials_cost_snapshot || 0);
+                const laborCost = parseFloat(order.labor_cost_snapshot || 0);
+                const quotedPrice = parseFloat(order.quoted_price || order.retail_price_snapshot || 0);
+                production.push({
+                    id: prodId,
+                    date: now,
+                    product_name: order.product_name || prodKey,
+                    quantity: qty,
+                    materials_cost: matCost,
+                    labor_cost: laborCost,
+                    retail_price: quotedPrice,
+                    profit: quotedPrice - (matCost + laborCost),
+                    product_key: prodKey,
+                    order_id: orderId
+                });
+                setMockData('production', production);
+
+                order.stock_deducted = true;
+                order.production_id = prodId;
+            }
+        }
+
+        order.status = body.status;
+        order.status_updated_at = now;
+        order.updated_at = now;
+        orders[idx] = computeMockOrderFields(order);
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
     }
@@ -792,19 +950,22 @@ async function mockApiHandler(resource, options) {
         if (!VALID_ORDER_STATUSES.includes(body.status)) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
-        orders[idx] = {
+        orders[idx] = computeMockOrderFields({
             ...orders[idx],
             client_id: body.client_id || "",
-            client_name: body.client_name,
-            product_key: body.product_key,
-            product_name: body.product_name,
-            size: body.size || "M",
-            custom_notes: body.custom_notes || "",
-            quoted_price: parseFloat(body.quoted_price) || 0.0,
-            due_date: body.due_date || "",
-            status: body.status || "pendiente",
+            client_name: body.client_name || orders[idx].client_name,
+            product_key: body.product_key || orders[idx].product_key,
+            product_name: body.product_name || orders[idx].product_name,
+            quantity: parseInt(body.quantity) || orders[idx].quantity || 1,
+            size: body.size || orders[idx].size || "M",
+            custom_notes: body.custom_notes !== undefined ? body.custom_notes : orders[idx].custom_notes,
+            quoted_price: parseFloat(body.quoted_price) || orders[idx].quoted_price || 0.0,
+            deposit_amount: parseFloat(body.deposit_amount) !== undefined ? parseFloat(body.deposit_amount) : orders[idx].deposit_amount,
+            due_date: body.due_date || orders[idx].due_date,
+            status: body.status || orders[idx].status,
+            contact_phone: body.contact_phone || orders[idx].contact_phone,
             updated_at: new Date().toISOString()
-        };
+        });
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
     }
@@ -813,7 +974,7 @@ async function mockApiHandler(resource, options) {
         const orderId = orderMatch[1];
         let orders = getMockData('orders') || [];
         const originalLen = orders.length;
-        orders = orders.filter(o => o.id !== orderId);
+        clients = orders.filter(o => o.id !== orderId);
         if (orders.length === originalLen) {
             return makeResponse({ detail: "Pedido no encontrado." }, 404);
         }
@@ -2416,6 +2577,21 @@ async function handleQuote(event) {
             }
         };
 
+        let createOrderBtn = document.getElementById('btn-quote-create-order');
+        if (!createOrderBtn) {
+            createOrderBtn = document.createElement('button');
+            createOrderBtn.id = 'btn-quote-create-order';
+            createOrderBtn.className = 'btn-primary';
+            createOrderBtn.style.marginTop = '0.5rem';
+            createOrderBtn.style.width = '100%';
+            createOrderBtn.textContent = '📋 Crear orden de este presupuesto';
+            document.querySelector('#quote-results').appendChild(createOrderBtn);
+        }
+
+        createOrderBtn.onclick = () => {
+            createOrderFromQuote({ productKey, productName, data, budgetNum });
+        };
+
         regBtn.onclick = () => {
             // Autofill the production form in pane-history
             const prodSelect = document.getElementById('prod_product_key');
@@ -2444,6 +2620,58 @@ async function handleQuote(event) {
     } finally {
         btn.classList.remove('loading');
         btn.disabled = false;
+    }
+}
+
+async function createOrderFromQuote(quoteData) {
+    const { productKey, productName, data, budgetNum } = quoteData;
+    const clientSelect = document.getElementById('quote_client');
+    const clientId = clientSelect ? clientSelect.value : "";
+    const clientOpt = clientSelect && clientSelect.selectedIndex >= 0 ? clientSelect.options[clientSelect.selectedIndex] : null;
+    const clientName = clientOpt ? clientOpt.dataset.name || "Cliente" : "Cliente Cotización";
+    const clientContact = clientOpt ? clientOpt.dataset.contact || "" : "";
+    
+    const depositDefault = Math.round(data.suggested_retail_price * 0.5);
+    const dueDateDefault = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+    const payload = {
+        client_id: clientId,
+        client_name: clientName,
+        product_key: productKey,
+        product_name: productName,
+        quantity: 1,
+        size: "M",
+        quoted_price: data.suggested_retail_price,
+        deposit_amount: depositDefault,
+        due_date: dueDateDefault,
+        materials_cost_snapshot: data.total_materials,
+        labor_cost_snapshot: data.labor.total,
+        retail_price_snapshot: data.suggested_retail_price,
+        notes: `Presupuesto #${budgetNum}`,
+        contact_phone: clientContact
+    };
+
+    try {
+        const response = await fetch('/api/orders/from-quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Error al crear la orden');
+        }
+
+        const newOrder = await response.json();
+        showToast(`¡Orden #${newOrder.id} creada con seña de $${depositDefault.toLocaleString('es-AR')}!`, 'success');
+        
+        if (typeof loadOrders === 'function') {
+            await loadOrders();
+        }
+        switchTab('orders');
+    } catch (error) {
+        showToast(`Error al crear la orden: ${error.message}`, 'error');
     }
 }
 
@@ -4406,7 +4634,12 @@ async function advanceOrderStatus(orderId, currentStatus) {
     if (idx < 0 || idx >= flow.length - 1) return;
     const nextStatus = flow[idx + 1];
 
-    if (!confirm(`¿Avanzar orden de "${statusLabels[currentStatus] || currentStatus}" a "${statusLabels[nextStatus] || nextStatus}"?`)) return;
+    let confirmMsg = `¿Avanzar orden de "${statusLabels[currentStatus] || currentStatus}" a "${statusLabels[nextStatus] || nextStatus}"?`;
+    if (nextStatus === 'terminado') {
+        confirmMsg = `⚠️ Al pasar a "Terminado", se descontarán automáticamente los insumos (BOM) del inventario del taller y se registrará la prenda en la producción.\n\n${confirmMsg}`;
+    }
+
+    if (!confirm(confirmMsg)) return;
 
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
@@ -4414,9 +4647,38 @@ async function advanceOrderStatus(orderId, currentStatus) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: nextStatus, status_updated_at: new Date().toISOString() })
         });
-        if (!response.ok) throw new Error('Error al avanzar estado');
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || 'Error al avanzar estado');
+        }
+        
         showToast(`Orden avanzada a: ${statusLabels[nextStatus] || nextStatus.replace('_',' ')}`, 'success');
         await loadOrders();
+    } catch (error) {
+        showToast(error.message, 'error');
+        if (error.message && error.message.includes('Falta stock')) {
+            alert(`⚠️ No se pudo pasar a Terminado por falta de stock:\n\n${error.message}\n\nRevisá la pestaña Inventario para reponer insumos.`);
+        }
+    }
+}
+
+async function sendWhatsAppReady(orderId) {
+    try {
+        const response = await fetch(`/api/orders/${orderId}/whatsapp-ready`);
+        if (!response.ok) throw new Error('Error al generar aviso de WhatsApp');
+        const data = await response.json();
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(data.text);
+            showToast('Mensaje de aviso copiado al portapapeles', 'success');
+        }
+
+        if (data.wa_url) {
+            window.open(data.wa_url, '_blank');
+        } else {
+            alert(`Mensaje de aviso copiado:\n\n${data.text}`);
+        }
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -4436,7 +4698,6 @@ async function deleteOrder(orderId) {
 
 function renderKanban(orders) {
     const statuses = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
-    const statusLabels = { pendiente: 'Pendiente', en_confeccion: 'En Confección', terminado: 'Terminado', entregado: 'Entregado' };
 
     statuses.forEach(status => {
         const container = document.getElementById(`kanban-${status}`);
@@ -4450,7 +4711,6 @@ function renderKanban(orders) {
             const card = document.createElement('div');
             card.className = 'kanban-card';
             
-            // Check if overdue
             const today = new Date();
             today.setHours(0,0,0,0);
             const orderDueDate = order.due_date ? new Date(order.due_date + 'T00:00:00') : null;
@@ -4461,17 +4721,42 @@ function renderKanban(orders) {
 
             const dueStr = order.due_date ? new Date(order.due_date).toLocaleDateString('es-AR') : '—';
             const showAdvance = status !== 'entregado';
+            const showWaReady = status === 'terminado' || status === 'entregado';
+
+            // Payment badge
+            let paymentBadgeHtml = '';
+            const pStatus = order.payment_status || 'sin_pago';
+            const deposit = order.deposit_amount || 0;
+            const balance = order.balance_amount || 0;
+            if (pStatus === 'pagado') {
+                paymentBadgeHtml = `<span style="background:rgba(76,175,80,0.2);color:#81c784;border:1px solid rgba(76,175,80,0.4);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">✓ Pagado</span>`;
+            } else if (pStatus === 'seña') {
+                paymentBadgeHtml = `<span style="background:rgba(255,152,0,0.2);color:#ffb74d;border:1px solid rgba(255,152,0,0.4);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">Seña: $${deposit.toLocaleString('es-AR')}</span>`;
+            } else {
+                paymentBadgeHtml = `<span style="background:rgba(244,67,54,0.15);color:#e57373;border:1px solid rgba(244,67,54,0.3);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">Sin seña</span>`;
+            }
+
+            const stockDeductedHtml = order.stock_deducted ? `<span style="color:#81c784;font-size:0.65rem;margin-left:0.3rem;" title="BOM descontado del inventario">📦 Stock descontado</span>` : '';
+
             card.innerHTML = `
-                <div class="order-client">${order.client_name || 'Cliente'}</div>
-                <div class="order-product">${order.product_name || order.product_key} · Talla ${order.size || 'M'}</div>
-                ${order.custom_notes ? `<div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:0.2rem;">📝 ${order.custom_notes}</div>` : ''}
-                <div class="order-meta">
-                    <span style="${isOverdue ? 'color:#e57373;font-weight:bold;' : ''}">📅 ${dueStr} ${isOverdue ? '<span style="background:#d32f2f;color:white;font-size:0.55rem;padding:2px 4px;border-radius:3px;margin-left:4px;display:inline-block;vertical-align:middle;font-weight:bold;">ATRASADA</span>' : ''}</span>
-                    <span class="order-price">$${(order.quoted_price || 0).toLocaleString()}</span>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div class="order-client">${order.client_name || 'Cliente'}</div>
+                    ${paymentBadgeHtml}
                 </div>
-                ${order.status_updated_at ? `<div style="font-size:0.65rem;color:var(--color-text-muted);margin-top:0.3rem;">🕒 Actualizado: ${new Date(order.status_updated_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'})}</div>` : ''}
-                <div class="order-actions">
+                <div class="order-product">${order.quantity || 1}x ${order.product_name || order.product_key} · Talla ${order.size || 'M'}</div>
+                ${order.custom_notes ? `<div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:0.2rem;">📝 ${order.custom_notes}</div>` : ''}
+                <div class="order-meta" style="margin-top:0.4rem;">
+                    <span style="${isOverdue ? 'color:#e57373;font-weight:bold;' : ''}">📅 ${dueStr} ${isOverdue ? '<span style="background:#d32f2f;color:white;font-size:0.55rem;padding:2px 4px;border-radius:3px;margin-left:4px;display:inline-block;vertical-align:middle;font-weight:bold;">ATRASADA</span>' : ''}</span>
+                    <span class="order-price">$${(order.quoted_price || 0).toLocaleString('es-AR')}</span>
+                </div>
+                ${balance > 0 ? `<div style="font-size:0.75rem;color:#ffb74d;font-weight:600;margin-top:0.2rem;">Saldo Pendiente: $${balance.toLocaleString('es-AR')}</div>` : ''}
+                <div style="font-size:0.65rem;color:var(--color-text-muted);margin-top:0.3rem;">
+                    🕒 ${order.status_updated_at ? new Date(order.status_updated_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : 'Reciente'}
+                    ${stockDeductedHtml}
+                </div>
+                <div class="order-actions" style="margin-top:0.5rem;display:flex;gap:0.3rem;flex-wrap:wrap;">
                     ${showAdvance ? `<button class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ Avanzar</button>` : ''}
+                    ${showWaReady ? `<button class="kanban-wa-btn" onclick="sendWhatsAppReady('${order.id}')" style="background:#25D366;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;cursor:pointer;font-weight:bold;">📱 WA Listo</button>` : ''}
                     <button class="kanban-delete-btn" onclick="deleteOrder('${order.id}')">✕</button>
                 </div>
             `;
