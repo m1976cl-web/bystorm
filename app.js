@@ -1636,6 +1636,69 @@ async function exportToPDF(elementId, filename) {
 // --- MANEJO DE PESTAÑAS (TABS) ---
 // Cada módulo es un .tab-pane aislado. Solo uno visible a la vez.
 // No mezclar datos de Inventario/Zero Waste dentro de Clientes, etc.
+const TAB_META = {
+    dashboard: {
+        group: 'Comercial',
+        title: 'Dashboard del taller',
+        blurb: 'Resumen del día. Atajos al flujo de pedidos sin pasar por stock o moldería.',
+    },
+    orders: {
+        group: 'Comercial',
+        title: 'Órdenes de confección',
+        blurb: 'Pedidos del DM a la entrega: estados, seña y seguimiento. El stock se descuenta al marcar terminado.',
+    },
+    quote: {
+        group: 'Comercial',
+        title: 'Cotizador',
+        blurb: 'Presupuesto de una prenda del catálogo Tormenta para responder un DM o armar la seña.',
+    },
+    clients: {
+        group: 'Comercial',
+        title: 'Clientes y medidas',
+        blurb: 'Solo fichas y medidas corporales. Acá no aparece el inventario ni el stock del taller.',
+    },
+    batch: {
+        group: 'Taller',
+        title: 'Planificador de lotes',
+        blurb: 'Validá si el stock alcanza para un lote de varias prendas antes de cortar.',
+    },
+    optimization: {
+        group: 'Taller',
+        title: 'Optimización Zero Waste',
+        blurb: 'Simulá insumos y cortes (paneles / tiras). Es un calculador de taller, no el stock real.',
+    },
+    scaling: {
+        group: 'Taller',
+        title: 'Escalado de patrones',
+        blurb: 'Escalá el molde base a talles S–XL a partir de las medidas del prototipo.',
+    },
+    history: {
+        group: 'Taller',
+        title: 'Registro e historial',
+        blurb: 'Producción registrada y analíticas de confección del taller.',
+    },
+    inventory: {
+        group: 'Insumos',
+        title: 'Inventario',
+        blurb: 'Stock real de herrajes y cuerina. Ajustes, alertas y movimientos.',
+    },
+    catalog: {
+        group: 'Insumos',
+        title: 'Catálogo de prendas (BOM)',
+        blurb: 'Fichas técnicas Tormenta: materiales por prenda (vegan / a medida).',
+    },
+    suppliers: {
+        group: 'Insumos',
+        title: 'Proveedores',
+        blurb: 'Contactos y comparación de precios de insumos.',
+    },
+    trends: {
+        group: 'Más',
+        title: 'Tendencias',
+        blurb: 'Inspiración y radar de moda. No afecta stock ni pedidos.',
+    },
+};
+
 const TAB_LOADERS = {
     dashboard: () => loadDashboard(),
     orders: () => { loadOrders(); loadOrderFormDropdowns(); },
@@ -1651,6 +1714,8 @@ const TAB_LOADERS = {
     trends: () => loadTrends(),
 };
 
+let currentTabId = 'dashboard';
+
 function hideAllTabPanes() {
     document.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.remove('active');
@@ -1661,21 +1726,64 @@ function hideAllTabPanes() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
+    });
+    document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('is-active-group'));
+}
+
+function ensureModuleHeaders() {
+    Object.keys(TAB_META).forEach(tabId => {
+        if (tabId === 'dashboard') return; // header ya en HTML con quick-actions
+        const pane = document.getElementById(`pane-${tabId}`);
+        if (!pane || pane.querySelector('[data-module-header]')) return;
+        const meta = TAB_META[tabId];
+        const header = document.createElement('div');
+        header.className = 'module-page-header';
+        header.setAttribute('data-module-header', '');
+        header.innerHTML = `
+            <div>
+                <p class="module-group-chip">${meta.group}</p>
+                <h2 class="module-page-title">${meta.title}</h2>
+                <p class="module-page-blurb">${meta.blurb}</p>
+            </div>
+        `;
+        pane.insertBefore(header, pane.firstChild);
+        pane.setAttribute('role', 'tabpanel');
+        pane.setAttribute('aria-labelledby', `tab-${tabId}`);
     });
 }
 
-function switchTab(tabId) {
-    if (!tabId) return;
+function switchTab(tabId, options = {}) {
+    if (!tabId || !document.getElementById(`pane-${tabId}`)) {
+        console.warn(`No se encontró el panel con ID: pane-${tabId}`);
+        return;
+    }
+    if (currentTabId === tabId && !options.force) {
+        // Re-cargar datos si se re-selecciona a propósito
+        if (!options.skipReload) {
+            try {
+                const loader = TAB_LOADERS[tabId];
+                if (typeof loader === 'function') loader();
+            } catch (e) {
+                console.error('Error al recargar la pestaña:', tabId, e);
+            }
+        }
+        return;
+    }
 
     hideAllTabPanes();
+    currentTabId = tabId;
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
     const activePane = document.getElementById(`pane-${tabId}`);
+    const meta = TAB_META[tabId];
 
     if (activeBtn) {
         activeBtn.classList.add('active');
         activeBtn.setAttribute('aria-selected', 'true');
-        // Centrar pestaña activa en scroll horizontal (móvil)
+        activeBtn.setAttribute('tabindex', '0');
+        const group = activeBtn.closest('.nav-group');
+        if (group) group.classList.add('is-active-group');
         try {
             activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
         } catch (_) { /* ignore */ }
@@ -1686,9 +1794,25 @@ function switchTab(tabId) {
         activePane.removeAttribute('hidden');
         activePane.setAttribute('aria-hidden', 'false');
         activePane.style.display = 'block';
-    } else {
-        console.warn(`No se encontró el panel con ID: pane-${tabId}`);
-        return;
+        // Subir al inicio del módulo al cambiar (mejor en móvil)
+        try {
+            const nav = document.getElementById('main-tab-nav');
+            if (nav) {
+                const top = nav.getBoundingClientRect().bottom + window.scrollY - 8;
+                if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top - 60), behavior: 'smooth' });
+            }
+        } catch (_) { /* ignore */ }
+    }
+
+    // Título del documento + URL hash (compartible / back del navegador)
+    if (meta) {
+        document.title = `${meta.title} · Tormenta / Bystorm`;
+    }
+    if (!options.skipHash) {
+        const newHash = `#${tabId}`;
+        if (location.hash !== newHash) {
+            history.replaceState(null, '', newHash);
+        }
     }
 
     try {
@@ -1700,6 +1824,7 @@ function switchTab(tabId) {
 }
 window.switchTab = switchTab;
 window.hideAllTabPanes = hideAllTabPanes;
+window.TAB_META = TAB_META;
 
 // --- ACTUALIZACIONES DINÁMICAS EN FORMULARIOS ---
 function updateFactorText(val) {
@@ -4946,18 +5071,41 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
+    ensureModuleHeaders();
+
     // Aislar paneles al arrancar (evita sangrado si el HTML quedó mal anidado)
     hideAllTabPanes();
+    currentTabId = null;
 
-    // Listeners fail-safe (además de onclick inline)
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const tabId = btn.dataset.tab || btn.id.replace(/^tab-/, '');
-            if (tabId) switchTab(tabId);
-        });
+    // Hash deep-link: #orders, #clients, etc.
+    const hashTab = (location.hash || '').replace(/^#/, '').trim();
+    const initialTab = (hashTab && TAB_META[hashTab]) ? hashTab : 'dashboard';
+    switchTab(initialTab, { force: true });
+
+    window.addEventListener('hashchange', () => {
+        const t = (location.hash || '').replace(/^#/, '').trim();
+        if (t && TAB_META[t] && t !== currentTabId) {
+            switchTab(t, { skipHash: true });
+        }
     });
 
-    // Solo el módulo activo: Dashboard (no precargar inventario/clientes en todas las vistas)
-    switchTab('dashboard');
+    // Teclado en la barra: flechas entre pestañas del mismo grupo
+    const nav = document.getElementById('main-tab-nav');
+    if (nav) {
+        nav.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+            const tabs = Array.from(nav.querySelectorAll('.tab-btn'));
+            const idx = tabs.findIndex(b => b.id === `tab-${currentTabId}`);
+            if (idx < 0) return;
+            e.preventDefault();
+            const next = e.key === 'ArrowRight'
+                ? tabs[(idx + 1) % tabs.length]
+                : tabs[(idx - 1 + tabs.length) % tabs.length];
+            const tabId = next.dataset.tab;
+            if (tabId) {
+                switchTab(tabId);
+                next.focus();
+            }
+        });
+    }
 });

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.1.1">
+    <link rel="stylesheet" href="style.css?v=1.2.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -34,98 +34,145 @@
     </header>
 
     <main class="app-container">
-        <!-- Navegación de módulos (un panel visible a la vez) -->
-        <nav class="tab-navigation" aria-label="Módulos del taller">
-            <span class="nav-group-label" aria-hidden="true">Comercial</span>
-            <button type="button" class="tab-btn active" id="tab-dashboard" data-tab="dashboard" onclick="switchTab('dashboard')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
-                </svg>
-                Dashboard
-            </button>
-            <button type="button" class="tab-btn" id="tab-orders" data-tab="orders" onclick="switchTab('orders')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
-                </svg>
-                Órdenes
-            </button>
-            <button type="button" class="tab-btn" id="tab-quote" data-tab="quote" onclick="switchTab('quote')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-                </svg>
-                Cotizador
-            </button>
-            <button type="button" class="tab-btn" id="tab-clients" data-tab="clients" onclick="switchTab('clients')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 010 7.75"/>
-                </svg>
-                Clientes
-            </button>
+        <!-- Navegación por flujo de taller: un módulo visible a la vez -->
+        <nav class="tab-navigation" id="main-tab-nav" aria-label="Módulos del taller" role="tablist">
+            <div class="nav-group" data-group="comercial">
+                <span class="nav-group-label">Comercial</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn active" role="tab" id="tab-dashboard" data-tab="dashboard" aria-controls="pane-dashboard" aria-selected="true" onclick="switchTab('dashboard')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+                        </svg>
+                        <span class="tab-label">Dashboard</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-orders" data-tab="orders" aria-controls="pane-orders" aria-selected="false" onclick="switchTab('orders')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/>
+                        </svg>
+                        <span class="tab-label">Órdenes</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-quote" data-tab="quote" aria-controls="pane-quote" aria-selected="false" onclick="switchTab('quote')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                        </svg>
+                        <span class="tab-label">Cotizador</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-clients" data-tab="clients" aria-controls="pane-clients" aria-selected="false" onclick="switchTab('clients')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 010 7.75"/>
+                        </svg>
+                        <span class="tab-label">Clientes</span>
+                    </button>
+                </div>
+            </div>
 
-            <span class="nav-group-label" aria-hidden="true">Taller</span>
-            <button type="button" class="tab-btn" id="tab-batch" data-tab="batch" onclick="switchTab('batch')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Lotes
-            </button>
-            <button type="button" class="tab-btn" id="tab-optimization" data-tab="optimization" onclick="switchTab('optimization')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                Zero Waste
-            </button>
-            <button type="button" class="tab-btn" id="tab-scaling" data-tab="scaling" onclick="switchTab('scaling')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
-                </svg>
-                Escalado
-            </button>
-            <button type="button" class="tab-btn" id="tab-history" data-tab="history" onclick="switchTab('history')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Historial
-            </button>
+            <div class="nav-group" data-group="taller">
+                <span class="nav-group-label">Taller</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-batch" data-tab="batch" aria-controls="pane-batch" aria-selected="false" onclick="switchTab('batch')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <span class="tab-label">Lotes</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-optimization" data-tab="optimization" aria-controls="pane-optimization" aria-selected="false" onclick="switchTab('optimization')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <span class="tab-label">Zero Waste</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-scaling" data-tab="scaling" aria-controls="pane-scaling" aria-selected="false" onclick="switchTab('scaling')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M9 9h6v6H9z"/>
+                        </svg>
+                        <span class="tab-label">Escalado</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-history" data-tab="history" aria-controls="pane-history" aria-selected="false" onclick="switchTab('history')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="tab-label">Historial</span>
+                    </button>
+                </div>
+            </div>
 
-            <span class="nav-group-label" aria-hidden="true">Insumos</span>
-            <button type="button" class="tab-btn" id="tab-inventory" data-tab="inventory" onclick="switchTab('inventory')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-                Inventario
-            </button>
-            <button type="button" class="tab-btn" id="tab-catalog" data-tab="catalog" onclick="switchTab('catalog')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
-                Catálogo
-            </button>
-            <button type="button" class="tab-btn" id="tab-suppliers" data-tab="suppliers" onclick="switchTab('suppliers')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                </svg>
-                Proveedores
-            </button>
+            <div class="nav-group" data-group="insumos">
+                <span class="nav-group-label">Insumos</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-inventory" data-tab="inventory" aria-controls="pane-inventory" aria-selected="false" onclick="switchTab('inventory')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                        <span class="tab-label">Inventario</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-catalog" data-tab="catalog" aria-controls="pane-catalog" aria-selected="false" onclick="switchTab('catalog')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span class="tab-label">Catálogo</span>
+                    </button>
+                    <button type="button" class="tab-btn" role="tab" id="tab-suppliers" data-tab="suppliers" aria-controls="pane-suppliers" aria-selected="false" onclick="switchTab('suppliers')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                        <span class="tab-label">Proveedores</span>
+                    </button>
+                </div>
+            </div>
 
-            <span class="nav-group-label" aria-hidden="true">Más</span>
-            <button type="button" class="tab-btn" id="tab-trends" data-tab="trends" onclick="switchTab('trends')">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Tendencias
-            </button>
+            <div class="nav-group" data-group="mas">
+                <span class="nav-group-label">Más</span>
+                <div class="nav-group-tabs">
+                    <button type="button" class="tab-btn" role="tab" id="tab-trends" data-tab="trends" aria-controls="pane-trends" aria-selected="false" onclick="switchTab('trends')">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="tab-label">Tendencias</span>
+                    </button>
+                </div>
+            </div>
         </nav>
 
         <!-- Contenido de las Pestañas -->
         <div class="tab-content-wrapper">
 
             <!-- PESTAÑA: DASHBOARD -->
-            <section class="tab-pane active" id="pane-dashboard">
+            <section class="tab-pane active" id="pane-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+                <div class="module-page-header" data-module-header>
+                    <div>
+                        <p class="module-group-chip">Comercial</p>
+                        <h2 class="module-page-title">Dashboard del taller</h2>
+                        <p class="module-page-blurb">Resumen del día. Desde acá entrá al flujo de pedidos sin pasar por pantallas de stock o moldería.</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions" aria-label="Accesos rápidos del taller">
+                    <button type="button" class="quick-action-card" onclick="switchTab('orders')">
+                        <span class="qa-icon" aria-hidden="true">📋</span>
+                        <strong>Órdenes</strong>
+                        <small>Pedidos en curso y estados</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('quote')">
+                        <span class="qa-icon" aria-hidden="true">💰</span>
+                        <strong>Cotizar</strong>
+                        <small>Presupuesto para un DM</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('clients')">
+                        <span class="qa-icon" aria-hidden="true">👤</span>
+                        <strong>Clientes</strong>
+                        <small>Medidas y fichas (sin stock)</small>
+                    </button>
+                    <button type="button" class="quick-action-card" onclick="switchTab('inventory')">
+                        <span class="qa-icon" aria-hidden="true">📦</span>
+                        <strong>Inventario</strong>
+                        <small>Herrajes y cuerina</small>
+                    </button>
+                </div>
+
                 <div class="kpi-grid">
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('history')" onkeydown="if(event.key==='Enter')switchTab('history')" title="Ver historial de producción">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-garments">0</span>
                             <span class="kpi-label">Prendas Este Mes</span>
@@ -139,21 +186,21 @@
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('inventory')" onkeydown="if(event.key==='Enter')switchTab('inventory')" title="Ir a inventario">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-alerts">0</span>
                             <span class="kpi-label">Alertas de Stock</span>
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" role="button" tabindex="0" onclick="switchTab('orders')" onkeydown="if(event.key==='Enter')switchTab('orders')" title="Ir a órdenes">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-orders">0</span>
                             <span class="kpi-label">Órdenes Pendientes</span>
                         </div>
                         <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
                     </div>
-                    <div class="kpi-card" id="kpi-overdue-card">
+                    <div class="kpi-card kpi-clickable" id="kpi-overdue-card" role="button" tabindex="0" onclick="switchTab('orders')" onkeydown="if(event.key==='Enter')switchTab('orders')" title="Ver órdenes atrasadas">
                         <div class="kpi-info">
                             <span class="kpi-value" id="kpi-overdue" style="color: #e57373;">0</span>
                             <span class="kpi-label">Órdenes Atrasadas</span>
