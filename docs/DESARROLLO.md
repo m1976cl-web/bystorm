@@ -157,10 +157,13 @@ Actualizar esta tabla **y** la de `PLAN_IMPLEMENTACION_PEDIDOS.md` al cerrar un 
 
 ### Extra ya hecho (fuera de la numeración D, pero en main)
 
-- Menú agrupado Comercial / Taller / Insumos / Más.  
+- Menú agrupado Comercial / Taller / Insumos / Más (chips visuales + grupo activo).  
+- Cabeceras por módulo (qué hace cada pantalla; Clientes aclara “sin stock”).  
+- Dashboard: atajos rápidos (Órdenes, Cotizar, Clientes, Inventario) y KPIs clickeables.  
+- Hash deep-link (`#orders`, `#clients`) y teclado flechas en la barra.  
 - Aislamiento de paneles y fix HTML Zero Waste.  
 - Catálogo Tormenta (líneas, badges Vegan / A medida).  
-- Doc de marca.
+- Doc de marca (`DESARROLLO.md`, `MARCA_TORMENTA.md`).
 
 ### Nunca recortar (v2.1)
 
