@@ -2424,6 +2424,118 @@ html[data-theme="light"] .article-title {
 /* =============================================================
    ORDERS TAB - TOOLBAR, LISTA, KANBAN & CALENDAR
    ============================================================= */
+/* Inventario */
+.inv-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.inv-search-group {
+    flex: 1;
+    min-width: 180px;
+    margin: 0;
+}
+
+.inv-quick-qty {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.inv-row-clickable {
+    cursor: pointer;
+}
+
+.inv-row-clickable:hover {
+    background: rgba(211, 47, 47, 0.08);
+}
+
+.inv-cards {
+    display: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+}
+
+.inv-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    text-align: left;
+    padding: 0.75rem;
+    min-height: 88px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.03);
+    color: inherit;
+    cursor: pointer;
+    font-family: var(--font-body);
+}
+
+.inv-card.level-critico {
+    border-color: rgba(239, 83, 80, 0.45);
+    background: rgba(239, 83, 80, 0.08);
+}
+
+.inv-card.level-bajo {
+    border-color: rgba(255, 179, 0, 0.4);
+}
+
+.inv-card-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.inv-card-stock {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.inv-card-stock small {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+}
+
+.inv-card-min {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.inv-movements-panel > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1rem 0.5rem;
+}
+
+.inv-movements-panel > summary::-webkit-details-marker { display: none; }
+
+.catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.catalog-toolbar .btn-secondary {
+    min-height: 44px;
+}
+
+@media (max-width: 768px) {
+    .inv-cards {
+        display: grid;
+    }
+    .inv-table-wrap {
+        display: none;
+    }
+}
+
 /* Cotizador — siguiente paso */
 .quote-costs-panel {
     margin: 0.5rem 0 1rem;
