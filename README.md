@@ -14,11 +14,14 @@ Funciona **online** (FastAPI + JSON local) y **offline** (mock en `localStorage`
 
 | Documento | Descripción |
 |-----------|-------------|
-| **[docs/PLAN_IMPLEMENTACION_PEDIDOS.md](docs/PLAN_IMPLEMENTACION_PEDIDOS.md)** | Release v2.1 — *Pedidos de punta a punta* (cotización → seña → stock → WhatsApp listo) |
+| **[docs/DESARROLLO.md](docs/DESARROLLO.md)** | **Documento maestro** — orden del trabajo, estado, reglas para humanos y robots |
+| [docs/PLAN_IMPLEMENTACION_PEDIDOS.md](docs/PLAN_IMPLEMENTACION_PEDIDOS.md) | Release v2.1 — *Pedidos de punta a punta* (cotización → seña → stock → WhatsApp listo) |
+| [docs/MARCA_TORMENTA.md](docs/MARCA_TORMENTA.md) | Contexto de marca / Instagram / catálogo |
 | [docs/README.md](docs/README.md) | Índice de documentación |
-| [AGENTS.md](AGENTS.md) | Guía para coding agents / apps robóticas |
+| [AGENTS.md](AGENTS.md) | Guía corta para coding agents / apps robóticas |
 
-Cualquier desarrollador o agente debe **leer el plan activo** antes de implementar features nuevas.
+Cualquier desarrollador o agente debe leer **`docs/DESARROLLO.md`** y el plan activo antes de implementar features nuevas.  
+Si solo se indica “seguir con Bystorm/pedidos”, el siguiente paso por defecto es **D4** (`from-quote`).
 
 ## Arranque rápido
 
@@ -49,11 +52,13 @@ Dashboard · Escalado · Zero Waste · Lotes · Catálogo · Cotizador · Histor
 
 ## Contribución
 
-1. Seguí el plan en `docs/` (orden D1→D10 del release activo).  
+1. Leé [docs/DESARROLLO.md](docs/DESARROLLO.md) y el plan en `docs/` (orden D1→D10; **siguiente: D4**).  
 2. Mantené paridad **API FastAPI ↔ mock offline**.  
-3. No reescribas el stack sin acuerdo.  
-4. UI y textos de usuaria en **español**.  
-5. Agentes automáticos: ver [AGENTS.md](AGENTS.md).
+3. Editá frontend en **`static/`** y sincronizá copias en la raíz.  
+4. No reescribas el stack sin acuerdo.  
+5. UI y textos de usuaria en **español**.  
+6. Tests: `pytest test_main.py` (o con `uv run … pytest`).  
+7. Agentes automáticos: [AGENTS.md](AGENTS.md) + [docs/DESARROLLO.md](docs/DESARROLLO.md).
 
 ## Marca
 

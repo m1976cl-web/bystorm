@@ -11,11 +11,12 @@ Stack: FastAPI (`main.py`) + vanilla HTML/CSS/JS (`static/` and root copies) + J
 
 | Priority | Document |
 |----------|----------|
+| **Master development order** | [`docs/DESARROLLO.md`](docs/DESARROLLO.md) — status, next task, rules for humans + robots |
 | **Current release** | [`docs/PLAN_IMPLEMENTACION_PEDIDOS.md`](docs/PLAN_IMPLEMENTACION_PEDIDOS.md) — end-to-end orders (quote → deposit → status → stock deduct → WhatsApp ready) |
 | Docs index | [`docs/README.md`](docs/README.md) |
 | Brand / Instagram | [`docs/MARCA_TORMENTA.md`](docs/MARCA_TORMENTA.md) — align catalog & copy with [@tormenta_indumentaria](https://www.instagram.com/tormenta_indumentaria/) |
 
-If the user (or orchestrator) says “continue Bystorm / Tormenta / pedidos”, implement against that plan unless told otherwise.
+If the user (or orchestrator) says “continue Bystorm / Tormenta / pedidos”, read `docs/DESARROLLO.md` and implement the **next pending day** (default **D4** `from-quote`) unless told otherwise.
 
 ## Non-negotiables for the active release
 
@@ -58,13 +59,14 @@ Persistence files used by the backend include products, clients, inventory, move
 
 ## Suggested agent workflow
 
-1. Read `docs/PLAN_IMPLEMENTACION_PEDIDOS.md` sections 0, 2, 7, 8, 9.  
-2. Run existing tests; note failures.  
-3. Implement the next pending day (D1…D10).  
+1. Read `docs/DESARROLLO.md` (status + next day) and `docs/PLAN_IMPLEMENTACION_PEDIDOS.md` sections 0, 2, 7, 8, 9.  
+2. Run existing tests; note failures (`uv run … pytest test_main.py` or `pytest test_main.py`).  
+3. Implement the next pending day (D1…D10) — do not skip stock core.  
 4. Add/adjust tests until green.  
-5. Mirror API changes in the offline mock.  
-6. Open a focused PR; mention day id (e.g. `D3 status orchestration`).  
-7. Update progress table in the plan if you complete a day.
+5. Mirror API changes in the offline mock (`mockApiHandler`) when touching API.  
+6. Sync `static/` → root frontend copies if you edited the UI.  
+7. Open a focused PR/commit; mention day id (e.g. `D4 from-quote`).  
+8. Update progress tables in **both** `docs/DESARROLLO.md` and `docs/PLAN_IMPLEMENTACION_PEDIDOS.md`.
 
 ## Out of scope unless explicitly requested
 

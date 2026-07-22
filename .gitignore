@@ -4,3 +4,11 @@ __pycache__/
 run_log.txt
 .vscode/
 .idea/
+
+# Secretos locales (nunca commitear)
+.env
+.env.*
+!.env.example
+*.local
+.github_token
+
