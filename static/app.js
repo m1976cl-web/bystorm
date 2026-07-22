@@ -735,103 +735,30 @@ async function mockApiHandler(resource, options) {
 
     // --- RUTA: PEDIDOS / ORDENES ---
     if (path === '/api/orders' && method === 'GET') {
-        const orders = (getMockData('orders') || []).map(computeMockOrderFields);
+        const orders = getMockData('orders') || [];
         return makeResponse(orders);
     }
 
     if (path === '/api/orders' && method === 'POST') {
         const orders = getMockData('orders') || [];
-        const now = new Date().toISOString();
-        let newOrder = {
+        const newOrder = {
             id: Math.random().toString(36).substring(2, 10),
             client_id: body.client_id || "",
-            client_name: body.client_name || "Cliente",
+            client_name: body.client_name,
             product_key: body.product_key,
-            product_name: body.product_name || body.product_key,
-            quantity: parseInt(body.quantity) || 1,
+            product_name: body.product_name,
             size: body.size || "M",
             custom_notes: body.custom_notes || "",
             quoted_price: parseFloat(body.quoted_price) || 0.0,
-            deposit_amount: parseFloat(body.deposit_amount) || 0.0,
-            deposit_date: body.deposit_amount > 0 ? now : null,
             due_date: body.due_date || "",
             status: body.status || "pendiente",
-            status_updated_at: now,
-            materials_cost_snapshot: body.materials_cost_snapshot || null,
-            labor_cost_snapshot: body.labor_cost_snapshot || null,
-            retail_price_snapshot: body.retail_price_snapshot || null,
-            stock_deducted: false,
-            production_id: null,
-            contact_phone: body.contact_phone || "",
-            created_at: now,
-            updated_at: now
+            status_updated_at: body.status_updated_at || new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
-        newOrder = computeMockOrderFields(newOrder);
         orders.push(newOrder);
         setMockData('orders', orders);
         return makeResponse(newOrder, 201);
-    }
-
-    if (path === '/api/orders/from-quote' && method === 'POST') {
-        const orders = getMockData('orders') || [];
-        const now = new Date().toISOString();
-        const quotedPrice = parseFloat(body.quoted_price || body.retail_price_snapshot || 0);
-        const depositAmount = parseFloat(body.deposit_amount || 0);
-
-        let newOrder = {
-            id: Math.random().toString(36).substring(2, 10),
-            client_id: body.client_id || "",
-            client_name: body.client_name || "Cliente Cotización",
-            product_key: body.product_key,
-            product_name: body.product_name || body.product_key,
-            quantity: parseInt(body.quantity) || 1,
-            size: body.size || "M",
-            custom_notes: body.notes || "",
-            quoted_price: quotedPrice,
-            deposit_amount: depositAmount,
-            deposit_date: depositAmount > 0 ? now : null,
-            due_date: body.due_date || "",
-            status: "pendiente",
-            status_updated_at: now,
-            materials_cost_snapshot: body.materials_cost_snapshot || null,
-            labor_cost_snapshot: body.labor_cost_snapshot || null,
-            retail_price_snapshot: body.retail_price_snapshot || null,
-            stock_deducted: false,
-            production_id: null,
-            contact_phone: body.contact_phone || "",
-            created_at: now,
-            updated_at: now
-        };
-        newOrder = computeMockOrderFields(newOrder);
-        orders.push(newOrder);
-        setMockData('orders', orders);
-        return makeResponse(newOrder, 201);
-    }
-
-    const orderWaMatch = path.match(/^\/api\/orders\/([^/]+)\/whatsapp-ready$/);
-    if (orderWaMatch && method === 'GET') {
-        const orderId = orderWaMatch[1];
-        const orders = getMockData('orders') || [];
-        const order = orders.find(o => o.id === orderId);
-        if (!order) {
-            return makeResponse({ detail: "Pedido no encontrado." }, 404);
-        }
-        const normalized = computeMockOrderFields(order);
-        const clientName = normalized.client_name || "Cliente";
-        const prodName = normalized.product_name || normalized.product_key;
-        const phone = (normalized.contact_phone || "").trim();
-        const text = `Hola ${clientName}! ⚡\nTu pedido de Tormenta Indumentaria ya está listo:\n• ${prodName} × ${normalized.quantity} (talle ${normalized.size})\n• Total: $${normalized.quoted_price.toLocaleString('es-AR')}\n• Saldo pendiente: $${normalized.balance_amount.toLocaleString('es-AR')}\nPodés retirar o coordinamos el envío cuando quieras.\n¡Muchas gracias por confiar en Tormenta! 🖤`;
-        
-        const cleanPhone = phone.replace(/\D/g, '');
-        const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : null;
-
-        return makeResponse({
-            order_id: orderId,
-            client_name: clientName,
-            phone: phone,
-            text: text,
-            wa_url: waUrl
-        });
     }
 
     const orderStatusMatch = path.match(/^\/api\/orders\/([^/]+)\/status$/);
@@ -846,94 +773,9 @@ async function mockApiHandler(resource, options) {
         if (!VALID_ORDER_STATUSES.includes(body.status)) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
-        
-        const now = new Date().toISOString();
-        const order = orders[idx];
-
-        if (body.status === "terminado" && !order.stock_deducted) {
-            // Descontar inventario mock
-            const products = getMockData('products') || {};
-            const prodKey = order.product_key;
-            if (prodKey && prodKey !== 'custom' && products[prodKey]) {
-                const bom = products[prodKey];
-                const qty = parseInt(order.quantity) || 1;
-                const needed = {
-                    cinta: (bom.cinta || 0) * qty,
-                    cadenas: (bom.cadenas || 0) * qty,
-                    argollas: (bom.argollas || 0) * qty,
-                    hebillas: (bom.hebillas || 0) * qty,
-                    remaches: (bom.remaches || 0) * qty,
-                    ojalillos: (bom.ojalillos || 0) * qty,
-                    varillas: (bom.varillas || 0) * qty,
-                    tachas: (bom.tachas || 0) * qty,
-                    mosquetones: (bom.mosquetones || 0) * qty
-                };
-
-                const inventory = getMockData('inventory') || [];
-                const shortages = [];
-                for (const [k, reqQty] of Object.entries(needed)) {
-                    if (reqQty > 0) {
-                        const invItem = inventory.find(i => i.item_key === k);
-                        if (!invItem || invItem.stock < reqQty) {
-                            const name = invItem ? invItem.name : k;
-                            const curStock = invItem ? invItem.stock : 0;
-                            shortages.push(`${name} (falta ${(reqQty - curStock).toFixed(2)})`);
-                        }
-                    }
-                }
-
-                if (shortages.length > 0) {
-                    return makeResponse({ detail: "Falta stock de materiales: " + shortages.join(", ") }, 400);
-                }
-
-                // Descontar stock
-                const movements = getMockData('movements') || [];
-                for (const [k, reqQty] of Object.entries(needed)) {
-                    if (reqQty > 0) {
-                        const invItem = inventory.find(i => i.item_key === k);
-                        invItem.stock = Math.round((invItem.stock - reqQty) * 100) / 100;
-                        movements.push({
-                            id: Math.random().toString(36).substring(2, 10),
-                            item_key: k,
-                            quantity: -reqQty,
-                            movement_type: 'produccion',
-                            reference: `Pedido #${orderId} - ${order.product_name || prodKey}`,
-                            date: now
-                        });
-                    }
-                }
-                setMockData('inventory', inventory);
-                setMockData('movements', movements);
-
-                // Crear producción record
-                const production = getMockData('production') || [];
-                const prodId = Math.random().toString(36).substring(2, 10);
-                const matCost = parseFloat(order.materials_cost_snapshot || 0);
-                const laborCost = parseFloat(order.labor_cost_snapshot || 0);
-                const quotedPrice = parseFloat(order.quoted_price || order.retail_price_snapshot || 0);
-                production.push({
-                    id: prodId,
-                    date: now,
-                    product_name: order.product_name || prodKey,
-                    quantity: qty,
-                    materials_cost: matCost,
-                    labor_cost: laborCost,
-                    retail_price: quotedPrice,
-                    profit: quotedPrice - (matCost + laborCost),
-                    product_key: prodKey,
-                    order_id: orderId
-                });
-                setMockData('production', production);
-
-                order.stock_deducted = true;
-                order.production_id = prodId;
-            }
-        }
-
-        order.status = body.status;
-        order.status_updated_at = now;
-        order.updated_at = now;
-        orders[idx] = computeMockOrderFields(order);
+        orders[idx].status = body.status;
+        orders[idx].status_updated_at = body.status_updated_at || new Date().toISOString();
+        orders[idx].updated_at = new Date().toISOString();
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
     }
@@ -950,22 +792,19 @@ async function mockApiHandler(resource, options) {
         if (!VALID_ORDER_STATUSES.includes(body.status)) {
             return makeResponse({ detail: `Estado no válido. Opciones: ${VALID_ORDER_STATUSES.join(', ')}` }, 400);
         }
-        orders[idx] = computeMockOrderFields({
+        orders[idx] = {
             ...orders[idx],
             client_id: body.client_id || "",
-            client_name: body.client_name || orders[idx].client_name,
-            product_key: body.product_key || orders[idx].product_key,
-            product_name: body.product_name || orders[idx].product_name,
-            quantity: parseInt(body.quantity) || orders[idx].quantity || 1,
-            size: body.size || orders[idx].size || "M",
-            custom_notes: body.custom_notes !== undefined ? body.custom_notes : orders[idx].custom_notes,
-            quoted_price: parseFloat(body.quoted_price) || orders[idx].quoted_price || 0.0,
-            deposit_amount: parseFloat(body.deposit_amount) !== undefined ? parseFloat(body.deposit_amount) : orders[idx].deposit_amount,
-            due_date: body.due_date || orders[idx].due_date,
-            status: body.status || orders[idx].status,
-            contact_phone: body.contact_phone || orders[idx].contact_phone,
+            client_name: body.client_name,
+            product_key: body.product_key,
+            product_name: body.product_name,
+            size: body.size || "M",
+            custom_notes: body.custom_notes || "",
+            quoted_price: parseFloat(body.quoted_price) || 0.0,
+            due_date: body.due_date || "",
+            status: body.status || "pendiente",
             updated_at: new Date().toISOString()
-        });
+        };
         setMockData('orders', orders);
         return makeResponse(orders[idx]);
     }
@@ -974,7 +813,7 @@ async function mockApiHandler(resource, options) {
         const orderId = orderMatch[1];
         let orders = getMockData('orders') || [];
         const originalLen = orders.length;
-        clients = orders.filter(o => o.id !== orderId);
+        orders = orders.filter(o => o.id !== orderId);
         if (orders.length === originalLen) {
             return makeResponse({ detail: "Pedido no encontrado." }, 404);
         }
@@ -1795,63 +1634,197 @@ async function exportToPDF(elementId, filename) {
 }
 
 // --- MANEJO DE PESTAÑAS (TABS) ---
-function switchTab(tabId) {
-    console.log("Cambiando a pestaña:", tabId);
-    
-    // Ocultar todas las pestañas y quitar clase activa
-    const allBtns = document.querySelectorAll('.tab-btn');
-    const allPanes = document.querySelectorAll('.tab-pane');
-    
-    allBtns.forEach(btn => btn.classList.remove('active'));
-    allPanes.forEach(pane => {
+// Cada módulo es un .tab-pane aislado. Solo uno visible a la vez.
+// No mezclar datos de Inventario/Zero Waste dentro de Clientes, etc.
+const TAB_META = {
+    dashboard: {
+        group: 'Comercial',
+        title: 'Dashboard del taller',
+        blurb: 'Resumen del día. Atajos al flujo de pedidos sin pasar por stock o moldería.',
+    },
+    orders: {
+        group: 'Comercial',
+        title: 'Órdenes de confección',
+        blurb: 'Pedidos del DM a la entrega: estados, adelanto y seguimiento. El stock se descuenta al marcar terminado.',
+    },
+    quote: {
+        group: 'Comercial',
+        title: 'Cotizador',
+        blurb: 'Presupuesto de una prenda del catálogo Tormenta para responder un DM o armar el adelanto.',
+    },
+    clients: {
+        group: 'Comercial',
+        title: 'Clientes y medidas',
+        blurb: 'Solo fichas y medidas corporales. Acá no aparece el inventario ni el stock del taller.',
+    },
+    batch: {
+        group: 'Taller',
+        title: 'Planificador de lotes',
+        blurb: 'Validá si el stock alcanza para un lote de varias prendas antes de cortar.',
+    },
+    optimization: {
+        group: 'Taller',
+        title: 'Optimización Zero Waste',
+        blurb: 'Simulá insumos y cortes (paneles / tiras). Es un calculador de taller, no el stock real.',
+    },
+    scaling: {
+        group: 'Taller',
+        title: 'Escalado de patrones',
+        blurb: 'Escalá el molde base a talles S–XL a partir de las medidas del prototipo.',
+    },
+    history: {
+        group: 'Taller',
+        title: 'Registro e historial',
+        blurb: 'Producción registrada y analíticas de confección del taller.',
+    },
+    inventory: {
+        group: 'Insumos',
+        title: 'Inventario',
+        blurb: 'Stock real del taller. Filtrá críticos, tocá un insumo y ajustá. No es el simulador Zero Waste.',
+    },
+    catalog: {
+        group: 'Insumos',
+        title: 'Catálogo de prendas (BOM)',
+        blurb: 'Fichas Tormenta por línea. Desde acá cotizás o armás una orden con esa prenda.',
+    },
+    suppliers: {
+        group: 'Insumos',
+        title: 'Proveedores',
+        blurb: 'Contactos, precios por insumo y comparación (el más barato en verde).',
+    },
+    trends: {
+        group: 'Más',
+        title: 'Tendencias',
+        blurb: 'Inspiración y radar de moda. No afecta stock ni pedidos.',
+    },
+};
+
+const TAB_LOADERS = {
+    dashboard: () => loadDashboard(),
+    orders: () => { loadOrders(); loadOrderFormDropdowns(); },
+    quote: () => loadCatalog(),
+    clients: () => loadClients(),
+    batch: () => loadCatalogForBatch(),
+    optimization: () => loadCatalog(),
+    scaling: () => {},
+    history: () => loadProductionHistory(),
+    inventory: () => loadInventory(),
+    catalog: () => loadCatalog(),
+    suppliers: () => { loadSuppliers(); loadPriceComparison(); },
+    trends: () => loadTrends(),
+};
+
+let currentTabId = 'dashboard';
+
+function hideAllTabPanes() {
+    document.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.remove('active');
+        pane.setAttribute('hidden', '');
+        pane.setAttribute('aria-hidden', 'true');
         pane.style.display = 'none';
     });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
+    });
+    document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('is-active-group'));
+}
+
+function ensureModuleHeaders() {
+    Object.keys(TAB_META).forEach(tabId => {
+        if (tabId === 'dashboard') return; // header ya en HTML con quick-actions
+        const pane = document.getElementById(`pane-${tabId}`);
+        if (!pane || pane.querySelector('[data-module-header]')) return;
+        const meta = TAB_META[tabId];
+        const header = document.createElement('div');
+        header.className = 'module-page-header';
+        header.setAttribute('data-module-header', '');
+        header.innerHTML = `
+            <div>
+                <p class="module-group-chip">${meta.group}</p>
+                <h2 class="module-page-title">${meta.title}</h2>
+                <p class="module-page-blurb">${meta.blurb}</p>
+            </div>
+        `;
+        pane.insertBefore(header, pane.firstChild);
+        pane.setAttribute('role', 'tabpanel');
+        pane.setAttribute('aria-labelledby', `tab-${tabId}`);
+    });
+}
+
+function switchTab(tabId, options = {}) {
+    if (!tabId || !document.getElementById(`pane-${tabId}`)) {
+        console.warn(`No se encontró el panel con ID: pane-${tabId}`);
+        return;
+    }
+    if (currentTabId === tabId && !options.force) {
+        // Re-cargar datos si se re-selecciona a propósito
+        if (!options.skipReload) {
+            try {
+                const loader = TAB_LOADERS[tabId];
+                if (typeof loader === 'function') loader();
+            } catch (e) {
+                console.error('Error al recargar la pestaña:', tabId, e);
+            }
+        }
+        return;
+    }
+
+    hideAllTabPanes();
+    currentTabId = tabId;
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
     const activePane = document.getElementById(`pane-${tabId}`);
-    
+    const meta = TAB_META[tabId];
+
     if (activeBtn) {
         activeBtn.classList.add('active');
+        activeBtn.setAttribute('aria-selected', 'true');
+        activeBtn.setAttribute('tabindex', '0');
+        const group = activeBtn.closest('.nav-group');
+        if (group) group.classList.add('is-active-group');
+        try {
+            activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        } catch (_) { /* ignore */ }
     }
-    
+
     if (activePane) {
         activePane.classList.add('active');
+        activePane.removeAttribute('hidden');
+        activePane.setAttribute('aria-hidden', 'false');
         activePane.style.display = 'block';
-    } else {
-        console.warn(`No se encontró el panel con ID: pane-${tabId}`);
+        // Subir al inicio del módulo al cambiar (mejor en móvil)
+        try {
+            const nav = document.getElementById('main-tab-nav');
+            if (nav) {
+                const top = nav.getBoundingClientRect().bottom + window.scrollY - 8;
+                if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top - 60), behavior: 'smooth' });
+            }
+        } catch (_) { /* ignore */ }
+    }
+
+    // Título del documento + URL hash (compartible / back del navegador)
+    if (meta) {
+        document.title = `${meta.title} · Tormenta / Bystorm`;
+    }
+    if (!options.skipHash) {
+        const newHash = `#${tabId}`;
+        if (location.hash !== newHash) {
+            history.replaceState(null, '', newHash);
+        }
     }
 
     try {
-        // Acciones al abrir pestañas específicas
-        if (tabId === 'trends') {
-            loadTrends();
-        } else if (tabId === 'history') {
-            loadProductionHistory();
-        } else if (tabId === 'batch') {
-            loadCatalogForBatch();
-        } else if (tabId === 'catalog') {
-            loadCatalog();
-        } else if (tabId === 'dashboard') {
-            loadDashboard();
-        } else if (tabId === 'inventory') {
-            loadInventory();
-        } else if (tabId === 'suppliers') {
-            loadSuppliers();
-            loadPriceComparison();
-        } else if (tabId === 'orders') {
-            loadOrders();
-            loadOrderFormDropdowns();
-        } else if (tabId === 'quote' || tabId === 'optimization') {
-            loadCatalog();
-        } else if (tabId === 'clients') {
-            loadClients();
-        }
+        const loader = TAB_LOADERS[tabId];
+        if (typeof loader === 'function') loader();
     } catch (e) {
-        console.error('Error al ejecutar acciones de la pestaña:', e);
+        console.error('Error al cargar datos de la pestaña:', tabId, e);
     }
 }
 window.switchTab = switchTab;
+window.hideAllTabPanes = hideAllTabPanes;
+window.TAB_META = TAB_META;
 
 // --- ACTUALIZACIONES DINÁMICAS EN FORMULARIOS ---
 function updateFactorText(val) {
@@ -2447,6 +2420,46 @@ function renderStripsRollMap(rollWidth, rollLengthM, stripW, stripH, packing, ne
 
 
 // --- MÓDULO 3: COTIZADOR / PRESUPUESTADOR ---
+let lastQuoteSnapshot = null; // para pasar a Órdenes con adelanto
+
+function prefillOrderFromQuote() {
+    if (!lastQuoteSnapshot) {
+        showToast('Primero generá un presupuesto', 'warning');
+        return;
+    }
+    const q = lastQuoteSnapshot;
+    switchTab('orders');
+    // Esperar a que se carguen dropdowns de órdenes
+    setTimeout(() => {
+        const prodSel = document.getElementById('order_product');
+        const clientSel = document.getElementById('order_client');
+        const priceEl = document.getElementById('order_price');
+        const depositEl = document.getElementById('order_deposit');
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        if (prodSel && q.product_key) {
+            prodSel.value = q.product_key;
+        }
+        if (clientSel && q.client_id) {
+            clientSel.value = q.client_id;
+        }
+        if (priceEl) priceEl.value = Math.round(q.suggested_retail_price || 0);
+        if (depositEl) {
+            const adelanto = Math.round((q.suggested_retail_price || 0) * 0.5);
+            depositEl.value = adelanto;
+        }
+        const due = document.getElementById('order_due');
+        if (due && !due.value) {
+            const d = new Date();
+            d.setDate(d.getDate() + 10);
+            due.value = d.toISOString().slice(0, 10);
+        }
+        showToast('Orden precargada con precio y adelanto 50%. Revisá y guardá.', 'success');
+        document.getElementById('btn-create-order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+}
+window.prefillOrderFromQuote = prefillOrderFromQuote;
+
 async function handleQuote(event) {
     event.preventDefault();
     
@@ -2494,7 +2507,7 @@ async function handleQuote(event) {
         // Rellenar cabecera de presupuesto formal
         const budgetNum = Math.floor(1000 + Math.random() * 9000);
         document.getElementById('budget-number').textContent = `PRESUPUESTO #${budgetNum}`;
-        document.getElementById('budget-date').textContent = `Fecha: ${new Date().toLocaleDateString('es-AR')}`;
+        document.getElementById('budget-date').textContent = `Fecha: ${new Date().toLocaleDateString('es-CL')}`;
         
         const clientSelect = document.getElementById('quote_client');
         const selectedOpt = clientSelect ? clientSelect.options[clientSelect.selectedIndex] : null;
@@ -2502,7 +2515,7 @@ async function handleQuote(event) {
             document.getElementById('budget-client-name').textContent = selectedOpt.dataset.name;
             document.getElementById('budget-client-contact').textContent = selectedOpt.dataset.contact;
         } else {
-            document.getElementById('budget-client-name').textContent = 'Consumidor Final';
+            document.getElementById('budget-client-name').textContent = 'Consumidor final';
             document.getElementById('budget-client-contact').textContent = 'Sin contacto registrado';
         }
 
@@ -2533,21 +2546,46 @@ async function handleQuote(event) {
         // Comparación de costos por proveedor
         renderQuoteSupplierComparison(data.breakdown);
 
+        const productSelect = document.getElementById('quote_product');
+        const productKey = productSelect.value;
+        const productName = productSelect.options[productSelect.selectedIndex]?.text || productKey;
+        const clientSelectAfter = document.getElementById('quote_client');
+
+        lastQuoteSnapshot = {
+            product_key: productKey,
+            product_name: productName,
+            client_id: clientSelectAfter?.value || '',
+            client_name: clientSelectAfter?.value
+                ? (clientSelectAfter.options[clientSelectAfter.selectedIndex]?.dataset.name || '')
+                : '',
+            suggested_retail_price: data.suggested_retail_price,
+            total_materials: data.total_materials,
+            labor_total: data.labor.total,
+        };
+
+        const toOrderBtn = document.getElementById('btn-quote-to-order');
+        if (toOrderBtn) {
+            toOrderBtn.disabled = false;
+            toOrderBtn.onclick = () => prefillOrderFromQuote();
+        }
+
         // Añadir botón dinámico para registrar directamente en el historial
         let regBtn = document.getElementById('btn-quote-register-prod');
         if (!regBtn) {
             regBtn = document.createElement('button');
+            regBtn.type = 'button';
             regBtn.id = 'btn-quote-register-prod';
             regBtn.className = 'btn-secondary';
             regBtn.style.marginTop = '1rem';
             regBtn.style.width = '100%';
-            regBtn.textContent = 'Registrar en Historial de Producción';
+            regBtn.textContent = 'Registrar en historial de producción';
             document.querySelector('#quote-results').appendChild(regBtn);
         }
 
         let waBtn = document.getElementById('btn-quote-whatsapp');
         if (!waBtn) {
             waBtn = document.createElement('button');
+            waBtn.type = 'button';
             waBtn.id = 'btn-quote-whatsapp';
             waBtn.className = 'btn-primary';
             waBtn.style.marginTop = '0.5rem';
@@ -2558,13 +2596,9 @@ async function handleQuote(event) {
             document.querySelector('#quote-results').appendChild(waBtn);
         }
 
-        // Obtener el nombre del producto para registrarlo
-        const productSelect = document.getElementById('quote_product');
-        const productKey = productSelect.value;
-        const productName = productSelect.options[productSelect.selectedIndex]?.text || productKey;
-
+        const adelantoMsg = Math.round(data.suggested_retail_price * 0.5);
         waBtn.onclick = () => {
-            const message = `🔩 TORMENTA INDUMENTARIA\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 Presupuesto #${budgetNum}\n📦 ${productName}\n━━━━━━━━━━━━━━━━━━━━━━━\n🧵 Materiales: $${data.total_materials.toLocaleString('es-AR')}\n🔧 Mano de obra: $${data.labor.total.toLocaleString('es-AR')}\n💰 PRECIO FINAL: $${data.suggested_retail_price.toLocaleString('es-AR')}\n━━━━━━━━━━━━━━━━━━━━━━━\n📅 Válido por 15 días\n⏱️ Confección: 7-10 días hábiles\n✨ Confección artesanal · Slow Fashion`;
+            const message = `🖤 TORMENTA INDUMENTARIA\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 Presupuesto #${budgetNum}\n📦 ${productName}\n━━━━━━━━━━━━━━━━━━━━━━━\n🧵 Materiales: $${data.total_materials.toLocaleString('es-CL')}\n🔧 Mano de obra: $${data.labor.total.toLocaleString('es-CL')}\n💰 PRECIO FINAL: $${data.suggested_retail_price.toLocaleString('es-CL')}\n💵 Adelanto 50%: $${adelantoMsg.toLocaleString('es-CL')}\n━━━━━━━━━━━━━━━━━━━━━━━\n📅 Válido por 15 días\n⏱️ Confección: 7-10 días hábiles\n✨ Hecho a mano en Santiago · Vegan · Slow fashion`;
             navigator.clipboard.writeText(message).then(() => {
                 showToast('Presupuesto copiado al portapapeles', 'success');
             });
@@ -2577,43 +2611,32 @@ async function handleQuote(event) {
             }
         };
 
-        let createOrderBtn = document.getElementById('btn-quote-create-order');
-        if (!createOrderBtn) {
-            createOrderBtn = document.createElement('button');
-            createOrderBtn.id = 'btn-quote-create-order';
-            createOrderBtn.className = 'btn-primary';
-            createOrderBtn.style.marginTop = '0.5rem';
-            createOrderBtn.style.width = '100%';
-            createOrderBtn.textContent = '📋 Crear orden de este presupuesto';
-            document.querySelector('#quote-results').appendChild(createOrderBtn);
-        }
-
-        createOrderBtn.onclick = () => {
-            createOrderFromQuote({ productKey, productName, data, budgetNum });
-        };
-
         regBtn.onclick = () => {
-            // Autofill the production form in pane-history
             const prodSelect = document.getElementById('prod_product_key');
             if (prodSelect) {
                 prodSelect.value = productKey;
-                handleProductionProductChange();
+                if (typeof handleProductionProductChange === 'function') handleProductionProductChange();
             }
-            document.getElementById('prod_qty').value = 1;
-            document.getElementById('prod_mat_cost').value = data.total_materials;
-            document.getElementById('prod_labor_cost').value = data.labor.total;
-            document.getElementById('prod_retail_price').value = data.suggested_retail_price;
+            const qty = document.getElementById('prod_qty');
+            if (qty) qty.value = 1;
+            const mat = document.getElementById('prod_mat_cost');
+            if (mat) mat.value = data.total_materials;
+            const lab = document.getElementById('prod_labor_cost');
+            if (lab) lab.value = data.labor.total;
+            const retail = document.getElementById('prod_retail_price');
+            if (retail) retail.value = data.suggested_retail_price;
 
             switchTab('history');
-            
-            // Animación y foco
             const prodForm = document.getElementById('production-form');
-            prodForm.style.boxShadow = '0 0 30px rgba(197, 160, 89, 0.4)';
-            setTimeout(() => { prodForm.style.boxShadow = ''; }, 1500);
+            if (prodForm) {
+                prodForm.style.boxShadow = '0 0 30px rgba(197, 160, 89, 0.4)';
+                setTimeout(() => { prodForm.style.boxShadow = ''; }, 1500);
+            }
         };
 
         placeholder.classList.add('hidden');
         resultsContainer.classList.remove('hidden');
+        toOrderBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -2623,75 +2646,77 @@ async function handleQuote(event) {
     }
 }
 
-async function createOrderFromQuote(quoteData) {
-    const { productKey, productName, data, budgetNum } = quoteData;
-    const clientSelect = document.getElementById('quote_client');
-    const clientId = clientSelect ? clientSelect.value : "";
-    const clientOpt = clientSelect && clientSelect.selectedIndex >= 0 ? clientSelect.options[clientSelect.selectedIndex] : null;
-    const clientName = clientOpt ? clientOpt.dataset.name || "Cliente" : "Cliente Cotización";
-    const clientContact = clientOpt ? clientOpt.dataset.contact || "" : "";
-    
-    const depositDefault = Math.round(data.suggested_retail_price * 0.5);
-    const dueDateDefault = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-
-    const payload = {
-        client_id: clientId,
-        client_name: clientName,
-        product_key: productKey,
-        product_name: productName,
-        quantity: 1,
-        size: "M",
-        quoted_price: data.suggested_retail_price,
-        deposit_amount: depositDefault,
-        due_date: dueDateDefault,
-        materials_cost_snapshot: data.total_materials,
-        labor_cost_snapshot: data.labor.total,
-        retail_price_snapshot: data.suggested_retail_price,
-        notes: `Presupuesto #${budgetNum}`,
-        contact_phone: clientContact
-    };
-
-    try {
-        const response = await fetch('/api/orders/from-quote', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'Error al crear la orden');
-        }
-
-        const newOrder = await response.json();
-        showToast(`¡Orden #${newOrder.id} creada con seña de $${depositDefault.toLocaleString('es-AR')}!`, 'success');
-        
-        if (typeof loadOrders === 'function') {
-            await loadOrders();
-        }
-        switchTab('orders');
-    } catch (error) {
-        showToast(`Error al crear la orden: ${error.message}`, 'error');
-    }
-}
-
 // --- MÓDULO 4: FICHAS DE CLIENTES ---
+let clientsCache = [];
+
 async function loadClients() {
     try {
         const response = await fetch('/api/clients');
-        const clients = await response.json();
-        renderClientList(clients);
-        updateClientDropdowns(clients);
+        clientsCache = await response.json();
+        filterClientsList();
+        updateClientDropdowns(clientsCache);
     } catch (error) {
         console.error('Error loading clients:', error);
     }
 }
 
+function filterClientsList() {
+    const q = (document.getElementById('clients-search')?.value || '').trim().toLowerCase();
+    let list = clientsCache || [];
+    if (q) {
+        list = list.filter(c => {
+            const blob = `${c.name || ''} ${c.contact || ''} ${c.notes || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderClientList(list);
+}
+window.filterClientsList = filterClientsList;
+
+function focusNewClientForm() {
+    const form = document.getElementById('client-form');
+    const title = document.getElementById('client-form-title');
+    if (typeof cancelClientEdit === 'function') {
+        try { cancelClientEdit(); } catch (_) { /* ok */ }
+    }
+    if (title) title.textContent = 'Registrar nueva clienta';
+    document.getElementById('client_edit_id').value = '';
+    form?.reset?.();
+    document.getElementById('client-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('client_name')?.focus();
+}
+window.focusNewClientForm = focusNewClientForm;
+
+function useClientInQuote(clientId) {
+    switchTab('quote');
+    setTimeout(() => {
+        const sel = document.getElementById('quote_client');
+        if (sel) {
+            sel.value = clientId;
+            showToast('Clienta seleccionada en el cotizador', 'success');
+        }
+    }, 200);
+}
+window.useClientInQuote = useClientInQuote;
+
+function useClientInOrder(clientId) {
+    switchTab('orders');
+    setTimeout(() => {
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        const sel = document.getElementById('order_client');
+        if (sel) {
+            sel.value = clientId;
+            showToast('Clienta precargada en la orden', 'success');
+        }
+    }, 250);
+}
+window.useClientInOrder = useClientInOrder;
+
 function updateClientDropdowns(clients) {
-    // 1. Selector de clientes del cotizador
     const quoteClientSel = document.getElementById('quote_client');
     if (quoteClientSel) {
-        quoteClientSel.innerHTML = '<option value="">-- Sin Cliente (Presupuesto Genérico) --</option>';
+        quoteClientSel.innerHTML = '<option value="">— Sin clienta (presupuesto genérico) —</option>';
         clients.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -2702,17 +2727,10 @@ function updateClientDropdowns(clients) {
         });
     }
 
-    // 2. Selector de clientes de pedidos/ordenes
+    // Órdenes: no pisar si loadOrderFormDropdowns ya armó placeholders
     const orderClientSel = document.getElementById('order_client');
-    if (orderClientSel) {
-        orderClientSel.innerHTML = '';
-        clients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            opt.dataset.name = c.name;
-            orderClientSel.appendChild(opt);
-        });
+    if (orderClientSel && !orderClientSel.querySelector('option[value=""]')) {
+        // se refresca en loadOrderFormDropdowns
     }
 }
 
@@ -2722,44 +2740,51 @@ function renderClientList(clients) {
     const listContainer = document.getElementById('client-list');
     
     if (!clients || clients.length === 0) {
-        placeholder.classList.remove('hidden');
-        listContainer.innerHTML = '';
+        if (placeholder) {
+            placeholder.classList.remove('hidden');
+            const q = (document.getElementById('clients-search')?.value || '').trim();
+            placeholder.querySelector('p') && (placeholder.querySelector('p').textContent = q
+                ? 'No hay fichas que coincidan con la búsqueda.'
+                : 'No hay clientas registradas aún. Usá el formulario para agregar la primera.');
+        }
+        if (listContainer) listContainer.innerHTML = '';
         return;
     }
     
-    placeholder.classList.add('hidden');
+    if (placeholder) placeholder.classList.add('hidden');
     listContainer.innerHTML = '';
     
     clients.forEach(client => {
         const card = document.createElement('div');
         card.className = 'client-card';
         
-        const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-AR') : '';
+        const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-CL') : '';
         const notesHtml = client.notes ? `<div class="client-notes-text">📝 ${client.notes}</div>` : '';
+        const safeName = (client.name || '').replace(/'/g, "\\'");
         
         const m = [
-            { label: 'Frente/Cabeza (1)', val: client.forehead },
-            { label: 'Cuello (2)', val: client.neck },
-            { label: 'Hombros (3)', val: client.shoulder_blade },
-            { label: 'Pecho (4)', val: client.chest || client.bust },
-            { label: 'Bajo Busto', val: client.underbust },
-            { label: 'Cintura (5)', val: client.waist },
-            { label: 'Cadera (6)', val: client.hips },
-            { label: 'Muslo (7)', val: client.thigh },
-            { label: 'Rodilla (8)', val: client.knee },
-            { label: 'Pantorrilla (9)', val: client.calf },
-            { label: 'Tobillo (10)', val: client.ankle },
-            { label: 'Calzado (11)', val: client.shoe_size },
-            { label: 'Suela (12)', val: client.sole_length },
-            { label: 'Entrep. Tobillo (13)', val: client.crotch_ankle },
-            { label: 'Bícep (14)', val: client.bicep },
-            { label: 'Codo (15)', val: client.elbow },
-            { label: 'Antebrazo (16)', val: client.forearm },
-            { label: 'Muñeca (17)', val: client.wrist },
-            { label: 'Palma (18)', val: client.palm },
-            { label: 'Tiro U (19)', val: client.u_seam },
-            { label: 'Brazo (20)', val: client.arm_length },
-            { label: 'Estatura (21)', val: client.height }
+            { label: 'Frente/Cabeza', val: client.forehead },
+            { label: 'Cuello', val: client.neck },
+            { label: 'Hombros', val: client.shoulder_blade },
+            { label: 'Pecho', val: client.chest || client.bust },
+            { label: 'Bajo busto', val: client.underbust },
+            { label: 'Cintura', val: client.waist },
+            { label: 'Cadera', val: client.hips },
+            { label: 'Muslo', val: client.thigh },
+            { label: 'Rodilla', val: client.knee },
+            { label: 'Pantorrilla', val: client.calf },
+            { label: 'Tobillo', val: client.ankle },
+            { label: 'Calzado', val: client.shoe_size },
+            { label: 'Suela', val: client.sole_length },
+            { label: 'Entrep. tobillo', val: client.crotch_ankle },
+            { label: 'Bícep', val: client.bicep },
+            { label: 'Codo', val: client.elbow },
+            { label: 'Antebrazo', val: client.forearm },
+            { label: 'Muñeca', val: client.wrist },
+            { label: 'Palma', val: client.palm },
+            { label: 'Tiro U', val: client.u_seam },
+            { label: 'Brazo', val: client.arm_length },
+            { label: 'Estatura', val: client.height }
         ].filter(item => item.val && parseFloat(item.val) > 0);
 
         const chipsHtml = m.length > 0
@@ -2771,20 +2796,26 @@ function renderClientList(clients) {
                 <div class="client-card-info">
                     <h4>${client.name}</h4>
                     ${client.contact ? `<div class="client-contact">${client.contact}</div>` : ''}
-                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talla: ${client.preferred_size} · Actualizado: ${dateStr}</div>
+                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talle: ${client.preferred_size || '—'} · Act.: ${dateStr}</div>
                 </div>
                 <div class="client-card-actions">
-                    <button class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al Escalado">
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInOrder('${client.id}')" title="Usar en una orden">
+                        📋 Orden
+                    </button>
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInQuote('${client.id}')" title="Usar en cotizador">
+                        💰 Cotizar
+                    </button>
+                    <button type="button" class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al escalado">
                         ↗ Escalar
                     </button>
-                    <button class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha de medidas">
-                        📄 Ficha
+                    <button type="button" class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha">
+                        📄
                     </button>
-                    <button class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar cliente">
-                        ✏ Editar
+                    <button type="button" class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar">
+                        ✏
                     </button>
-                    <button class="client-action-btn delete-btn" onclick="deleteClient('${client.id}', '${client.name}')" title="Eliminar cliente">
-                        ✕ Borrar
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteClient('${client.id}', '${safeName}')" title="Eliminar">
+                        ✕
                     </button>
                 </div>
             </div>
@@ -2965,36 +2996,125 @@ async function loadCatalog() {
     try {
         const response = await fetch('/api/products');
         productsCatalog = await response.json();
-        renderCatalogList(productsCatalog);
+        filterCatalogView();
         updateProductDropdowns(productsCatalog);
     } catch (error) {
         console.error('Error loading products catalog:', error);
     }
 }
 
+const CATEGORY_LABELS = {
+    arneses: 'Arneses',
+    collares: 'Collares',
+    corseteria: 'Corsetería',
+    mascaras: 'Máscaras',
+    lenceria: 'Lencería',
+    portaligas: 'Portaligas',
+    accesorios: 'Accesorios',
+    cadenas: 'Cadenas',
+    general: 'General',
+};
+
+function filterCatalogView() {
+    const q = (document.getElementById('catalog-search')?.value || '').trim().toLowerCase();
+    const catFilter = document.getElementById('catalog-cat-filter')?.value || '';
+    let entries = Object.entries(productsCatalog || {});
+    if (catFilter) {
+        entries = entries.filter(([, p]) => (p.category || 'general') === catFilter);
+    }
+    if (q) {
+        entries = entries.filter(([key, p]) => {
+            const blob = `${key} ${p.name || ''} ${p.description || ''} ${p.category || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderCatalogList(Object.fromEntries(entries));
+}
+window.filterCatalogView = filterCatalogView;
+
+function focusNewCatalogForm() {
+    const form = document.getElementById('catalog-form');
+    form?.reset();
+    const keyEl = document.getElementById('cat_key');
+    if (keyEl) keyEl.disabled = false;
+    const title = document.getElementById('catalog-form-title');
+    if (title) title.textContent = 'Ficha de prenda (BOM)';
+    document.querySelector('.cat-panel-dim')?.classList.add('hidden');
+    document.getElementById('catalog-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    keyEl?.focus();
+}
+window.focusNewCatalogForm = focusNewCatalogForm;
+
+function useProductInQuote(key) {
+    switchTab('quote');
+    setTimeout(() => {
+        const sel = document.getElementById('quote_product');
+        if (sel) {
+            sel.value = key;
+            showToast('Prenda cargada en el cotizador', 'success');
+        }
+    }, 200);
+}
+window.useProductInQuote = useProductInQuote;
+
+function useProductInOrder(key) {
+    switchTab('orders');
+    setTimeout(() => {
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        const sel = document.getElementById('order_product');
+        if (sel) {
+            sel.value = key;
+            showToast('Prenda precargada en la orden', 'success');
+        }
+    }, 250);
+}
+window.useProductInOrder = useProductInOrder;
+
 function renderCatalogList(catalog) {
     const listContainer = document.getElementById('catalog-items-list');
     if (!listContainer) return;
-    
+
     if (!catalog || Object.keys(catalog).length === 0) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted);">No hay productos registrados en el catálogo.</p>';
+        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted);">No hay prendas con este filtro.</p>';
         return;
     }
-    
+
+    // Ordenar por categoría de marca Tormenta
+    const categoryOrder = ['arneses', 'mascaras', 'collares', 'corseteria', 'lenceria', 'portaligas', 'accesorios', 'cadenas', 'general'];
+    const entries = Object.entries(catalog).sort((a, b) => {
+        const ca = categoryOrder.indexOf(a[1].category || 'general');
+        const cb = categoryOrder.indexOf(b[1].category || 'general');
+        if (ca !== cb) return (ca === -1 ? 99 : ca) - (cb === -1 ? 99 : cb);
+        return (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'es');
+    });
+
     listContainer.innerHTML = '';
-    
-    for (const [key, prod] of Object.entries(catalog)) {
+    let lastCategory = null;
+
+    for (const [key, prod] of entries) {
+        const cat = prod.category || 'general';
+        if (cat !== lastCategory) {
+            lastCategory = cat;
+            const heading = document.createElement('div');
+            heading.className = 'catalog-category-heading';
+            heading.innerHTML = `<h3>${CATEGORY_LABELS[cat] || cat}</h3>`;
+            listContainer.appendChild(heading);
+        }
+
         const card = document.createElement('div');
-        card.className = 'client-card'; // Reusar clase tarjeta cliente por consistencia
-        
-        const isBase = ["arnes", "mascara", "corset"].includes(key);
-        const tagType = isBase ? 'Base' : 'Personalizado';
-        
+        card.className = 'client-card catalog-product-card';
+
+        const isCore = prod.core === true || ['arnes', 'arnes_body', 'mascara', 'corset_underbust'].includes(key);
+        const veganBadge = prod.vegan !== false ? '<span class="item-tag tag-vegan">Vegan</span>' : '';
+        const mtoBadge = prod.made_to_order !== false ? '<span class="item-tag tag-mto">A medida</span>' : '';
+        const coreBadge = isCore ? '<span class="item-tag">Base taller</span>' : '';
+
         let detailsHtml = `
             <ul>
                 ${prod.cinta > 0 ? `<li><strong>Cinta:</strong> ${prod.cinta} m</li>` : ''}
                 ${prod.cadenas > 0 ? `<li><strong>Cadenas:</strong> ${prod.cadenas} m</li>` : ''}
-                ${prod.panels_count > 0 ? `<li><strong>Paneles Cuero:</strong> ${prod.panels_count} de ${prod.panel_width}x${prod.panel_height}cm</li>` : ''}
+                ${prod.panels_count > 0 ? `<li><strong>Paneles cuerina:</strong> ${prod.panels_count} de ${prod.panel_width}x${prod.panel_height}cm</li>` : ''}
                 ${prod.argollas > 0 ? `<li><strong>Argollas:</strong> ${prod.argollas} uds</li>` : ''}
                 ${prod.hebillas > 0 ? `<li><strong>Hebillas:</strong> ${prod.hebillas} uds</li>` : ''}
                 ${prod.remaches > 0 ? `<li><strong>Remaches:</strong> ${prod.remaches} uds</li>` : ''}
@@ -3005,16 +3125,21 @@ function renderCatalogList(catalog) {
             </ul>
         `;
 
+        const safeName = (prod.name || key).replace(/'/g, "\\'");
         card.innerHTML = `
             <div class="client-card-header">
                 <div class="client-card-info">
-                    <span class="item-tag">${tagType}</span>
-                    <h4 style="margin-top: 0.3rem;">${prod.name}</h4>
-                    <div class="client-date">Identificador: <em>${key}</em></div>
+                    <div class="catalog-badges">${coreBadge}${veganBadge}${mtoBadge}</div>
+                    <h4 style="margin-top: 0.3rem;">${prod.name || key}</h4>
+                    <div class="client-date">Clave: <em>${key}</em></div>
+                    ${prod.description ? `<p class="catalog-product-desc">${prod.description}</p>` : ''}
+                    ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${prod.material}</p>` : ''}
                 </div>
                 <div class="client-card-actions">
-                    <button class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏ Editar</button>
-                    ${!isBase ? `<button class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${prod.name}')">✕ Borrar</button>` : ''}
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${key}')" title="Usar en orden">📋</button>
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${key}')" title="Usar en cotizador">💰</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="editProduct('${key}')">✏</button>
+                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕</button>` : ''}
                 </div>
             </div>
             <div class="catalog-item-bom" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.15); border-radius: 4px;">
@@ -3025,51 +3150,68 @@ function renderCatalogList(catalog) {
     }
 }
 
+function fillProductSelect(selectEl, catalog, { includeCustom = false, customLabel = '', placeholder = '' } = {}) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    if (placeholder) {
+        const ph = document.createElement('option');
+        ph.value = '';
+        ph.disabled = true;
+        ph.selected = true;
+        ph.textContent = placeholder;
+        selectEl.appendChild(ph);
+    }
+
+    // Agrupar por categoría (como en el feed de Tormenta: líneas de producto)
+    const byCat = {};
+    for (const [key, prod] of Object.entries(catalog || {})) {
+        const cat = prod.category || 'general';
+        if (!byCat[cat]) byCat[cat] = [];
+        byCat[cat].push([key, prod]);
+    }
+    const categoryOrder = ['arneses', 'mascaras', 'collares', 'corseteria', 'lenceria', 'portaligas', 'accesorios', 'cadenas', 'general'];
+    const cats = Object.keys(byCat).sort((a, b) => {
+        const ia = categoryOrder.indexOf(a);
+        const ib = categoryOrder.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+
+    for (const cat of cats) {
+        const group = document.createElement('optgroup');
+        group.label = CATEGORY_LABELS[cat] || cat;
+        byCat[cat]
+            .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'es'))
+            .forEach(([key, prod]) => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = prod.name || key;
+                group.appendChild(opt);
+            });
+        selectEl.appendChild(group);
+    }
+
+    if (includeCustom) {
+        const customOpt = document.createElement('option');
+        customOpt.value = 'custom';
+        customOpt.textContent = customLabel || 'Personalizado / BOM manual';
+        selectEl.appendChild(customOpt);
+    }
+}
+
 function updateProductDropdowns(catalog) {
-    // 1. Selector de optimizador común
-    const optSelect = document.getElementById('product_key');
-    if (optSelect) {
-        // Mantener opciones fijas y custom, pero rellenar dinámicamente el catálogo
-        optSelect.innerHTML = '';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            optSelect.appendChild(opt);
-        }
-        const customOpt = document.createElement('option');
-        customOpt.value = 'custom';
-        customOpt.textContent = 'Ficha de Insumos Personalizada (BOM Manual)';
-        optSelect.appendChild(customOpt);
-    }
-
-    // 2. Selector de cotizador
-    const quoteSelect = document.getElementById('quote_product');
-    if (quoteSelect) {
-        quoteSelect.innerHTML = '';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            quoteSelect.appendChild(opt);
-        }
-    }
-
-    // 3. Selector de registro de producción
-    const prodSelect = document.getElementById('prod_product_key');
-    if (prodSelect) {
-        prodSelect.innerHTML = '<option value="" disabled selected>-- Seleccionar Prenda --</option>';
-        for (const [key, prod] of Object.entries(catalog)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = prod.name;
-            prodSelect.appendChild(opt);
-        }
-        const customOpt = document.createElement('option');
-        customOpt.value = 'custom';
-        customOpt.textContent = 'Prenda Personalizada / Sin Catálogo';
-        prodSelect.appendChild(customOpt);
-    }
+    fillProductSelect(document.getElementById('product_key'), catalog, {
+        includeCustom: true,
+        customLabel: 'Ficha de insumos personalizada (BOM manual)',
+    });
+    fillProductSelect(document.getElementById('quote_product'), catalog);
+    fillProductSelect(document.getElementById('prod_product_key'), catalog, {
+        includeCustom: true,
+        customLabel: 'Prenda personalizada / sin catálogo',
+        placeholder: '-- Seleccionar prenda Tormenta --',
+    });
+    fillProductSelect(document.getElementById('order_product'), catalog, {
+        placeholder: '-- Prenda del pedido --',
+    });
 }
 
 async function handleSaveProduct(event) {
@@ -3081,25 +3223,22 @@ async function handleSaveProduct(event) {
 
     const key = document.getElementById('cat_key').value.trim();
     const name = document.getElementById('cat_name').value.trim();
+    const category = document.getElementById('cat_category')?.value || 'general';
     const panelsCount = parseInt(document.getElementById('cat_panels').value) || 0;
 
-    const payload = {
-        key: key,
-        name: name,
-        bom: {
-            cinta: parseFloat(document.getElementById('cat_cinta').value) || 0.0,
-            argollas: parseInt(document.getElementById('cat_argollas').value) || 0,
-            hebillas: parseInt(document.getElementById('cat_hebillas').value) || 0,
-            remaches: parseInt(document.getElementById('cat_remaches').value) || 0,
-            ojalillos: parseInt(document.getElementById('cat_ojalillos').value) || 0,
-            varillas: parseInt(document.getElementById('cat_varillas').value) || 0,
-            cadenas: parseFloat(document.getElementById('cat_cadenas').value) || 0.0,
-            tachas: parseInt(document.getElementById('cat_tachas').value) || 0,
-            mosquetones: parseInt(document.getElementById('cat_mosquetones').value) || 0,
-            panels_count: panelsCount,
-            panel_width: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_w').value) || 0.0) : 0.0,
-            panel_height: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_h').value) || 0.0) : 0.0
-        }
+    const bom = {
+        cinta: parseFloat(document.getElementById('cat_cinta').value) || 0.0,
+        argollas: parseInt(document.getElementById('cat_argollas').value) || 0,
+        hebillas: parseInt(document.getElementById('cat_hebillas').value) || 0,
+        remaches: parseInt(document.getElementById('cat_remaches').value) || 0,
+        ojalillos: parseInt(document.getElementById('cat_ojalillos').value) || 0,
+        varillas: parseInt(document.getElementById('cat_varillas').value) || 0,
+        cadenas: parseFloat(document.getElementById('cat_cadenas').value) || 0.0,
+        tachas: parseInt(document.getElementById('cat_tachas').value) || 0,
+        mosquetones: parseInt(document.getElementById('cat_mosquetones').value) || 0,
+        panels_count: panelsCount,
+        panel_width: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_w').value) || 0.0) : 0.0,
+        panel_height: panelsCount > 0 ? (parseFloat(document.getElementById('cat_panel_h').value) || 0.0) : 0.0
     };
 
     const isEditMode = document.getElementById('cat_key').disabled;
@@ -3107,18 +3246,23 @@ async function handleSaveProduct(event) {
     try {
         let response;
         if (isEditMode) {
-            // Edición: PUT a /api/products/{key} enviando solo el BOM
             response = await fetch(`/api/products/${key}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload.bom)
+                body: JSON.stringify({ name, category, ...bom })
             });
         } else {
-            // Creación: POST a /api/products
             response = await fetch('/api/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    key,
+                    name,
+                    category,
+                    vegan: true,
+                    made_to_order: true,
+                    bom,
+                })
             });
         }
 
@@ -3127,10 +3271,11 @@ async function handleSaveProduct(event) {
             throw new Error(err.detail || 'Error al guardar el producto');
         }
 
+        showToast(isEditMode ? 'Ficha actualizada' : 'Ficha creada', 'success');
         document.getElementById('catalog-form').reset();
         document.getElementById('cat_key').disabled = false;
-        document.getElementById('catalog-form-title').textContent = 'Registrar Ficha de Prenda (BOM)';
-        document.querySelector('.cat-panel-dim').classList.add('hidden');
+        document.getElementById('catalog-form-title').textContent = 'Ficha de prenda (BOM)';
+        document.querySelector('.cat-panel-dim')?.classList.add('hidden');
         
         await loadCatalog();
 
@@ -3147,8 +3292,10 @@ async function editProduct(key) {
     if (!prod) return;
 
     document.getElementById('cat_key').value = key;
-    document.getElementById('cat_key').disabled = true; // No permitir cambiar clave en edición
+    document.getElementById('cat_key').disabled = true;
     document.getElementById('cat_name').value = prod.name;
+    const catSel = document.getElementById('cat_category');
+    if (catSel) catSel.value = prod.category || 'general';
     document.getElementById('cat_cinta').value = prod.cinta;
     document.getElementById('cat_cadenas').value = prod.cadenas;
     document.getElementById('cat_panels').value = prod.panels_count;
@@ -3161,15 +3308,15 @@ async function editProduct(key) {
     document.getElementById('cat_mosquetones').value = prod.mosquetones;
 
     if (prod.panels_count > 0) {
-        document.querySelector('.cat-panel-dim').classList.remove('hidden');
+        document.querySelector('.cat-panel-dim')?.classList.remove('hidden');
         document.getElementById('cat_panel_w').value = prod.panel_width;
         document.getElementById('cat_panel_h').value = prod.panel_height;
     } else {
-        document.querySelector('.cat-panel-dim').classList.add('hidden');
+        document.querySelector('.cat-panel-dim')?.classList.add('hidden');
     }
 
-    document.getElementById('catalog-form-title').textContent = `Editando BOM: ${prod.name}`;
-    document.getElementById('catalog-form').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('catalog-form-title').textContent = `Editando: ${prod.name}`;
+    document.getElementById('catalog-form-card')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function deleteProduct(key, name) {
@@ -4245,55 +4392,130 @@ function renderRestockPredictions() {
 }
 
 // --- MÓDULO: INVENTARIO ---
+let inventoryCache = [];
+let inventoryFilter = 'todos';
+
+function stockLevel(item) {
+    if (item.stock <= item.min_stock) return 'critico';
+    if (item.stock <= item.min_stock * 2) return 'bajo';
+    return 'ok';
+}
+
+function setInventoryFilter(filter) {
+    inventoryFilter = filter;
+    document.querySelectorAll('[data-inv-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-inv-filter') === filter);
+    });
+    filterInventoryView();
+}
+window.setInventoryFilter = setInventoryFilter;
+
+function setInvQuickQty(n) {
+    const el = document.getElementById('inv_quantity');
+    if (el) el.value = n;
+}
+window.setInvQuickQty = setInvQuickQty;
+
+function selectInventoryItem(itemKey) {
+    const sel = document.getElementById('inv_item');
+    if (sel) sel.value = itemKey;
+    document.getElementById('inventory-adjust-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('inv_quantity')?.focus();
+}
+window.selectInventoryItem = selectInventoryItem;
+
+function filterInventoryView() {
+    const q = (document.getElementById('inv-search')?.value || '').trim().toLowerCase();
+    let items = inventoryCache.slice();
+    if (inventoryFilter !== 'todos') {
+        items = items.filter(i => stockLevel(i) === inventoryFilter);
+    }
+    if (q) {
+        items = items.filter(i => `${i.name} ${i.item_key}`.toLowerCase().includes(q));
+    }
+    renderInventoryItems(items);
+}
+window.filterInventoryView = filterInventoryView;
+
+function renderInventoryItems(items) {
+    const tableBody = document.getElementById('inventory-table-body');
+    const cards = document.getElementById('inventory-cards');
+    const select = document.getElementById('inv_item');
+    if (!tableBody) return;
+
+    const prevSelect = select?.value;
+    tableBody.innerHTML = '';
+    if (cards) cards.innerHTML = '';
+    if (select) select.innerHTML = '';
+
+    if (!items.length) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);">Sin insumos con este filtro.</td></tr>';
+    }
+
+    // Select siempre con catálogo completo
+    (inventoryCache || []).forEach(item => {
+        if (select) {
+            const opt = document.createElement('option');
+            opt.value = item.item_key;
+            opt.textContent = item.name;
+            select.appendChild(opt);
+        }
+    });
+    if (select && prevSelect) select.value = prevSelect;
+
+    items.forEach(item => {
+        const level = stockLevel(item);
+        const statusClass = level === 'critico' ? 'stock-critical' : level === 'bajo' ? 'stock-low' : 'stock-ok';
+        const statusText = level === 'critico' ? 'Crítico' : level === 'bajo' ? 'Bajo' : 'OK';
+
+        const tr = document.createElement('tr');
+        tr.className = 'inv-row-clickable';
+        tr.title = 'Clic para ajustar este insumo';
+        tr.onclick = () => selectInventoryItem(item.item_key);
+        tr.innerHTML = `
+            <td><strong>${item.name}</strong></td>
+            <td>${item.stock}</td>
+            <td>${item.min_stock}</td>
+            <td>${item.unit}</td>
+            <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
+        `;
+        tableBody.appendChild(tr);
+
+        if (cards) {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `inv-card level-${level}`;
+            card.onclick = () => selectInventoryItem(item.item_key);
+            card.innerHTML = `
+                <span class="inv-card-name">${item.name}</span>
+                <span class="inv-card-stock">${item.stock} <small>${item.unit}</small></span>
+                <span class="stock-badge ${statusClass}">${statusText}</span>
+                <span class="inv-card-min">mín. ${item.min_stock}</span>
+            `;
+            cards.appendChild(card);
+        }
+    });
+}
+
 async function loadInventory() {
     try {
         const response = await fetch('/api/inventory');
-        const items = await response.json();
-        const tableBody = document.getElementById('inventory-table-body');
+        inventoryCache = await response.json();
         const banner = document.getElementById('inventory-alert-banner');
         const bannerText = document.getElementById('inventory-alert-text');
-        const select = document.getElementById('inv_item');
-        if (!tableBody) return;
+        const alertCount = inventoryCache.filter(i => stockLevel(i) === 'critico').length;
 
-        tableBody.innerHTML = '';
-        if (select) select.innerHTML = '';
-        let alertCount = 0;
-
-        items.forEach(item => {
-            let statusClass = 'stock-ok';
-            let statusText = 'OK';
-            if (item.stock <= item.min_stock) {
-                statusClass = 'stock-critical'; statusText = 'Crítico'; alertCount++;
-            } else if (item.stock <= item.min_stock * 2) {
-                statusClass = 'stock-low'; statusText = 'Bajo';
+        if (banner && bannerText) {
+            if (alertCount > 0) {
+                banner.className = 'inventory-alert-banner';
+                bannerText.textContent = `⚠ ${alertCount} insumo(s) bajo el mínimo. Tocá un ítem crítico para reponer.`;
+            } else {
+                banner.className = 'inventory-alert-banner ok';
+                bannerText.textContent = '✓ Todos los insumos están dentro de los niveles seguros.';
             }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${item.name}</strong></td>
-                <td>${item.stock}</td>
-                <td>${item.min_stock}</td>
-                <td>${item.unit}</td>
-                <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
-            `;
-            tableBody.appendChild(tr);
-
-            if (select) {
-                const opt = document.createElement('option');
-                opt.value = item.item_key;
-                opt.textContent = item.name;
-                select.appendChild(opt);
-            }
-        });
-
-        if (alertCount > 0) {
-            banner.className = 'inventory-alert-banner';
-            bannerText.textContent = `⚠ ${alertCount} insumo(s) por debajo del stock mínimo.`;
-        } else {
-            banner.className = 'inventory-alert-banner ok';
-            bannerText.textContent = '✓ Todos los insumos están dentro de los niveles seguros.';
         }
-        
+
+        filterInventoryView();
         await loadInventoryMovements();
     } catch (error) {
         console.error('Error loading inventory:', error);
@@ -4312,17 +4534,20 @@ async function loadInventoryMovements() {
             return;
         }
 
+        const nameByKey = Object.fromEntries((inventoryCache || []).map(i => [i.item_key, i.name]));
         const ITEM_NAMES = {
-            argollas: "Argollas metálicas",
-            hebillas: "Hebillas reguladoras",
-            remaches: "Remaches de unión",
-            ojalillos: "Ojalillos metálicos",
-            varillas: "Varillas de soporte",
-            cadenas: "Cadenas metálicas",
-            tachas: "Tachas decorativas",
-            mosquetones: "Mosquetones de enganche",
-            cinta: "Cinta/Correa",
-            cuerina_rollo: "Cuerina en rollo"
+            argollas: 'Argollas metálicas',
+            hebillas: 'Hebillas reguladoras',
+            remaches: 'Remaches de unión',
+            ojalillos: 'Ojalillos metálicos',
+            varillas: 'Varillas de soporte',
+            cadenas: 'Cadenas metálicas',
+            tachas: 'Tachas decorativas',
+            mosquetones: 'Mosquetones de enganche',
+            cinta: 'Cinta/Correa',
+            cuerina_rollo: 'Cuerina vegana en rollo',
+            charol_rollo: 'Charol vegano en rollo',
+            ...nameByKey,
         };
 
         const typeTranslations = {
@@ -4334,10 +4559,11 @@ async function loadInventoryMovements() {
         };
 
         tableBody.innerHTML = '';
-        movements.forEach(m => {
-            const dateStr = new Date(m.date).toLocaleString('es-AR');
+        // Mostrar los 40 más recientes
+        movements.slice(0, 40).forEach(m => {
+            const dateStr = new Date(m.date).toLocaleString('es-CL');
             const opClass = m.quantity >= 0 ? 'stock-ok' : 'stock-critical';
-            const opText = m.quantity >= 0 ? 'Suma (+)' : 'Resta (-)';
+            const opText = m.quantity >= 0 ? '+' : '−';
             const qtyText = Math.abs(m.quantity);
             const typeText = typeTranslations[m.movement_type] || m.movement_type;
             const itemName = ITEM_NAMES[m.item_key] || m.item_key;
@@ -4364,7 +4590,10 @@ async function handleUpdateInventory(event) {
     let quantity = parseFloat(document.getElementById('inv_quantity').value) || 0;
     const operation = document.getElementById('inv_operation').value;
     const reason = document.getElementById('inv_reason').value;
-    if (!itemKey || quantity <= 0) { showToast('Selecciona un insumo y cantidad válida', 'warning'); return; }
+    if (!itemKey || quantity <= 0) {
+        showToast('Elegí un insumo y una cantidad válida', 'warning');
+        return;
+    }
 
     if (operation === 'restar') {
         quantity = -quantity;
@@ -4377,9 +4606,12 @@ async function handleUpdateInventory(event) {
             body: JSON.stringify({ quantity, reason })
         });
         if (response.ok) {
-            showToast('Stock actualizado exitosamente', 'success');
+            showToast('Stock actualizado', 'success');
+            const keepItem = itemKey;
             document.getElementById('inventory-form').reset();
             await loadInventory();
+            const sel = document.getElementById('inv_item');
+            if (sel) sel.value = keepItem;
         } else {
             const err = await response.json();
             showToast(err.detail || 'Error al actualizar', 'error');
@@ -4390,42 +4622,138 @@ async function handleUpdateInventory(event) {
 }
 
 // --- MÓDULO: PROVEEDORES ---
+let suppliersCache = [];
+
+const SUPPLIER_PRICE_KEYS = [
+    'cinta', 'cuerina', 'cadenas', 'argollas', 'hebillas',
+    'remaches', 'ojalillos', 'varillas', 'tachas', 'mosquetones',
+];
+
+const SUPPLIER_PRICE_LABELS = {
+    cinta: 'Cinta ($/m)',
+    cuerina: 'Cuerina ($/m)',
+    cadenas: 'Cadenas ($/m)',
+    argollas: 'Argollas',
+    hebillas: 'Hebillas',
+    remaches: 'Remaches',
+    ojalillos: 'Ojalillos',
+    varillas: 'Varillas',
+    tachas: 'Tachas',
+    mosquetones: 'Mosquetones',
+};
+
+function readSupplierPricesFromForm() {
+    const prices = {};
+    SUPPLIER_PRICE_KEYS.forEach(k => {
+        const el = document.getElementById(`sup_p_${k}`);
+        prices[k] = el ? (parseFloat(el.value) || 0) : 0;
+    });
+    return prices;
+}
+
+function fillSupplierPricesForm(prices = {}) {
+    SUPPLIER_PRICE_KEYS.forEach(k => {
+        const el = document.getElementById(`sup_p_${k}`);
+        if (el) el.value = prices[k] || 0;
+    });
+}
+
+function focusNewSupplierForm() {
+    document.getElementById('supplier-form')?.reset();
+    document.getElementById('supplier_edit_id').value = '';
+    fillSupplierPricesForm({});
+    document.getElementById('supplier-form-title').textContent = 'Registrar proveedor';
+    const cancelBtn = document.getElementById('btn-cancel-supplier');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    document.getElementById('supplier-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('sup_name')?.focus();
+}
+window.focusNewSupplierForm = focusNewSupplierForm;
+
+function filterSuppliersList() {
+    const q = (document.getElementById('suppliers-search')?.value || '').trim().toLowerCase();
+    let list = suppliersCache || [];
+    if (q) {
+        list = list.filter(s => {
+            const blob = `${s.name || ''} ${s.contact || ''} ${s.notes || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderSuppliersList(list);
+}
+window.filterSuppliersList = filterSuppliersList;
+
+function renderSuppliersBestPrices(comparison) {
+    const el = document.getElementById('suppliers-best-prices');
+    if (!el) return;
+    // comparison: { item_key: [{supplier, price}, ...] } sorted ascending
+    const cards = [];
+    Object.entries(comparison || {}).forEach(([itemKey, rows]) => {
+        const withPrice = (rows || []).filter(r => r.price > 0);
+        if (!withPrice.length) return;
+        const best = withPrice[0];
+        cards.push(`
+            <div class="sup-best-card">
+                <span class="sup-best-item">${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</span>
+                <span class="sup-best-price">$${Number(best.price).toLocaleString('es-CL')}</span>
+                <span class="sup-best-name">${best.supplier}</span>
+            </div>
+        `);
+    });
+    el.innerHTML = cards.length
+        ? cards.join('')
+        : '<p class="sup-best-empty">Cargá precios en al menos un proveedor para ver el mejor valor por insumo.</p>';
+}
+
+function renderSuppliersList(suppliers) {
+    const list = document.getElementById('suppliers-list');
+    if (!list) return;
+
+    if (!suppliers || suppliers.length === 0) {
+        const q = (document.getElementById('suppliers-search')?.value || '').trim();
+        list.innerHTML = `<p style="text-align:center;color:var(--color-text-muted);padding:1rem;">${
+            q ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores. Usá el formulario de la izquierda.'
+        }</p>`;
+        return;
+    }
+
+    list.innerHTML = '';
+    suppliers.forEach(sup => {
+        const card = document.createElement('div');
+        card.className = 'supplier-card';
+        const pricesHtml = sup.prices
+            ? Object.entries(sup.prices)
+                .filter(([, v]) => v > 0)
+                .map(([k, v]) => `<span class="sup-price-chip">${SUPPLIER_PRICE_LABELS[k] || k}: $${Number(v).toLocaleString('es-CL')}</span>`)
+                .join('')
+            : '';
+        const safeName = (sup.name || '').replace(/'/g, "\\'");
+        const contact = sup.contact || '';
+        const waDigits = contact.replace(/\D/g, '');
+        card.innerHTML = `
+            <div class="supplier-card-top">
+                <div>
+                    <h4>${sup.name}</h4>
+                    ${contact ? `<div class="supplier-contact">${contact}</div>` : ''}
+                    ${sup.notes ? `<div class="supplier-notes">${sup.notes}</div>` : ''}
+                </div>
+                <div class="supplier-card-actions">
+                    ${waDigits.length > 8 ? `<button type="button" class="client-action-btn load-btn" onclick="window.open('https://wa.me/${waDigits}','_blank')" title="WhatsApp">📱</button>` : ''}
+                    <button type="button" class="client-action-btn edit-btn" onclick="editSupplier('${sup.id}')">✏</button>
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteSupplier('${sup.id}','${safeName}')">✕</button>
+                </div>
+            </div>
+            ${pricesHtml ? `<div class="sup-price-chips">${pricesHtml}</div>` : '<p class="sup-no-prices">Sin precios cargados</p>'}
+        `;
+        list.appendChild(card);
+    });
+}
+
 async function loadSuppliers() {
     try {
         const response = await fetch('/api/suppliers');
-        const suppliers = await response.json();
-        const list = document.getElementById('suppliers-list');
-        if (!list) return;
-
-        if (!suppliers || suppliers.length === 0) {
-            list.innerHTML = '<p style="text-align:center;color:var(--color-text-muted);">No hay proveedores registrados.</p>';
-            return;
-        }
-
-        list.innerHTML = '';
-        suppliers.forEach(sup => {
-            const card = document.createElement('div');
-            card.className = 'supplier-card';
-            const pricesHtml = sup.prices ? Object.entries(sup.prices)
-                .filter(([k,v]) => v > 0)
-                .map(([k,v]) => `<span style="font-size:0.75rem;color:var(--accent-steel);">${k}: $${v}</span>`)
-                .join(' · ') : '';
-            card.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
-                        <h4>${sup.name}</h4>
-                        ${sup.contact ? `<div class="supplier-contact">${sup.contact}</div>` : ''}
-                        ${sup.notes ? `<div class="supplier-notes">${sup.notes}</div>` : ''}
-                        ${pricesHtml ? `<div style="margin-top:0.5rem;">${pricesHtml}</div>` : ''}
-                    </div>
-                    <div style="display:flex;gap:0.3rem;flex-shrink:0;">
-                        <button class="client-action-btn edit-btn" onclick="editSupplier('${sup.id}')">✏ Editar</button>
-                        <button class="client-action-btn delete-btn" onclick="deleteSupplier('${sup.id}','${sup.name}')">✕ Borrar</button>
-                    </div>
-                </div>
-            `;
-            list.appendChild(card);
-        });
+        suppliersCache = await response.json();
+        filterSuppliersList();
     } catch (error) {
         console.error('Error loading suppliers:', error);
     }
@@ -4434,18 +4762,16 @@ async function loadSuppliers() {
 async function handleSaveSupplier(event) {
     event.preventDefault();
     const editId = document.getElementById('supplier_edit_id').value;
+    const name = document.getElementById('sup_name').value.trim();
+    if (!name) {
+        showToast('Ingresá el nombre del proveedor', 'warning');
+        return;
+    }
     const payload = {
-        name: document.getElementById('sup_name').value.trim(),
+        name,
         contact: document.getElementById('sup_contact').value.trim(),
         notes: document.getElementById('sup_notes').value.trim(),
-        prices: {
-            cinta: parseFloat(document.getElementById('sup_p_cinta').value) || 0,
-            argollas: parseFloat(document.getElementById('sup_p_argollas').value) || 0,
-            hebillas: parseFloat(document.getElementById('sup_p_hebillas').value) || 0,
-            remaches: parseFloat(document.getElementById('sup_p_remaches').value) || 0,
-            ojalillos: parseFloat(document.getElementById('sup_p_ojalillos').value) || 0,
-            cadenas: parseFloat(document.getElementById('sup_p_cadenas').value) || 0
-        }
+        prices: readSupplierPricesFromForm(),
     };
 
     try {
@@ -4456,12 +4782,13 @@ async function handleSaveSupplier(event) {
         const response = await fetch(url, {
             method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
-        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error'); }
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Error al guardar');
+        }
 
-        document.getElementById('supplier-form').reset();
-        document.getElementById('supplier_edit_id').value = '';
-        document.getElementById('supplier-form-title').textContent = 'Registrar Proveedor';
-        showToast('Proveedor guardado exitosamente', 'success');
+        focusNewSupplierForm();
+        showToast(editId ? 'Proveedor actualizado' : 'Proveedor guardado', 'success');
         await loadSuppliers();
         await loadPriceComparison();
     } catch (error) {
@@ -4471,25 +4798,19 @@ async function handleSaveSupplier(event) {
 
 async function editSupplier(id) {
     try {
-        const response = await fetch('/api/suppliers');
-        const suppliers = await response.json();
-        const sup = suppliers.find(s => s.id === id);
+        const sup = (suppliersCache || []).find(s => s.id === id)
+            || (await (await fetch('/api/suppliers')).json()).find(s => s.id === id);
         if (!sup) return;
 
         document.getElementById('supplier_edit_id').value = sup.id;
         document.getElementById('sup_name').value = sup.name;
         document.getElementById('sup_contact').value = sup.contact || '';
         document.getElementById('sup_notes').value = sup.notes || '';
-        if (sup.prices) {
-            document.getElementById('sup_p_cinta').value = sup.prices.cinta || 0;
-            document.getElementById('sup_p_argollas').value = sup.prices.argollas || 0;
-            document.getElementById('sup_p_hebillas').value = sup.prices.hebillas || 0;
-            document.getElementById('sup_p_remaches').value = sup.prices.remaches || 0;
-            document.getElementById('sup_p_ojalillos').value = sup.prices.ojalillos || 0;
-            document.getElementById('sup_p_cadenas').value = sup.prices.cadenas || 0;
-        }
+        fillSupplierPricesForm(sup.prices || {});
         document.getElementById('supplier-form-title').textContent = `Editando: ${sup.name}`;
-        document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth' });
+        const cancelBtn = document.getElementById('btn-cancel-supplier');
+        if (cancelBtn) cancelBtn.style.display = '';
+        document.getElementById('supplier-form-card')?.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
         showToast('Error al cargar proveedor', 'error');
     }
@@ -4511,34 +4832,51 @@ async function deleteSupplier(id, name) {
 async function loadPriceComparison() {
     try {
         const response = await fetch('/api/suppliers/compare');
-        const data = await response.json();
+        // API real: { item_key: [ { supplier, price }, ... ] } ordenado por precio
+        const comparison = await response.json();
         const thead = document.getElementById('compare-thead');
         const tbody = document.getElementById('compare-tbody');
         if (!thead || !tbody) return;
 
-        if (!data.suppliers || data.suppliers.length === 0) {
+        renderSuppliersBestPrices(comparison);
+
+        const supplierNames = [];
+        Object.values(comparison || {}).forEach(rows => {
+            (rows || []).forEach(r => {
+                if (r.supplier && !supplierNames.includes(r.supplier)) supplierNames.push(r.supplier);
+            });
+        });
+
+        if (!supplierNames.length) {
             thead.innerHTML = '<tr><th>Insumo</th></tr>';
-            tbody.innerHTML = '<tr><td style="color:var(--color-text-muted);text-align:center;">Agrega proveedores para comparar</td></tr>';
+            tbody.innerHTML = '<tr><td style="color:var(--color-text-muted);text-align:center;">Agregá proveedores con precios para comparar</td></tr>';
             return;
         }
 
         let headRow = '<th>Insumo</th>';
-        data.suppliers.forEach(s => { headRow += `<th>${s}</th>`; });
+        supplierNames.forEach(s => { headRow += `<th>${s}</th>`; });
         thead.innerHTML = `<tr>${headRow}</tr>`;
 
         tbody.innerHTML = '';
-        if (data.items) {
-            for (const [item, prices] of Object.entries(data.items)) {
-                const minPrice = Math.min(...Object.values(prices).filter(v => v > 0));
-                let row = `<td><strong>${item}</strong></td>`;
-                data.suppliers.forEach(s => {
-                    const val = prices[s] || 0;
-                    const cls = (val > 0 && val === minPrice) ? ' class="price-highlight"' : '';
-                    row += `<td${cls}>${val > 0 ? '$' + val.toLocaleString() : '—'}</td>`;
-                });
-                tbody.innerHTML += `<tr>${row}</tr>`;
-            }
-        }
+        const itemKeys = Object.keys(comparison || {}).sort((a, b) =>
+            (SUPPLIER_PRICE_LABELS[a] || a).localeCompare(SUPPLIER_PRICE_LABELS[b] || b, 'es')
+        );
+
+        itemKeys.forEach(itemKey => {
+            const rows = comparison[itemKey] || [];
+            const byName = {};
+            rows.forEach(r => { byName[r.supplier] = r.price; });
+            const positive = rows.filter(r => r.price > 0).map(r => r.price);
+            const minPrice = positive.length ? Math.min(...positive) : null;
+
+            let row = `<td><strong>${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</strong></td>`;
+            supplierNames.forEach(s => {
+                const val = byName[s] || 0;
+                const cls = (val > 0 && minPrice != null && val === minPrice) ? ' class="price-highlight"' : '';
+                row += `<td${cls}>${val > 0 ? '$' + Number(val).toLocaleString('es-CL') : '—'}</td>`;
+            });
+            tbody.innerHTML += `<tr>${row}</tr>`;
+        });
     } catch (error) {
         console.error('Error loading price comparison:', error);
     }
@@ -4547,12 +4885,17 @@ async function loadPriceComparison() {
 // --- MÓDULO: ÓRDENES ---
 async function loadOrderFormDropdowns() {
     try {
-        // Load clients
         const cRes = await fetch('/api/clients');
         const clients = await cRes.json();
         const clientSel = document.getElementById('order_client');
         if (clientSel) {
             clientSel.innerHTML = '';
+            const ph = document.createElement('option');
+            ph.value = '';
+            ph.textContent = clients.length ? '— Elegir cliente —' : '— Sin clientes: creá uno en Clientes —';
+            ph.disabled = true;
+            ph.selected = true;
+            clientSel.appendChild(ph);
             clients.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
@@ -4562,54 +4905,193 @@ async function loadOrderFormDropdowns() {
             });
         }
 
-        // Load products
         const pRes = await fetch('/api/products');
         const products = await pRes.json();
         const prodSel = document.getElementById('order_product');
         if (prodSel) {
-            prodSel.innerHTML = '';
-            for (const [key, prod] of Object.entries(products)) {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = prod.name;
-                opt.dataset.name = prod.name;
-                prodSel.appendChild(opt);
+            // Reutilizar agrupación por categoría si está disponible
+            if (typeof fillProductSelect === 'function') {
+                fillProductSelect(prodSel, products, {
+                    placeholder: '— Elegir prenda Tormenta —',
+                });
+            } else {
+                prodSel.innerHTML = '';
+                for (const [key, prod] of Object.entries(products)) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = prod.name;
+                    opt.dataset.name = prod.name;
+                    prodSel.appendChild(opt);
+                }
             }
+            // dataset.name en opciones (optgroup)
+            prodSel.querySelectorAll('option[value]').forEach(opt => {
+                if (opt.value && products[opt.value]) {
+                    opt.dataset.name = products[opt.value].name || opt.textContent;
+                }
+            });
         }
     } catch (error) {
         console.error('Error loading order dropdowns:', error);
     }
 }
 
+let ordersFilter = 'activas'; // activas | atrasadas | todas
+let ordersView = 'kanban'; // kanban | lista
+
+const ORDER_STATUS_FLOW = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
+const ORDER_STATUS_LABELS = {
+    pendiente: 'Pendiente',
+    en_confeccion: 'En confección',
+    terminado: 'Terminado',
+    entregado: 'Entregado',
+};
+const ORDER_NEXT_ACTION = {
+    pendiente: 'Empezar confección',
+    en_confeccion: 'Marcar terminado',
+    terminado: 'Marcar entregado',
+};
+const PAYMENT_LABELS = {
+    sin_pago: 'Sin pago',
+    'adelanto': 'Adelanto', 'seña': 'Adelanto',
+    pagado: 'Pagado',
+};
+
+function isOrderOverdue(order) {
+    if (!order || order.status === 'entregado' || !order.due_date) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(order.due_date + 'T00:00:00');
+    return due < today;
+}
+
+function filterOrdersList(orders) {
+    const list = Array.isArray(orders) ? orders : [];
+    if (ordersFilter === 'atrasadas') return list.filter(isOrderOverdue);
+    if (ordersFilter === 'activas') return list.filter(o => o.status !== 'entregado');
+    return list;
+}
+
+function setOrdersFilter(filter) {
+    ordersFilter = filter;
+    document.querySelectorAll('[data-orders-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-orders-filter') === filter);
+    });
+    renderOrdersViews();
+}
+window.setOrdersFilter = setOrdersFilter;
+
+function setOrdersView(view) {
+    ordersView = view;
+    document.querySelectorAll('[data-orders-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-orders-view') === view);
+    });
+    const listEl = document.getElementById('orders-list-view');
+    const kanbanWrap = document.getElementById('orders-kanban-wrap');
+    if (listEl) listEl.classList.toggle('hidden', view !== 'lista');
+    if (kanbanWrap) kanbanWrap.classList.toggle('hidden', view !== 'kanban');
+    renderOrdersViews();
+}
+window.setOrdersView = setOrdersView;
+
+function formatMoney(n) {
+    const v = Number(n) || 0;
+    return `$${v.toLocaleString('es-AR')}`;
+}
+
+function buildOrderCardHTML(order, { compact = false } = {}) {
+    const status = order.status || 'pendiente';
+    const overdue = isOrderOverdue(order);
+    const dueStr = order.due_date
+        ? new Date(order.due_date + 'T00:00:00').toLocaleDateString('es-AR')
+        : '—';
+    const pay = order.payment_status || 'sin_pago';
+    const payClass = (pay === 'adelanto' || pay === 'seña') ? 'adelanto' : pay;
+    const balance = order.balance_amount != null
+        ? order.balance_amount
+        : Math.max(0, (order.quoted_price || 0) - (order.amount_paid_total || order.deposit_amount || 0));
+    const qty = order.quantity || 1;
+    const nextLabel = ORDER_NEXT_ACTION[status];
+    const showAdvance = status !== 'entregado' && nextLabel;
+    const notes = order.notes || order.custom_notes || '';
+    const stockBadge = order.stock_deducted
+        ? '<span class="order-badge badge-stock-ok">Stock descontado</span>'
+        : (status === 'terminado' || status === 'entregado'
+            ? '<span class="order-badge badge-stock-warn">Sin descuento</span>'
+            : '');
+
+    return `
+        <div class="order-client">${order.client_name || 'Cliente'}</div>
+        <div class="order-product">${order.product_name || order.product_key || 'Prenda'} · ${order.size || 'M'}${qty > 1 ? ` · ×${qty}` : ''}</div>
+        ${notes ? `<div class="order-notes">📝 ${notes}</div>` : ''}
+        <div class="order-badges">
+            <span class="order-badge badge-pay-${payClass}">${PAYMENT_LABELS[pay] || pay}</span>
+            ${overdue ? '<span class="order-badge badge-overdue">Atrasada</span>' : ''}
+            ${stockBadge}
+        </div>
+        <div class="order-meta">
+            <span class="${overdue ? 'order-due-overdue' : ''}">📅 ${dueStr}</span>
+            <span class="order-price">${formatMoney(order.quoted_price)}</span>
+        </div>
+        <div class="order-money-row">
+            <span>Adelanto ${formatMoney(order.deposit_amount || 0)}</span>
+            <span>Saldo ${formatMoney(balance)}</span>
+        </div>
+        <div class="order-actions">
+            ${showAdvance ? `<button type="button" class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ ${nextLabel}</button>` : '<span class="order-done-label">Entregada</span>'}
+            <button type="button" class="kanban-delete-btn" onclick="deleteOrder('${order.id}')" title="Eliminar orden">✕</button>
+        </div>
+    `;
+}
+
 async function loadOrders() {
     try {
         const response = await fetch('/api/orders');
         ordersCache = await response.json();
-        renderKanban(ordersCache);
+        renderOrdersViews();
         renderCalendar(calendarMonth, calendarYear);
     } catch (error) {
         console.error('Error loading orders:', error);
     }
 }
 
+function renderOrdersViews() {
+    const filtered = filterOrdersList(ordersCache);
+    renderKanban(filtered, ordersCache);
+    renderOrdersList(filtered);
+}
+
 async function handleCreateOrder(event) {
     event.preventDefault();
     const clientSel = document.getElementById('order_client');
     const prodSel = document.getElementById('order_product');
-    const clientName = clientSel.options[clientSel.selectedIndex]?.dataset.name || clientSel.options[clientSel.selectedIndex]?.text || '';
-    const prodName = prodSel.options[prodSel.selectedIndex]?.dataset.name || prodSel.options[prodSel.selectedIndex]?.text || '';
+    if (!clientSel?.value) {
+        showToast('Elegí un cliente (o crealo en Clientes)', 'warning');
+        return;
+    }
+    if (!prodSel?.value) {
+        showToast('Elegí una prenda del catálogo', 'warning');
+        return;
+    }
+    const clientName = clientSel.options[clientSel.selectedIndex]?.dataset.name
+        || clientSel.options[clientSel.selectedIndex]?.text || '';
+    const prodName = prodSel.options[prodSel.selectedIndex]?.dataset.name
+        || prodSel.options[prodSel.selectedIndex]?.text || '';
 
     const payload = {
         client_id: clientSel.value,
         client_name: clientName,
         product_key: prodSel.value,
         product_name: prodName,
+        quantity: parseInt(document.getElementById('order_qty')?.value, 10) || 1,
         size: document.getElementById('order_size').value,
         custom_notes: document.getElementById('order_notes').value.trim(),
+        notes: document.getElementById('order_notes').value.trim(),
         quoted_price: parseFloat(document.getElementById('order_price').value) || 0,
+        deposit_amount: parseFloat(document.getElementById('order_deposit')?.value) || 0,
+        contact_phone: (document.getElementById('order_phone')?.value || '').trim(),
         due_date: document.getElementById('order_due').value,
         status: 'pendiente',
-        status_updated_at: new Date().toISOString()
     };
 
     try {
@@ -4618,74 +5100,56 @@ async function handleCreateOrder(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error'); }
-        showToast('Orden creada exitosamente', 'success');
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Error al crear la orden');
+        }
+        showToast('Orden creada', 'success');
         document.getElementById('order-form').reset();
+        const qty = document.getElementById('order_qty');
+        if (qty) qty.value = '1';
+        const panel = document.getElementById('orders-new-panel');
+        if (panel && window.matchMedia('(max-width: 768px)').matches) panel.open = false;
         await loadOrders();
+        await loadOrderFormDropdowns();
     } catch (error) {
         showToast(error.message, 'error');
     }
 }
 
 async function advanceOrderStatus(orderId, currentStatus) {
-    const flow = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
-    const statusLabels = { pendiente: 'Pendiente', en_confeccion: 'En Confección', terminado: 'Terminado', entregado: 'Entregado' };
-    const idx = flow.indexOf(currentStatus);
-    if (idx < 0 || idx >= flow.length - 1) return;
-    const nextStatus = flow[idx + 1];
+    const idx = ORDER_STATUS_FLOW.indexOf(currentStatus);
+    if (idx < 0 || idx >= ORDER_STATUS_FLOW.length - 1) return;
+    const nextStatus = ORDER_STATUS_FLOW[idx + 1];
+    const fromL = ORDER_STATUS_LABELS[currentStatus] || currentStatus;
+    const toL = ORDER_STATUS_LABELS[nextStatus] || nextStatus;
 
-    let confirmMsg = `¿Avanzar orden de "${statusLabels[currentStatus] || currentStatus}" a "${statusLabels[nextStatus] || nextStatus}"?`;
+    let msg = `¿Pasar de «${fromL}» a «${toL}»?`;
     if (nextStatus === 'terminado') {
-        confirmMsg = `⚠️ Al pasar a "Terminado", se descontarán automáticamente los insumos (BOM) del inventario del taller y se registrará la prenda en la producción.\n\n${confirmMsg}`;
+        msg = `Al marcar TERMINADO se descontará el BOM del inventario (una sola vez).\n\n¿Continuar?`;
     }
-
-    if (!confirm(confirmMsg)) return;
+    if (!confirm(msg)) return;
 
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: nextStatus, status_updated_at: new Date().toISOString() })
+            body: JSON.stringify({ status: nextStatus })
         });
-        
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.detail || 'Error al avanzar estado');
+            const err = await response.json().catch(() => ({}));
+            const detail = err.detail || 'Error al avanzar estado';
+            throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
         }
-        
-        showToast(`Orden avanzada a: ${statusLabels[nextStatus] || nextStatus.replace('_',' ')}`, 'success');
+        showToast(`Orden → ${toL}`, 'success');
         await loadOrders();
-    } catch (error) {
-        showToast(error.message, 'error');
-        if (error.message && error.message.includes('Falta stock')) {
-            alert(`⚠️ No se pudo pasar a Terminado por falta de stock:\n\n${error.message}\n\nRevisá la pestaña Inventario para reponer insumos.`);
-        }
-    }
-}
-
-async function sendWhatsAppReady(orderId) {
-    try {
-        const response = await fetch(`/api/orders/${orderId}/whatsapp-ready`);
-        if (!response.ok) throw new Error('Error al generar aviso de WhatsApp');
-        const data = await response.json();
-
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(data.text);
-            showToast('Mensaje de aviso copiado al portapapeles', 'success');
-        }
-
-        if (data.wa_url) {
-            window.open(data.wa_url, '_blank');
-        } else {
-            alert(`Mensaje de aviso copiado:\n\n${data.text}`);
-        }
     } catch (error) {
         showToast(error.message, 'error');
     }
 }
 
 async function deleteOrder(orderId) {
-    if (!confirm('¿Eliminar esta orden?')) return;
+    if (!confirm('¿Eliminar esta orden? No se puede deshacer.')) return;
     try {
         const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Error al eliminar');
@@ -4696,73 +5160,62 @@ async function deleteOrder(orderId) {
     }
 }
 
-function renderKanban(orders) {
-    const statuses = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
+function renderKanban(filteredOrders, allOrders) {
+    const statuses = ORDER_STATUS_FLOW;
+    const sourceCounts = Array.isArray(allOrders) ? allOrders : filteredOrders;
 
     statuses.forEach(status => {
         const container = document.getElementById(`kanban-${status}`);
         const countEl = document.getElementById(`count-${status}`);
         if (!container) return;
         container.innerHTML = '';
-        const filtered = orders.filter(o => o.status === status);
-        if (countEl) countEl.textContent = filtered.length;
+        const filtered = filteredOrders.filter(o => o.status === status);
+        // Contador: con filtro "activas/atrasadas" muestra las del filtro; si no, total por columna
+        if (countEl) {
+            countEl.textContent = sourceCounts.filter(o => o.status === status).length;
+        }
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'kanban-empty';
+            empty.textContent = 'Sin órdenes aquí';
+            container.appendChild(empty);
+            return;
+        }
 
         filtered.forEach(order => {
             const card = document.createElement('div');
             card.className = 'kanban-card';
-            
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const orderDueDate = order.due_date ? new Date(order.due_date + 'T00:00:00') : null;
-            const isOverdue = status !== 'entregado' && orderDueDate && orderDueDate < today;
-            if (isOverdue) {
-                card.classList.add('overdue');
-            }
-
-            const dueStr = order.due_date ? new Date(order.due_date).toLocaleDateString('es-AR') : '—';
-            const showAdvance = status !== 'entregado';
-            const showWaReady = status === 'terminado' || status === 'entregado';
-
-            // Payment badge
-            let paymentBadgeHtml = '';
-            const pStatus = order.payment_status || 'sin_pago';
-            const deposit = order.deposit_amount || 0;
-            const balance = order.balance_amount || 0;
-            if (pStatus === 'pagado') {
-                paymentBadgeHtml = `<span style="background:rgba(76,175,80,0.2);color:#81c784;border:1px solid rgba(76,175,80,0.4);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">✓ Pagado</span>`;
-            } else if (pStatus === 'seña') {
-                paymentBadgeHtml = `<span style="background:rgba(255,152,0,0.2);color:#ffb74d;border:1px solid rgba(255,152,0,0.4);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">Seña: $${deposit.toLocaleString('es-AR')}</span>`;
-            } else {
-                paymentBadgeHtml = `<span style="background:rgba(244,67,54,0.15);color:#e57373;border:1px solid rgba(244,67,54,0.3);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:600;">Sin seña</span>`;
-            }
-
-            const stockDeductedHtml = order.stock_deducted ? `<span style="color:#81c784;font-size:0.65rem;margin-left:0.3rem;" title="BOM descontado del inventario">📦 Stock descontado</span>` : '';
-
-            card.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div class="order-client">${order.client_name || 'Cliente'}</div>
-                    ${paymentBadgeHtml}
-                </div>
-                <div class="order-product">${order.quantity || 1}x ${order.product_name || order.product_key} · Talla ${order.size || 'M'}</div>
-                ${order.custom_notes ? `<div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:0.2rem;">📝 ${order.custom_notes}</div>` : ''}
-                <div class="order-meta" style="margin-top:0.4rem;">
-                    <span style="${isOverdue ? 'color:#e57373;font-weight:bold;' : ''}">📅 ${dueStr} ${isOverdue ? '<span style="background:#d32f2f;color:white;font-size:0.55rem;padding:2px 4px;border-radius:3px;margin-left:4px;display:inline-block;vertical-align:middle;font-weight:bold;">ATRASADA</span>' : ''}</span>
-                    <span class="order-price">$${(order.quoted_price || 0).toLocaleString('es-AR')}</span>
-                </div>
-                ${balance > 0 ? `<div style="font-size:0.75rem;color:#ffb74d;font-weight:600;margin-top:0.2rem;">Saldo Pendiente: $${balance.toLocaleString('es-AR')}</div>` : ''}
-                <div style="font-size:0.65rem;color:var(--color-text-muted);margin-top:0.3rem;">
-                    🕒 ${order.status_updated_at ? new Date(order.status_updated_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : 'Reciente'}
-                    ${stockDeductedHtml}
-                </div>
-                <div class="order-actions" style="margin-top:0.5rem;display:flex;gap:0.3rem;flex-wrap:wrap;">
-                    ${showAdvance ? `<button class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ Avanzar</button>` : ''}
-                    ${showWaReady ? `<button class="kanban-wa-btn" onclick="sendWhatsAppReady('${order.id}')" style="background:#25D366;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;cursor:pointer;font-weight:bold;">📱 WA Listo</button>` : ''}
-                    <button class="kanban-delete-btn" onclick="deleteOrder('${order.id}')">✕</button>
-                </div>
-            `;
+            if (isOrderOverdue(order)) card.classList.add('overdue');
+            card.innerHTML = buildOrderCardHTML(order);
             container.appendChild(card);
         });
     });
+}
+
+function renderOrdersList(orders) {
+    const el = document.getElementById('orders-list-view');
+    if (!el) return;
+    if (!orders.length) {
+        el.innerHTML = '<p class="orders-list-empty">No hay órdenes con este filtro.</p>';
+        return;
+    }
+    // Prioridad: atrasadas primero, luego por fecha
+    const sorted = [...orders].sort((a, b) => {
+        const ao = isOrderOverdue(a) ? 0 : 1;
+        const bo = isOrderOverdue(b) ? 0 : 1;
+        if (ao !== bo) return ao - bo;
+        return (a.due_date || '9999').localeCompare(b.due_date || '9999');
+    });
+    el.innerHTML = sorted.map(order => {
+        const st = order.status || 'pendiente';
+        return `
+            <article class="orders-list-card ${isOrderOverdue(order) ? 'overdue' : ''}">
+                <div class="orders-list-status status-${st}">${ORDER_STATUS_LABELS[st] || st}</div>
+                ${buildOrderCardHTML(order)}
+            </article>
+        `;
+    }).join('');
 }
 
 // --- CALENDAR ---
@@ -5148,7 +5601,7 @@ function printClientMeasurements(clientId) {
         <div style="font-size:12px;color:#555;">${client.notes || ''}</div>
     </div>
     <div class="footer">
-        <span>Tormenta Indumentaria · Buenos Aires, Argentina</span>
+        <span>Tormenta Indumentaria · Santiago, Chile</span>
         <span>Medidas en centímetros · No reproducir</span>
     </div>
     <script>window.onload = () => window.print();</script>
@@ -5169,16 +5622,41 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
-    // Event listeners para pestañas de navegación (fail-safe)
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const tabId = btn.id.replace('tab-', '');
-            if (tabId) switchTab(tabId);
-        });
+    ensureModuleHeaders();
+
+    // Aislar paneles al arrancar (evita sangrado si el HTML quedó mal anidado)
+    hideAllTabPanes();
+    currentTabId = null;
+
+    // Hash deep-link: #orders, #clients, etc.
+    const hashTab = (location.hash || '').replace(/^#/, '').trim();
+    const initialTab = (hashTab && TAB_META[hashTab]) ? hashTab : 'dashboard';
+    switchTab(initialTab, { force: true });
+
+    window.addEventListener('hashchange', () => {
+        const t = (location.hash || '').replace(/^#/, '').trim();
+        if (t && TAB_META[t] && t !== currentTabId) {
+            switchTab(t, { skipHash: true });
+        }
     });
 
-    // Load initial data
-    loadClients();
-    loadCatalog();
-    loadDashboard();
+    // Teclado en la barra: flechas entre pestañas del mismo grupo
+    const nav = document.getElementById('main-tab-nav');
+    if (nav) {
+        nav.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+            const tabs = Array.from(nav.querySelectorAll('.tab-btn'));
+            const idx = tabs.findIndex(b => b.id === `tab-${currentTabId}`);
+            if (idx < 0) return;
+            e.preventDefault();
+            const next = e.key === 'ArrowRight'
+                ? tabs[(idx + 1) % tabs.length]
+                : tabs[(idx - 1 + tabs.length) % tabs.length];
+            const tabId = next.dataset.tab;
+            if (tabId) {
+                switchTab(tabId);
+                next.focus();
+            }
+        });
+    }
 });

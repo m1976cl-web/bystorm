@@ -460,9 +460,9 @@ Enfoque **test-first en el núcleo de stock**; UI puede ser más exploratoria.
 
 | Día | Estado | PR / notas |
 |-----|--------|------------|
-| D1 | pending | |
-| D2 | pending | |
-| D3 | pending | |
+| D1 | done | Modelo Order extendido + normalización legacy; `static/` canónico (`netlify.toml` + `sync_static.ps1`); tests T1/T9 |
+| D2 | done | `deduct_bom_for_product` + `check_bom_stock` + `_bom_requirements`; producción usa el helper |
+| D3 | done | `PUT /status` → `terminado` descuenta BOM, crea production, `stock_deducted`; 400 si falta stock; T3–T6 |
 | D4 | pending | |
 | D5 | pending | |
 | D6 | pending | |

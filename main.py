@@ -21,8 +21,8 @@ from typing import Optional, Dict, List
 
 app = FastAPI(
     title="Tormenta Indumentaria Workshop Optimizer",
-    description="Herramienta de escalado de patrones y cálculo de materiales para slow fashion.",
-    version="1.0.0"
+    description="Herramienta de escalado de patrones y cálculo de materiales para slow fashion. Release v2.1: pedidos punta a punta.",
+    version="2.1.0"
 )
 
 # Servir archivos estáticos del frontend
@@ -163,13 +163,22 @@ class ProductionRecord(BaseModel):
     retail_price: float
     profit: float
     product_key: Optional[str] = None
+    order_id: Optional[str] = None  # link opcional al pedido (v2.1)
 
 
 class ProductionResponse(ProductionRecord):
     id: str
     date: str
 
-# --- CONSTANTES / BOM CONFIG (SLOW FASHION DE AUTOR) ---
+# --- CONSTANTES / BOM CONFIG (Tormenta Indumentaria — vegan slow fashion) ---
+# Ver docs/MARCA_TORMENTA.md. Campos extra en products_data.json: category, description, material, vegan, core.
+
+PRODUCT_META_KEYS = {
+    "name", "category", "description", "material", "vegan",
+    "made_to_order", "core", "tags",
+}
+
+BOM_FIELD_KEYS = set(BOMItem.model_fields.keys())
 
 DEFAULT_BOMS = {
     "arnes": BOMItem(
@@ -181,8 +190,14 @@ DEFAULT_BOMS = {
     "arnes_muslo": BOMItem(
         cinta=1.8, argollas=4, hebillas=2, remaches=8, ojalillos=0, varillas=0, cadenas=0.0, tachas=4, mosquetones=2
     ),
+    "arnes_cabeza": BOMItem(
+        cinta=1.2, argollas=2, hebillas=2, remaches=10, ojalillos=0, varillas=0, cadenas=0.3, tachas=6, mosquetones=0
+    ),
     "choker_dring": BOMItem(
         cinta=0.4, argollas=1, hebillas=1, remaches=4, ojalillos=0, varillas=0, cadenas=0.0, tachas=6, mosquetones=0
+    ),
+    "collar_cadena": BOMItem(
+        cinta=0.5, argollas=3, hebillas=1, remaches=6, ojalillos=0, varillas=0, cadenas=0.6, tachas=4, mosquetones=1
     ),
     "corset_underbust": BOMItem(
         cinta=3.5, argollas=0, hebillas=0, remaches=8, ojalillos=16, varillas=12, panels_count=4, panel_width=25.0, panel_height=35.0, cadenas=0.0, tachas=6, mosquetones=0
@@ -193,7 +208,10 @@ DEFAULT_BOMS = {
     "mascara": BOMItem(
         cinta=0.8, argollas=2, hebillas=1, remaches=8, ojalillos=0, varillas=0, panels_count=1, panel_width=30.0, panel_height=25.0, cadenas=0.0, tachas=4, mosquetones=0
     ),
-    "falda_latex": BOMItem(
+    "top_lenceria": BOMItem(
+        cinta=1.5, argollas=4, hebillas=2, remaches=8, ojalillos=0, varillas=0, panels_count=2, panel_width=28.0, panel_height=22.0, cadenas=0.2, tachas=4, mosquetones=0
+    ),
+    "falda_tubo": BOMItem(
         cinta=0.5, argollas=0, hebillas=0, remaches=6, ojalillos=4, varillas=0, panels_count=2, panel_width=45.0, panel_height=55.0, cadenas=0.0, tachas=4, mosquetones=0
     ),
     "cinturon_portaligas": BOMItem(
@@ -201,8 +219,51 @@ DEFAULT_BOMS = {
     ),
     "brazaletes": BOMItem(
         cinta=0.6, argollas=0, hebillas=2, remaches=16, ojalillos=0, varillas=0, cadenas=0.0, tachas=10, mosquetones=0
-    )
+    ),
+    "pieza_cadenas": BOMItem(
+        cinta=1.0, argollas=8, hebillas=2, remaches=10, ojalillos=0, varillas=0, cadenas=2.5, tachas=6, mosquetones=2
+    ),
 }
+
+DEFAULT_PRODUCT_NAMES = {
+    "arnes": "Arnés pechera Tormenta",
+    "arnes_body": "Arnés corporal integral (body harness)",
+    "arnes_muslo": "Ligas de muslo con O-ring",
+    "arnes_cabeza": "Arnés de cabeza (charol vegano)",
+    "choker_dring": "Choker D-ring",
+    "collar_cadena": "Collar con cadena y argolla",
+    "corset_underbust": "Corset underbust vegano",
+    "corset_overbust": "Corset overbust vegano",
+    "mascara": "Máscara de performance",
+    "top_lenceria": "Top lencería / pechera suave",
+    "falda_tubo": "Falda tubo con herrajes",
+    "cinturon_portaligas": "Cinturón portaligas con mosquetones",
+    "brazaletes": "Brazaletes / muñequeras con remaches",
+    "pieza_cadenas": "Pieza / top con cadenas",
+}
+
+PRODUCT_LABOR_HOURS_DEFAULT = {
+    "arnes": 2.5,
+    "arnes_body": 5.0,
+    "arnes_muslo": 2.0,
+    "arnes_cabeza": 2.0,
+    "choker_dring": 1.0,
+    "collar_cadena": 1.5,
+    "corset_underbust": 4.5,
+    "corset_overbust": 6.5,
+    "mascara": 1.5,
+    "top_lenceria": 2.5,
+    "falda_tubo": 3.5,
+    "cinturon_portaligas": 2.5,
+    "brazaletes": 1.5,
+    "pieza_cadenas": 3.0,
+}
+
+
+def _product_to_bom(prod_data: dict) -> BOMItem:
+    """Extrae solo campos BOM de un producto del catálogo (ignora metadatos de marca)."""
+    payload = {k: v for k, v in prod_data.items() if k in BOM_FIELD_KEYS}
+    return BOMItem(**payload)
 
 # --- PERSISTENCIA DE PRODUCTOS (JSON local) ---
 
@@ -210,22 +271,16 @@ PRODUCTS_FILE = os.path.join(os.path.dirname(__file__), "products_data.json")
 
 def _load_products() -> Dict[str, dict]:
     if not os.path.exists(PRODUCTS_FILE):
-        names = {
-            "arnes": "Arnés Pechera Tormenta (Base)",
-            "arnes_body": "Arnés Corporal Integral (Body Harness)",
-            "arnes_muslo": "Set Ligas de Muslo con Argollas O-Ring",
-            "choker_dring": "Gargantilla Choker D-Ring Neopunk",
-            "corset_underbust": "Corset Underbust de Cuero (Vesta)",
-            "corset_overbust": "Corset Overbust Neogótico (Couture)",
-            "mascara": "Máscara Gótica Shadow (Performance)",
-            "falda_latex": "Falda Tubo Neopunk con Cierre Frontal",
-            "cinturon_portaligas": "Cinturón Portaligas con Mosquetones",
-            "brazaletes": "Set de Brazaletes / Muñequeras con Remaches"
-        }
         initial_data = {
             k: {
-                "name": names.get(k, k),
-                **v.model_dump()
+                "name": DEFAULT_PRODUCT_NAMES.get(k, k),
+                "category": "general",
+                "description": "",
+                "material": "Cuerina/cinta vegana + herrajes",
+                "vegan": True,
+                "made_to_order": True,
+                "core": k in ("arnes", "arnes_body", "mascara", "corset_underbust"),
+                **v.model_dump(),
             }
             for k, v in DEFAULT_BOMS.items()
         }
@@ -413,7 +468,7 @@ def optimize_materials(request: MaterialOptimizeRequest):
         if request.product_key not in products:
             raise HTTPException(status_code=400, detail="Producto no reconocido.")
         prod_data = products[request.product_key]
-        bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
+        bom = _product_to_bom(prod_data)
     
     constraints = {}
     
@@ -538,7 +593,7 @@ def generate_quote(request: QuoteRequest):
         if request.product_key not in products:
             raise HTTPException(status_code=400, detail="Producto no reconocido.")
         prod_data = products[request.product_key]
-        bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
+        bom = _product_to_bom(prod_data)
     
     p = request.pricing
     breakdown = []
@@ -597,6 +652,36 @@ class ProductCreate(BaseModel):
     key: str = Field(..., description="Clave única del producto")
     name: str = Field(..., description="Nombre del producto")
     bom: BOMItem
+    category: str = "general"
+    description: str = ""
+    material: str = "Cuerina/cinta vegana + herrajes"
+    vegan: bool = True
+    made_to_order: bool = True
+    core: bool = False
+
+
+class ProductUpdate(BaseModel):
+    """Actualización de ficha: BOM + metadatos de marca (campos opcionales)."""
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    material: Optional[str] = None
+    vegan: Optional[bool] = None
+    made_to_order: Optional[bool] = None
+    # BOM fields (mismo shape que BOMItem; opcionales para no forzar todo)
+    cinta: Optional[float] = None
+    argollas: Optional[int] = None
+    hebillas: Optional[int] = None
+    remaches: Optional[int] = None
+    ojalillos: Optional[int] = None
+    varillas: Optional[int] = None
+    cadenas: Optional[float] = None
+    tachas: Optional[int] = None
+    mosquetones: Optional[int] = None
+    panels_count: Optional[int] = None
+    panel_width: Optional[float] = None
+    panel_height: Optional[float] = None
+
 
 @app.get("/api/products")
 def list_products():
@@ -610,22 +695,41 @@ def create_product(product: ProductCreate):
     
     products[product.key] = {
         "name": product.name,
-        **product.bom.model_dump()
+        "category": product.category or "general",
+        "description": product.description or "",
+        "material": product.material or "",
+        "vegan": product.vegan,
+        "made_to_order": product.made_to_order,
+        "core": product.core,
+        **product.bom.model_dump(),
     }
     _save_products(products)
     return {"key": product.key, **products[product.key]}
 
 @app.put("/api/products/{product_key}")
-def update_product(product_key: str, product: BOMItem):
+def update_product(product_key: str, product: dict):
+    """Acepta BOM plano (legacy) o ProductUpdate con metadatos de marca."""
     products = _load_products()
     if product_key not in products:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")
-    
-    name = products[product_key].get("name", product_key)
-    products[product_key] = {
-        "name": name,
-        **product.model_dump()
-    }
+
+    existing = dict(products[product_key])
+    # Si viene envuelto como { bom: {...}, name, category } del frontend nuevo
+    if isinstance(product.get("bom"), dict):
+        bom_data = product["bom"]
+        meta = {k: product[k] for k in ("name", "category", "description", "material", "vegan", "made_to_order", "core") if k in product}
+        merged = {**existing, **meta, **bom_data}
+    else:
+        # Plano: puede ser solo BOM o campos mezclados
+        merged = {**existing, **product}
+        if "name" not in product:
+            merged["name"] = existing.get("name", product_key)
+
+    # Conservar core si ya era base
+    if existing.get("core"):
+        merged["core"] = True
+
+    products[product_key] = merged
     _save_products(products)
     return {"key": product_key, **products[product_key]}
 
@@ -634,8 +738,13 @@ def delete_product(product_key: str):
     products = _load_products()
     if product_key not in products:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")
-    if product_key in ["arnes", "mascara", "corset"]:
-        raise HTTPException(status_code=400, detail="No se pueden borrar los productos base del taller.")
+    # Productos core de Tormenta (o claves históricas base) no se borran
+    prod = products.get(product_key, {})
+    if prod.get("core") or product_key in ("arnes", "mascara", "corset_underbust", "arnes_body"):
+        raise HTTPException(
+            status_code=400,
+            detail="No se pueden borrar las fichas base del catálogo Tormenta.",
+        )
     del products[product_key]
     _save_products(products)
     return {"deleted": True, "key": product_key}
@@ -801,18 +910,7 @@ def optimize_batch(request: BatchProductionRequest):
     total_mosquetones = 0
     total_labor_hours = 0.0
     
-    PRODUCT_LABOR_HOURS = {
-        "arnes": 2.5,
-        "arnes_body": 5.0,
-        "arnes_muslo": 2.0,
-        "choker_dring": 1.0,
-        "corset_underbust": 4.5,
-        "corset_overbust": 6.5,
-        "mascara": 1.5,
-        "falda_latex": 3.5,
-        "cinturon_portaligas": 2.5,
-        "brazaletes": 1.5
-    }
+    PRODUCT_LABOR_HOURS = PRODUCT_LABOR_HOURS_DEFAULT
     
     panel_requirements = []
     
@@ -828,7 +926,7 @@ def optimize_batch(request: BatchProductionRequest):
             if item.product_key not in products:
                 raise HTTPException(status_code=400, detail=f"Producto '{item.product_key}' no reconocido.")
             prod_data = products[item.product_key]
-            bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
+            bom = _product_to_bom(prod_data)
             
         qty = item.quantity
         total_cinta += bom.cinta * qty
@@ -909,73 +1007,6 @@ def optimize_batch(request: BatchProductionRequest):
     }
 
 
-def deduct_bom_for_product(product_key: str, quantity: int, reference_text: str) -> dict:
-    """
-    Verifica y descuenta el stock de inventario para una prenda según su BOM.
-    Retorna los requerimientos descontados. Lanza HTTPException(400) si falta stock.
-    """
-    if not product_key or product_key == "custom":
-        return {}
-        
-    products = _load_products()
-    if product_key not in products:
-        return {}
-        
-    prod_data = products[product_key]
-    bom = BOMItem(**{k: v for k, v in prod_data.items() if k != "name"})
-    
-    needed = {
-        "cinta": round(bom.cinta * quantity, 2),
-        "cadenas": round(bom.cadenas * quantity, 2),
-        "argollas": bom.argollas * quantity,
-        "hebillas": bom.hebillas * quantity,
-        "remaches": bom.remaches * quantity,
-        "ojalillos": bom.ojalillos * quantity,
-        "varillas": bom.varillas * quantity,
-        "tachas": bom.tachas * quantity,
-        "mosquetones": bom.mosquetones * quantity,
-    }
-    
-    if bom.panels_count > 0 and bom.panel_width > 0 and bom.panel_height > 0:
-        needed["cuerina_rollo"] = calculate_cuerina_consumed_m(
-            bom.panel_width, bom.panel_height, bom.panels_count * quantity
-        )
-        
-    needed = {k: v for k, v in needed.items() if v > 0}
-    if not needed:
-        return {}
-        
-    inventory = _load_inventory()
-    inventory_dict = {item["item_key"]: item for item in inventory}
-    shortages = []
-    for key, qty in needed.items():
-        inv_item = inventory_dict.get(key)
-        if not inv_item:
-            shortages.append(f"Insumo '{key}' no encontrado en inventario")
-        elif inv_item["stock"] < qty:
-            shortages.append(
-                f"{inv_item['name']} (falta {round(qty - inv_item['stock'], 2)} {inv_item['unit']})"
-            )
-            
-    if shortages:
-        raise HTTPException(
-            status_code=400,
-            detail="Falta stock de materiales: " + ", ".join(shortages)
-        )
-        
-    for key, qty in needed.items():
-        inventory_dict[key]["stock"] = round(inventory_dict[key]["stock"] - qty, 2)
-        _log_movement(
-            item_key=key,
-            quantity=-qty,
-            movement_type="produccion",
-            reference=reference_text
-        )
-        
-    _save_inventory(list(inventory_dict.values()))
-    return needed
-
-
 @app.get("/api/production")
 def get_production_history():
     """Retorna el historial de producción."""
@@ -984,13 +1015,19 @@ def get_production_history():
 
 @app.post("/api/production", status_code=201)
 def add_production_record(record: ProductionRecord):
-    """Agrega un registro de producción al historial y descuenta automáticamente del inventario."""
-    deduct_bom_for_product(
-        product_key=record.product_key,
-        quantity=record.quantity,
-        reference_text=f"Confección de {record.quantity}x {record.product_name}"
-    )
+    """Agrega un registro de producción al historial y descuenta automáticamente del inventario.
 
+    El descuento de BOM usa la función compartida `deduct_bom_for_product` (D2).
+    """
+    # 1. Descontar stock vía helper compartido (si hay catálogo)
+    if record.product_key and record.product_key != "custom":
+        deduct_bom_for_product(
+            product_key=record.product_key,
+            quantity=record.quantity,
+            reference=f"Confección de {record.quantity}x {record.product_name}",
+        )
+
+    # 2. Guardar registro de producción
     records = _load_production()
     new_record = {
         "id": str(uuid.uuid4())[:8],
@@ -1149,7 +1186,8 @@ DEFAULT_INVENTORY = [
     {"item_key": "tachas", "name": "Tachas decorativas", "stock": 150, "min_stock": 25, "unit": "uds"},
     {"item_key": "mosquetones", "name": "Mosquetones de enganche", "stock": 40, "min_stock": 8, "unit": "uds"},
     {"item_key": "cinta", "name": "Cinta/Correa", "stock": 20.0, "min_stock": 5.0, "unit": "metros"},
-    {"item_key": "cuerina_rollo", "name": "Cuerina en rollo", "stock": 15.0, "min_stock": 3.0, "unit": "metros"},
+    {"item_key": "cuerina_rollo", "name": "Cuerina vegana en rollo", "stock": 15.0, "min_stock": 3.0, "unit": "metros"},
+    {"item_key": "charol_rollo", "name": "Charol vegano en rollo", "stock": 8.0, "min_stock": 2.0, "unit": "metros"},
 ]
 
 
@@ -1220,6 +1258,129 @@ def _log_movement(item_key: str, quantity: float, movement_type: str, reference:
     }
     movements.append(new_movement)
     _save_movements(movements)
+    return new_movement
+
+
+def _bom_requirements(product_key: str, quantity: int) -> Dict[str, float]:
+    """Calcula insumos requeridos (item_key → qty) para quantity unidades del producto."""
+    if quantity < 1:
+        raise HTTPException(status_code=400, detail="La cantidad debe ser al menos 1.")
+    products = _load_products()
+    if product_key not in products:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Producto '{product_key}' no encontrado en el catálogo para descontar stock.",
+        )
+    prod_data = products[product_key]
+    bom = _product_to_bom(prod_data)
+    needed: Dict[str, float] = {
+        "cinta": round(bom.cinta * quantity, 2),
+        "cadenas": round(bom.cadenas * quantity, 2),
+        "argollas": bom.argollas * quantity,
+        "hebillas": bom.hebillas * quantity,
+        "remaches": bom.remaches * quantity,
+        "ojalillos": bom.ojalillos * quantity,
+        "varillas": bom.varillas * quantity,
+        "tachas": bom.tachas * quantity,
+        "mosquetones": bom.mosquetones * quantity,
+    }
+    if bom.panels_count > 0 and bom.panel_width > 0 and bom.panel_height > 0:
+        needed["cuerina_rollo"] = calculate_cuerina_consumed_m(
+            bom.panel_width, bom.panel_height, bom.panels_count * quantity
+        )
+    return {k: v for k, v in needed.items() if v and v > 0}
+
+
+def check_bom_stock(product_key: str, quantity: int) -> List[str]:
+    """Devuelve lista de faltantes legibles; vacía si el stock alcanza."""
+    needed = _bom_requirements(product_key, quantity)
+    if not needed:
+        return []
+    inventory = _load_inventory()
+    inventory_dict = {item["item_key"]: item for item in inventory}
+    shortages: List[str] = []
+    for key, qty in needed.items():
+        inv_item = inventory_dict.get(key)
+        if not inv_item:
+            shortages.append(f"Insumo '{key}' no encontrado en inventario")
+        elif inv_item["stock"] < qty:
+            shortages.append(
+                f"{inv_item['name']} (falta {round(qty - inv_item['stock'], 2)} {inv_item['unit']})"
+            )
+    return shortages
+
+
+def deduct_bom_for_product(
+    product_key: str,
+    quantity: int,
+    reference: str = "",
+) -> List[dict]:
+    """Descuenta el BOM del inventario y registra movimientos tipo produccion.
+
+    Usado por POST /api/production y por la transición de orden a `terminado` (D2/D3).
+    Raises HTTPException 400 si falta stock (no muta inventario en ese caso).
+    Returns: lista de movimientos creados.
+    """
+    if not product_key or product_key == "custom":
+        return []
+
+    shortages = check_bom_stock(product_key, quantity)
+    if shortages:
+        raise HTTPException(
+            status_code=400,
+            detail="Falta stock de materiales: " + ", ".join(shortages),
+        )
+
+    needed = _bom_requirements(product_key, quantity)
+    if not needed:
+        return []
+
+    inventory = _load_inventory()
+    inventory_dict = {item["item_key"]: item for item in inventory}
+    movements_created: List[dict] = []
+    ref = reference or f"Producción {quantity}x {product_key}"
+
+    for key, qty in needed.items():
+        inventory_dict[key]["stock"] = round(inventory_dict[key]["stock"] - qty, 2)
+        mov = _log_movement(
+            item_key=key,
+            quantity=-qty,
+            movement_type="produccion",
+            reference=ref,
+        )
+        movements_created.append(mov)
+
+    _save_inventory(list(inventory_dict.values()))
+    return movements_created
+
+
+def _create_production_from_order(order: dict) -> dict:
+    """Crea un registro de producción a partir de una orden terminada."""
+    qty = int(order.get("quantity") or 1)
+    materials = float(order.get("materials_cost_snapshot") or 0)
+    labor = float(order.get("labor_cost_snapshot") or 0)
+    retail = float(
+        order.get("retail_price_snapshot")
+        or order.get("quoted_price")
+        or 0
+    )
+    profit = round(retail - materials - labor, 2)
+    new_record = {
+        "id": str(uuid.uuid4())[:8],
+        "date": datetime.now().isoformat(),
+        "product_name": order.get("product_name") or order.get("product_key") or "Prenda",
+        "quantity": qty,
+        "materials_cost": materials,
+        "labor_cost": labor,
+        "retail_price": retail,
+        "profit": profit,
+        "product_key": order.get("product_key"),
+        "order_id": order.get("id"),
+    }
+    records = _load_production()
+    records.append(new_record)
+    _save_production(records)
+    return new_record
 
 
 # --- PERSISTENCIA DE PROVEEDORES (JSON local) ---
@@ -1259,86 +1420,202 @@ def _save_suppliers(suppliers: List[dict]):
 ORDERS_FILE = os.path.join(os.path.dirname(__file__), "orders_data.json")
 
 VALID_ORDER_STATUSES = {"pendiente", "en_confeccion", "terminado", "entregado"}
+# "adelanto" = uso Chile (antes "seña" en Argentina). Se aceptan ambos al leer.
+VALID_PAYMENT_STATUSES = {"sin_pago", "adelanto", "pagado", "seña"}
 
 
 class OrderCreate(BaseModel):
+    """Pedido de taller. Campos nuevos son opcionales con defaults (migración suave)."""
     client_id: str = ""
-    client_name: str = ""
+    client_name: str
     product_key: str
-    product_name: str = ""
-    quantity: int = 1
+    product_name: str
+    quantity: int = Field(1, ge=1)
     size: str = "M"
     custom_notes: str = ""
-    quoted_price: float = 0.0
-    deposit_amount: float = 0.0
-    deposit_date: Optional[str] = None
+    notes: str = ""  # alias amigable; se fusiona con custom_notes al persistir
+    quoted_price: float = 0
     due_date: str = ""
     status: str = "pendiente"
+    # Pagos embebidos (v2.1)
+    deposit_amount: float = Field(0, ge=0)
+    deposit_date: Optional[str] = None
+    amount_paid_total: float = Field(0, ge=0)
+    payment_status: str = "sin_pago"
+    # Snapshots del cotizador
     materials_cost_snapshot: Optional[float] = None
     labor_cost_snapshot: Optional[float] = None
     retail_price_snapshot: Optional[float] = None
+    # Orquestación stock / producción (D2–D3)
     stock_deducted: bool = False
     production_id: Optional[str] = None
+    # WhatsApp
     contact_phone: str = ""
-    status_updated_at: Optional[str] = None
+    whatsapp_ready_sent_at: Optional[str] = None
 
 
 class OrderResponse(OrderCreate):
     id: str
-    amount_paid_total: float = 0.0
-    balance_amount: float = 0.0
-    payment_status: str = "sin_pago"
     created_at: str
     updated_at: str
+    balance_amount: float = 0
 
 
 class OrderStatusUpdate(BaseModel):
     status: str
 
 
-class OrderFromQuoteRequest(BaseModel):
-    client_id: str = ""
-    client_name: str = ""
-    product_key: str
-    product_name: str = ""
-    quantity: int = 1
-    size: str = "M"
-    quoted_price: float = 0.0
-    deposit_amount: float = 0.0
-    due_date: str = ""
-    materials_cost_snapshot: Optional[float] = None
-    labor_cost_snapshot: Optional[float] = None
-    retail_price_snapshot: Optional[float] = None
-    notes: str = ""
-    contact_phone: str = ""
+def _compute_payment_fields(
+    quoted_price: float,
+    deposit_amount: float,
+    amount_paid_total: float = 0.0,
+    payment_status: Optional[str] = None,
+) -> dict:
+    """Calcula saldo y payment_status de forma consistente.
 
+    Reglas:
+    - amount_paid_total: si no se envía (>0), usa deposit_amount como cobro inicial.
+    - payment_status: se recalcula salvo que ya sea un valor válido y se quiera forzar
+      (en create/update siempre recalculamos desde montos).
+    """
+    quoted = float(quoted_price or 0)
+    deposit = float(deposit_amount or 0)
+    paid = float(amount_paid_total or 0)
+    if paid <= 0 and deposit > 0:
+        paid = deposit
+    # No pagar de más en el cálculo de saldo mostrado
+    balance = round(max(0.0, quoted - paid), 2)
 
-def compute_order_fields(order_dict: dict) -> dict:
-    quoted_price = float(order_dict.get("quoted_price") or order_dict.get("retail_price_snapshot") or 0.0)
-    deposit_amount = float(order_dict.get("deposit_amount") or 0.0)
-    amount_paid_total = float(order_dict.get("amount_paid_total") if order_dict.get("amount_paid_total") is not None else deposit_amount)
-    
-    balance_amount = max(0.0, quoted_price - amount_paid_total)
-    
-    if quoted_price > 0 and amount_paid_total >= quoted_price:
-        payment_status = "pagado"
-    elif amount_paid_total > 0:
-        payment_status = "seña"
+    if quoted <= 0 and paid <= 0:
+        status = "sin_pago"
+    elif paid <= 0:
+        status = "sin_pago"
+    elif quoted > 0 and paid + 0.009 >= quoted:
+        status = "pagado"
     else:
-        payment_status = "sin_pago"
+        status = "adelanto"
 
-    order_dict["quoted_price"] = quoted_price
-    order_dict["deposit_amount"] = deposit_amount
-    order_dict["amount_paid_total"] = amount_paid_total
-    order_dict["balance_amount"] = balance_amount
-    order_dict["payment_status"] = payment_status
-    if "stock_deducted" not in order_dict:
-        order_dict["stock_deducted"] = False
-    if "quantity" not in order_dict or not order_dict["quantity"]:
-        order_dict["quantity"] = 1
-    if "size" not in order_dict or not order_dict["size"]:
-        order_dict["size"] = "M"
-    return order_dict
+    # Si el cliente forzó un status válido y montos son 0, respetar solo sin_pago
+    if payment_status in VALID_PAYMENT_STATUSES and quoted <= 0 and paid <= 0:
+        status = payment_status if payment_status == "sin_pago" else status
+
+    # Normalizar legacy argentino → chileno
+    if status == "seña":
+        status = "adelanto"
+
+    return {
+        "deposit_amount": round(deposit, 2),
+        "amount_paid_total": round(paid, 2),
+        "balance_amount": balance,
+        "payment_status": status,
+    }
+
+
+def _normalize_order(order: dict) -> dict:
+    """Aplica defaults a órdenes legacy para no romper GET/PUT (T9)."""
+    o = dict(order)
+    defaults = {
+        "client_id": "",
+        "quantity": 1,
+        "size": "M",
+        "custom_notes": "",
+        "notes": "",
+        "quoted_price": 0,
+        "due_date": "",
+        "status": "pendiente",
+        "deposit_amount": 0,
+        "deposit_date": None,
+        "amount_paid_total": 0,
+        "payment_status": "sin_pago",
+        "materials_cost_snapshot": None,
+        "labor_cost_snapshot": None,
+        "retail_price_snapshot": None,
+        "stock_deducted": False,
+        "production_id": None,
+        "contact_phone": "",
+        "whatsapp_ready_sent_at": None,
+    }
+    for key, value in defaults.items():
+        if key not in o:
+            o[key] = value
+
+    # Campos numéricos / bool que no deben quedar en None
+    if o.get("quantity") is None or int(o.get("quantity") or 0) < 1:
+        o["quantity"] = 1
+    else:
+        o["quantity"] = int(o["quantity"])
+    for num_key in ("quoted_price", "deposit_amount", "amount_paid_total"):
+        if o.get(num_key) is None:
+            o[num_key] = 0
+
+    # notes ↔ custom_notes
+    if not o.get("notes") and o.get("custom_notes"):
+        o["notes"] = o["custom_notes"]
+    if not o.get("custom_notes") and o.get("notes"):
+        o["custom_notes"] = o["notes"]
+
+    pay = _compute_payment_fields(
+        o.get("quoted_price", 0),
+        o.get("deposit_amount", 0),
+        o.get("amount_paid_total", 0),
+    )
+    # Montos son la fuente de verdad del estado de pago
+    o["balance_amount"] = pay["balance_amount"]
+    o["payment_status"] = pay["payment_status"]
+    o["amount_paid_total"] = pay["amount_paid_total"]
+    o["deposit_amount"] = pay["deposit_amount"]
+
+    if o.get("status") not in VALID_ORDER_STATUSES:
+        o["status"] = "pendiente"
+
+    o["stock_deducted"] = bool(o.get("stock_deducted", False))
+    return o
+
+
+def _order_from_create(order: OrderCreate, existing: Optional[dict] = None) -> dict:
+    """Construye un dict de orden listo para persistir a partir del modelo de entrada."""
+    data = order.model_dump()
+    # Fusionar notas
+    notes = (data.get("notes") or data.get("custom_notes") or "").strip()
+    data["notes"] = notes
+    data["custom_notes"] = notes
+
+    pay = _compute_payment_fields(
+        data.get("quoted_price", 0),
+        data.get("deposit_amount", 0),
+        data.get("amount_paid_total", 0),
+    )
+    data.update(pay)
+
+    if data.get("retail_price_snapshot") is None and data.get("quoted_price"):
+        data["retail_price_snapshot"] = data["quoted_price"]
+
+    # deposit_date automático si hay adelanto y no se envió fecha
+    if data.get("deposit_amount", 0) > 0 and not data.get("deposit_date"):
+        data["deposit_date"] = datetime.now().date().isoformat()
+
+    if data.get("payment_status") == "seña":
+        data["payment_status"] = "adelanto"
+    if data.get("payment_status") not in ("sin_pago", "adelanto", "pagado"):
+        data["payment_status"] = "sin_pago"
+    if data.get("status") not in VALID_ORDER_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Estado no válido. Opciones: {', '.join(sorted(VALID_ORDER_STATUSES))}",
+        )
+
+    # Preservar flags de orquestación si se actualiza una orden existente
+    if existing:
+        data["stock_deducted"] = bool(existing.get("stock_deducted", False))
+        # No borrar production_id / whatsapp al editar campos de ficha
+        if not data.get("production_id"):
+            data["production_id"] = existing.get("production_id")
+        if not data.get("whatsapp_ready_sent_at"):
+            data["whatsapp_ready_sent_at"] = existing.get("whatsapp_ready_sent_at")
+        # Permitir subir adelanto sin resetear stock_deducted
+        data["stock_deducted"] = bool(existing.get("stock_deducted", False))
+
+    return data
 
 
 def _load_orders() -> List[dict]:
@@ -1346,15 +1623,24 @@ def _load_orders() -> List[dict]:
         return []
     try:
         with open(ORDERS_FILE, "r", encoding="utf-8") as f:
-            raw_orders = json.load(f)
-            return [compute_order_fields(o) for o in raw_orders]
+            raw = json.load(f)
+        if not isinstance(raw, list):
+            return []
+        return [_normalize_order(o) for o in raw]
     except (json.JSONDecodeError, IOError):
         return []
 
 
 def _save_orders(orders: List[dict]):
+    # Persistir sin campos puramente calculados duplicados está ok;
+    # balance_amount se puede recalcular al leer.
+    to_save = []
+    for o in orders:
+        row = dict(o)
+        row.pop("balance_amount", None)  # se recalcula en _normalize_order
+        to_save.append(row)
     with open(ORDERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(orders, f, ensure_ascii=False, indent=2)
+        json.dump(to_save, f, ensure_ascii=False, indent=2)
 
 
 # --- BACKUP / RESTORE ---
@@ -1528,85 +1814,58 @@ def list_orders(status: Optional[str] = None):
     orders = _load_orders()
     if status:
         if status not in VALID_ORDER_STATUSES:
-            raise HTTPException(status_code=400, detail=f"Estado no válido. Opciones: {', '.join(VALID_ORDER_STATUSES)}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Estado no válido. Opciones: {', '.join(sorted(VALID_ORDER_STATUSES))}",
+            )
         orders = [o for o in orders if o.get("status") == status]
     return orders
 
 
 @app.post("/api/orders", status_code=201)
 def create_order(order: OrderCreate):
-    """Crea un nuevo pedido de producción."""
+    """Crea un nuevo pedido de producción (campos de adelanto/stock con defaults suaves)."""
     if order.status not in VALID_ORDER_STATUSES:
-        raise HTTPException(status_code=400, detail=f"Estado no válido. Opciones: {', '.join(VALID_ORDER_STATUSES)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Estado no válido. Opciones: {', '.join(sorted(VALID_ORDER_STATUSES))}",
+        )
     orders = _load_orders()
     now = datetime.now().isoformat()
-    new_order = {
+    body = _order_from_create(order)
+    # Alta: nunca nace con stock ya descontado
+    body["stock_deducted"] = False
+    body["production_id"] = None
+    new_order = _normalize_order({
         "id": str(uuid.uuid4())[:8],
-        **order.model_dump(),
+        **body,
         "created_at": now,
         "updated_at": now,
-        "status_updated_at": now
-    }
-    new_order = compute_order_fields(new_order)
+    })
     orders.append(new_order)
     _save_orders(orders)
     return new_order
 
 
-@app.post("/api/orders/from-quote", status_code=201)
-def create_order_from_quote(quote_req: OrderFromQuoteRequest):
-    """Crea un pedido de producción a partir de una cotización del taller."""
-    orders = _load_orders()
-    now = datetime.now().isoformat()
-    
-    quoted_price = quote_req.quoted_price or quote_req.retail_price_snapshot or 0.0
-    deposit_amount = quote_req.deposit_amount or 0.0
-    
-    order_dict = {
-        "id": str(uuid.uuid4())[:8],
-        "client_id": quote_req.client_id,
-        "client_name": quote_req.client_name or "Cliente Cotización",
-        "product_key": quote_req.product_key,
-        "product_name": quote_req.product_name or quote_req.product_key,
-        "quantity": quote_req.quantity,
-        "size": quote_req.size,
-        "custom_notes": quote_req.notes,
-        "quoted_price": quoted_price,
-        "deposit_amount": deposit_amount,
-        "deposit_date": now if deposit_amount > 0 else None,
-        "due_date": quote_req.due_date,
-        "status": "pendiente",
-        "status_updated_at": now,
-        "materials_cost_snapshot": quote_req.materials_cost_snapshot,
-        "labor_cost_snapshot": quote_req.labor_cost_snapshot,
-        "retail_price_snapshot": quote_req.retail_price_snapshot,
-        "stock_deducted": False,
-        "production_id": None,
-        "contact_phone": quote_req.contact_phone,
-        "created_at": now,
-        "updated_at": now
-    }
-    order_dict = compute_order_fields(order_dict)
-    orders.append(order_dict)
-    _save_orders(orders)
-    return order_dict
-
-
 @app.put("/api/orders/{order_id}")
 def update_order(order_id: str, order: OrderCreate):
-    """Actualiza un pedido existente (todos los campos)."""
+    """Actualiza un pedido existente (preserva stock_deducted / production_id)."""
     if order.status not in VALID_ORDER_STATUSES:
-        raise HTTPException(status_code=400, detail=f"Estado no válido. Opciones: {', '.join(VALID_ORDER_STATUSES)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Estado no válido. Opciones: {', '.join(sorted(VALID_ORDER_STATUSES))}",
+        )
     orders = _load_orders()
     for i, o in enumerate(orders):
         if o["id"] == order_id:
-            updated = {
+            body = _order_from_create(order, existing=o)
+            orders[i] = _normalize_order({
                 **o,
-                **order.model_dump(),
-                "updated_at": datetime.now().isoformat()
-            }
-            updated = compute_order_fields(updated)
-            orders[i] = updated
+                **body,
+                "id": o["id"],
+                "created_at": o.get("created_at", datetime.now().isoformat()),
+                "updated_at": datetime.now().isoformat(),
+            })
             _save_orders(orders)
             return orders[i]
     raise HTTPException(status_code=404, detail="Pedido no encontrado.")
@@ -1614,103 +1873,53 @@ def update_order(order_id: str, order: OrderCreate):
 
 @app.put("/api/orders/{order_id}/status")
 def update_order_status(order_id: str, body: OrderStatusUpdate):
-    """
-    Actualiza solo el estado de un pedido.
-    Al pasar a 'terminado', descuenta automáticamente el BOM del inventario y genera el registro de producción (idempotente).
+    """Actualiza el estado de un pedido con side-effects (D3).
+
+    Al pasar a `terminado` (si aún no stock_deducted):
+      1. Verifica stock del BOM × quantity
+      2. Si falta → 400 y el estado NO cambia
+      3. Si ok → deduct + movements + production record + stock_deducted=true
+    Reentrada a terminado con stock_deducted ya true: no descuenta de nuevo (T6).
+    Volver atrás desde terminado no reingresa stock (v1 documentado).
     """
     if body.status not in VALID_ORDER_STATUSES:
-        raise HTTPException(status_code=400, detail=f"Estado no válido. Opciones: {', '.join(VALID_ORDER_STATUSES)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Estado no válido. Opciones: {', '.join(sorted(VALID_ORDER_STATUSES))}",
+        )
     orders = _load_orders()
     for i, o in enumerate(orders):
-        if o["id"] == order_id:
-            now = datetime.now().isoformat()
-            new_status = body.status
-            
-            # Orquestación de descuento de stock al pasar a terminado
-            if new_status == "terminado" and not o.get("stock_deducted"):
-                prod_key = o.get("product_key", "")
-                qty = o.get("quantity", 1)
-                prod_name = o.get("product_name") or prod_key
-                
-                # 1. Descontar inventario (lanza HTTP 400 si falta stock)
+        if o["id"] != order_id:
+            continue
+
+        order = dict(o)
+        new_status = body.status
+
+        # --- Orquestación al terminar ---
+        if new_status == "terminado" and not order.get("stock_deducted"):
+            product_key = order.get("product_key") or ""
+            qty = int(order.get("quantity") or 1)
+            product_name = order.get("product_name") or product_key or "prenda"
+            reference = f"Orden {order_id}: confección de {qty}x {product_name}"
+
+            if product_key and product_key != "custom":
+                # deduct_bom lanza 400 si falta stock (estado intacto en disco)
                 deduct_bom_for_product(
-                    product_key=prod_key,
+                    product_key=product_key,
                     quantity=qty,
-                    reference_text=f"Pedido #{order_id} - {prod_name}"
+                    reference=reference,
                 )
-                
-                # 2. Registrar producción automáticamente
-                prod_id = str(uuid.uuid4())[:8]
-                mat_cost = float(o.get("materials_cost_snapshot") or 0.0)
-                labor_cost = float(o.get("labor_cost_snapshot") or 0.0)
-                quoted_price = float(o.get("quoted_price") or o.get("retail_price_snapshot") or 0.0)
-                profit = quoted_price - (mat_cost + labor_cost)
-                
-                prod_record = {
-                    "id": prod_id,
-                    "date": now,
-                    "product_name": prod_name,
-                    "quantity": qty,
-                    "materials_cost": mat_cost,
-                    "labor_cost": labor_cost,
-                    "retail_price": quoted_price,
-                    "profit": round(profit, 2),
-                    "product_key": prod_key,
-                    "order_id": order_id
-                }
-                prods = _load_production()
-                prods.append(prod_record)
-                _save_production(prods)
-                
-                orders[i]["stock_deducted"] = True
-                orders[i]["production_id"] = prod_id
 
-            orders[i]["status"] = new_status
-            orders[i]["status_updated_at"] = now
-            orders[i]["updated_at"] = now
-            orders[i] = compute_order_fields(orders[i])
-            _save_orders(orders)
-            return orders[i]
-    raise HTTPException(status_code=404, detail="Pedido no encontrado.")
+            prod = _create_production_from_order(order)
+            order["production_id"] = prod["id"]
+            order["stock_deducted"] = True
 
+        order["status"] = new_status
+        order["updated_at"] = datetime.now().isoformat()
+        orders[i] = _normalize_order(order)
+        _save_orders(orders)
+        return orders[i]
 
-@app.get("/api/orders/{order_id}/whatsapp-ready")
-def get_whatsapp_ready(order_id: str):
-    """Genera el mensaje y enlace wa.me para avisar que un pedido está listo."""
-    orders = _load_orders()
-    for o in orders:
-        if o["id"] == order_id:
-            client_name = o.get("client_name") or "Cliente"
-            prod_name = o.get("product_name") or o.get("product_key") or "Prenda"
-            qty = o.get("quantity", 1)
-            size = o.get("size", "M")
-            price = o.get("quoted_price", 0)
-            balance = o.get("balance_amount", 0)
-            phone = str(o.get("contact_phone") or "").strip()
-            
-            text = (
-                f"Hola {client_name}! ⚡\n"
-                f"Tu pedido de Tormenta Indumentaria ya está listo:\n"
-                f"• {prod_name} × {qty} (talle {size})\n"
-                f"• Total: ${price:,.0f}\n"
-                f"• Saldo pendiente: ${balance:,.0f}\n"
-                f"Podés retirar o coordinamos el envío cuando quieras.\n"
-                f"¡Muchas gracias por confiar en Tormenta! 🖤"
-            )
-            
-            wa_url = None
-            clean_phone = "".join(filter(str.isdigit, phone))
-            if clean_phone:
-                import urllib.parse
-                wa_url = f"https://wa.me/{clean_phone}?text={urllib.parse.quote(text)}"
-                
-            return {
-                "order_id": order_id,
-                "client_name": client_name,
-                "phone": phone,
-                "text": text,
-                "wa_url": wa_url
-            }
     raise HTTPException(status_code=404, detail="Pedido no encontrado.")
 
 
