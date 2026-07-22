@@ -333,9 +333,9 @@ def test_overdue_orders_and_movements_flow():
 # --- v2.1 pedidos-punta-a-punta (D1+) ---
 
 def test_t1_create_order_with_half_deposit():
-    """T1: Crear orden con seña 50% → payment_status seña y balance correcto."""
+    """T1: Crear orden con adelanto 50% → payment_status adelanto y balance correcto."""
     payload = {
-        "client_name": "Cliente Seña",
+        "client_name": "Cliente Adelanto",
         "product_key": "arnes_body",
         "product_name": "Arnés Corporal Integral",
         "quantity": 1,
@@ -343,14 +343,14 @@ def test_t1_create_order_with_half_deposit():
         "quoted_price": 45000,
         "deposit_amount": 22500,
         "due_date": "2026-08-01",
-        "contact_phone": "5491100000000",
+        "contact_phone": "56900000000",
         "materials_cost_snapshot": 12000,
         "labor_cost_snapshot": 8000,
     }
     response = client.post("/api/orders", json=payload)
     assert response.status_code == 201
     data = response.json()
-    assert data["payment_status"] == "seña"
+    assert data["payment_status"] == "adelanto"
     assert data["deposit_amount"] == 22500
     assert data["amount_paid_total"] == 22500
     assert data["balance_amount"] == 22500

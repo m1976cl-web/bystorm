@@ -39,7 +39,7 @@ Ayudar a la emprendedora a operar el taller desde Instagram:
 DM Instagram
   → cliente + medidas
   → cotización
-  → orden con seña
+  → orden con adelanto
   → confección (estados)
   → terminado (descuento BOM + producción)
   → WhatsApp “pedido listo”
@@ -144,7 +144,7 @@ Actualizar esta tabla **y** la de `PLAN_IMPLEMENTACION_PEDIDOS.md` al cerrar un 
 
 | Día | Entrega | Estado | Notas |
 |-----|---------|--------|-------|
-| **D1** | Modelo de orden + defaults + `static/` canónico | **done** | Seña, saldo, `payment_status`, `stock_deducted`, T1/T9 |
+| **D1** | Modelo de orden + defaults + `static/` canónico | **done** | Adelanto, saldo, `payment_status`, `stock_deducted`, T1/T9 |
 | **D2** | `deduct_bom_for_product` compartido | **done** | Producción y órdenes comparten lógica |
 | **D3** | `PUT .../status` orquestado al `terminado` | **done** | Stock + production + idempotencia; T3–T6 |
 | **D4** | `POST /api/orders/from-quote` + pagos embebidos | **pending** | ← **siguiente backend** |
@@ -163,7 +163,10 @@ Actualizar esta tabla **y** la de `PLAN_IMPLEMENTACION_PEDIDOS.md` al cerrar un 
 - Hash deep-link (`#orders`, `#clients`) y teclado flechas en la barra.  
 - Aislamiento de paneles y fix HTML Zero Waste.  
 - Catálogo Tormenta (líneas, badges Vegan / A medida).  
-- Doc de marca (`DESARROLLO.md`, `MARCA_TORMENTA.md`).
+- Doc de marca (`DESARROLLO.md`, `MARCA_TORMENTA.md`).  
+- Lenguaje Chile: **adelanto** (no seña).  
+- Cotizador: CTA “Crear orden con este presupuesto” + adelanto 50% precargado.  
+- Clientes: búsqueda, atajos Orden / Cotizar / Escalar.
 
 ### Nunca recortar (v2.1)
 
@@ -246,7 +249,7 @@ Un día = un commit o un PR pequeño. Preferible a un monstruo de 10 archivos si
 
 | # | Caso | Estado orientativo |
 |---|------|--------------------|
-| T1 | Orden con seña 50% → `payment_status=seña` | Cubierto |
+| T1 | Orden con adelanto 50% → `payment_status=adelanto` | Cubierto |
 | T2 | `from-quote` → 201 + snapshots | **Pendiente (D4/D5)** |
 | T3 | pendiente → en_confeccion sin tocar stock | Cubierto |
 | T4 | → terminado con stock OK | Cubierto |
@@ -292,7 +295,7 @@ Antes de commit: si los tests ensuciaron movimientos/stock, restaurar desde `mai
 
 ## 11. Comunicación con la beneficiaria
 
-- Lenguaje de UI: español claro de taller (seña, saldo, a medida, listo).  
+- Lenguaje de UI: español de taller **Chile** (adelanto — no “seña”—, saldo, a medida, listo).  
 - Materialidad: **vegan** / cuerina / charol vegano — no “cuero animal”.  
 - Canal real: Instagram DM; la app no reemplaza el IG, lo **soporta**.  
 - Validar BOMs y precios de herrajes con ella cuando se pueda; el catálogo actual es alineación de marca, no cotización contable oficial.

@@ -1645,12 +1645,12 @@ const TAB_META = {
     orders: {
         group: 'Comercial',
         title: 'Órdenes de confección',
-        blurb: 'Pedidos del DM a la entrega: estados, seña y seguimiento. El stock se descuenta al marcar terminado.',
+        blurb: 'Pedidos del DM a la entrega: estados, adelanto y seguimiento. El stock se descuenta al marcar terminado.',
     },
     quote: {
         group: 'Comercial',
         title: 'Cotizador',
-        blurb: 'Presupuesto de una prenda del catálogo Tormenta para responder un DM o armar la seña.',
+        blurb: 'Presupuesto de una prenda del catálogo Tormenta para responder un DM o armar el adelanto.',
     },
     clients: {
         group: 'Comercial',
@@ -2420,6 +2420,46 @@ function renderStripsRollMap(rollWidth, rollLengthM, stripW, stripH, packing, ne
 
 
 // --- MÓDULO 3: COTIZADOR / PRESUPUESTADOR ---
+let lastQuoteSnapshot = null; // para pasar a Órdenes con adelanto
+
+function prefillOrderFromQuote() {
+    if (!lastQuoteSnapshot) {
+        showToast('Primero generá un presupuesto', 'warning');
+        return;
+    }
+    const q = lastQuoteSnapshot;
+    switchTab('orders');
+    // Esperar a que se carguen dropdowns de órdenes
+    setTimeout(() => {
+        const prodSel = document.getElementById('order_product');
+        const clientSel = document.getElementById('order_client');
+        const priceEl = document.getElementById('order_price');
+        const depositEl = document.getElementById('order_deposit');
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        if (prodSel && q.product_key) {
+            prodSel.value = q.product_key;
+        }
+        if (clientSel && q.client_id) {
+            clientSel.value = q.client_id;
+        }
+        if (priceEl) priceEl.value = Math.round(q.suggested_retail_price || 0);
+        if (depositEl) {
+            const adelanto = Math.round((q.suggested_retail_price || 0) * 0.5);
+            depositEl.value = adelanto;
+        }
+        const due = document.getElementById('order_due');
+        if (due && !due.value) {
+            const d = new Date();
+            d.setDate(d.getDate() + 10);
+            due.value = d.toISOString().slice(0, 10);
+        }
+        showToast('Orden precargada con precio y adelanto 50%. Revisá y guardá.', 'success');
+        document.getElementById('btn-create-order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+}
+window.prefillOrderFromQuote = prefillOrderFromQuote;
+
 async function handleQuote(event) {
     event.preventDefault();
     
@@ -2467,7 +2507,7 @@ async function handleQuote(event) {
         // Rellenar cabecera de presupuesto formal
         const budgetNum = Math.floor(1000 + Math.random() * 9000);
         document.getElementById('budget-number').textContent = `PRESUPUESTO #${budgetNum}`;
-        document.getElementById('budget-date').textContent = `Fecha: ${new Date().toLocaleDateString('es-AR')}`;
+        document.getElementById('budget-date').textContent = `Fecha: ${new Date().toLocaleDateString('es-CL')}`;
         
         const clientSelect = document.getElementById('quote_client');
         const selectedOpt = clientSelect ? clientSelect.options[clientSelect.selectedIndex] : null;
@@ -2475,7 +2515,7 @@ async function handleQuote(event) {
             document.getElementById('budget-client-name').textContent = selectedOpt.dataset.name;
             document.getElementById('budget-client-contact').textContent = selectedOpt.dataset.contact;
         } else {
-            document.getElementById('budget-client-name').textContent = 'Consumidor Final';
+            document.getElementById('budget-client-name').textContent = 'Consumidor final';
             document.getElementById('budget-client-contact').textContent = 'Sin contacto registrado';
         }
 
@@ -2506,21 +2546,46 @@ async function handleQuote(event) {
         // Comparación de costos por proveedor
         renderQuoteSupplierComparison(data.breakdown);
 
+        const productSelect = document.getElementById('quote_product');
+        const productKey = productSelect.value;
+        const productName = productSelect.options[productSelect.selectedIndex]?.text || productKey;
+        const clientSelectAfter = document.getElementById('quote_client');
+
+        lastQuoteSnapshot = {
+            product_key: productKey,
+            product_name: productName,
+            client_id: clientSelectAfter?.value || '',
+            client_name: clientSelectAfter?.value
+                ? (clientSelectAfter.options[clientSelectAfter.selectedIndex]?.dataset.name || '')
+                : '',
+            suggested_retail_price: data.suggested_retail_price,
+            total_materials: data.total_materials,
+            labor_total: data.labor.total,
+        };
+
+        const toOrderBtn = document.getElementById('btn-quote-to-order');
+        if (toOrderBtn) {
+            toOrderBtn.disabled = false;
+            toOrderBtn.onclick = () => prefillOrderFromQuote();
+        }
+
         // Añadir botón dinámico para registrar directamente en el historial
         let regBtn = document.getElementById('btn-quote-register-prod');
         if (!regBtn) {
             regBtn = document.createElement('button');
+            regBtn.type = 'button';
             regBtn.id = 'btn-quote-register-prod';
             regBtn.className = 'btn-secondary';
             regBtn.style.marginTop = '1rem';
             regBtn.style.width = '100%';
-            regBtn.textContent = 'Registrar en Historial de Producción';
+            regBtn.textContent = 'Registrar en historial de producción';
             document.querySelector('#quote-results').appendChild(regBtn);
         }
 
         let waBtn = document.getElementById('btn-quote-whatsapp');
         if (!waBtn) {
             waBtn = document.createElement('button');
+            waBtn.type = 'button';
             waBtn.id = 'btn-quote-whatsapp';
             waBtn.className = 'btn-primary';
             waBtn.style.marginTop = '0.5rem';
@@ -2531,13 +2596,9 @@ async function handleQuote(event) {
             document.querySelector('#quote-results').appendChild(waBtn);
         }
 
-        // Obtener el nombre del producto para registrarlo
-        const productSelect = document.getElementById('quote_product');
-        const productKey = productSelect.value;
-        const productName = productSelect.options[productSelect.selectedIndex]?.text || productKey;
-
+        const adelantoMsg = Math.round(data.suggested_retail_price * 0.5);
         waBtn.onclick = () => {
-            const message = `🔩 TORMENTA INDUMENTARIA\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 Presupuesto #${budgetNum}\n📦 ${productName}\n━━━━━━━━━━━━━━━━━━━━━━━\n🧵 Materiales: $${data.total_materials.toLocaleString('es-AR')}\n🔧 Mano de obra: $${data.labor.total.toLocaleString('es-AR')}\n💰 PRECIO FINAL: $${data.suggested_retail_price.toLocaleString('es-AR')}\n━━━━━━━━━━━━━━━━━━━━━━━\n📅 Válido por 15 días\n⏱️ Confección: 7-10 días hábiles\n✨ Confección artesanal · Slow Fashion`;
+            const message = `🖤 TORMENTA INDUMENTARIA\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 Presupuesto #${budgetNum}\n📦 ${productName}\n━━━━━━━━━━━━━━━━━━━━━━━\n🧵 Materiales: $${data.total_materials.toLocaleString('es-CL')}\n🔧 Mano de obra: $${data.labor.total.toLocaleString('es-CL')}\n💰 PRECIO FINAL: $${data.suggested_retail_price.toLocaleString('es-CL')}\n💵 Adelanto 50%: $${adelantoMsg.toLocaleString('es-CL')}\n━━━━━━━━━━━━━━━━━━━━━━━\n📅 Válido por 15 días\n⏱️ Confección: 7-10 días hábiles\n✨ Hecho a mano en Santiago · Vegan · Slow fashion`;
             navigator.clipboard.writeText(message).then(() => {
                 showToast('Presupuesto copiado al portapapeles', 'success');
             });
@@ -2551,27 +2612,31 @@ async function handleQuote(event) {
         };
 
         regBtn.onclick = () => {
-            // Autofill the production form in pane-history
             const prodSelect = document.getElementById('prod_product_key');
             if (prodSelect) {
                 prodSelect.value = productKey;
-                handleProductionProductChange();
+                if (typeof handleProductionProductChange === 'function') handleProductionProductChange();
             }
-            document.getElementById('prod_qty').value = 1;
-            document.getElementById('prod_mat_cost').value = data.total_materials;
-            document.getElementById('prod_labor_cost').value = data.labor.total;
-            document.getElementById('prod_retail_price').value = data.suggested_retail_price;
+            const qty = document.getElementById('prod_qty');
+            if (qty) qty.value = 1;
+            const mat = document.getElementById('prod_mat_cost');
+            if (mat) mat.value = data.total_materials;
+            const lab = document.getElementById('prod_labor_cost');
+            if (lab) lab.value = data.labor.total;
+            const retail = document.getElementById('prod_retail_price');
+            if (retail) retail.value = data.suggested_retail_price;
 
             switchTab('history');
-            
-            // Animación y foco
             const prodForm = document.getElementById('production-form');
-            prodForm.style.boxShadow = '0 0 30px rgba(197, 160, 89, 0.4)';
-            setTimeout(() => { prodForm.style.boxShadow = ''; }, 1500);
+            if (prodForm) {
+                prodForm.style.boxShadow = '0 0 30px rgba(197, 160, 89, 0.4)';
+                setTimeout(() => { prodForm.style.boxShadow = ''; }, 1500);
+            }
         };
 
         placeholder.classList.add('hidden');
         resultsContainer.classList.remove('hidden');
+        toOrderBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -2582,22 +2647,76 @@ async function handleQuote(event) {
 }
 
 // --- MÓDULO 4: FICHAS DE CLIENTES ---
+let clientsCache = [];
+
 async function loadClients() {
     try {
         const response = await fetch('/api/clients');
-        const clients = await response.json();
-        renderClientList(clients);
-        updateClientDropdowns(clients);
+        clientsCache = await response.json();
+        filterClientsList();
+        updateClientDropdowns(clientsCache);
     } catch (error) {
         console.error('Error loading clients:', error);
     }
 }
 
+function filterClientsList() {
+    const q = (document.getElementById('clients-search')?.value || '').trim().toLowerCase();
+    let list = clientsCache || [];
+    if (q) {
+        list = list.filter(c => {
+            const blob = `${c.name || ''} ${c.contact || ''} ${c.notes || ''}`.toLowerCase();
+            return blob.includes(q);
+        });
+    }
+    renderClientList(list);
+}
+window.filterClientsList = filterClientsList;
+
+function focusNewClientForm() {
+    const form = document.getElementById('client-form');
+    const title = document.getElementById('client-form-title');
+    if (typeof cancelClientEdit === 'function') {
+        try { cancelClientEdit(); } catch (_) { /* ok */ }
+    }
+    if (title) title.textContent = 'Registrar nueva clienta';
+    document.getElementById('client_edit_id').value = '';
+    form?.reset?.();
+    document.getElementById('client-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('client_name')?.focus();
+}
+window.focusNewClientForm = focusNewClientForm;
+
+function useClientInQuote(clientId) {
+    switchTab('quote');
+    setTimeout(() => {
+        const sel = document.getElementById('quote_client');
+        if (sel) {
+            sel.value = clientId;
+            showToast('Clienta seleccionada en el cotizador', 'success');
+        }
+    }, 200);
+}
+window.useClientInQuote = useClientInQuote;
+
+function useClientInOrder(clientId) {
+    switchTab('orders');
+    setTimeout(() => {
+        const panel = document.getElementById('orders-new-panel');
+        if (panel) panel.open = true;
+        const sel = document.getElementById('order_client');
+        if (sel) {
+            sel.value = clientId;
+            showToast('Clienta precargada en la orden', 'success');
+        }
+    }, 250);
+}
+window.useClientInOrder = useClientInOrder;
+
 function updateClientDropdowns(clients) {
-    // 1. Selector de clientes del cotizador
     const quoteClientSel = document.getElementById('quote_client');
     if (quoteClientSel) {
-        quoteClientSel.innerHTML = '<option value="">-- Sin Cliente (Presupuesto Genérico) --</option>';
+        quoteClientSel.innerHTML = '<option value="">— Sin clienta (presupuesto genérico) —</option>';
         clients.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -2608,17 +2727,10 @@ function updateClientDropdowns(clients) {
         });
     }
 
-    // 2. Selector de clientes de pedidos/ordenes
+    // Órdenes: no pisar si loadOrderFormDropdowns ya armó placeholders
     const orderClientSel = document.getElementById('order_client');
-    if (orderClientSel) {
-        orderClientSel.innerHTML = '';
-        clients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            opt.dataset.name = c.name;
-            orderClientSel.appendChild(opt);
-        });
+    if (orderClientSel && !orderClientSel.querySelector('option[value=""]')) {
+        // se refresca en loadOrderFormDropdowns
     }
 }
 
@@ -2628,44 +2740,51 @@ function renderClientList(clients) {
     const listContainer = document.getElementById('client-list');
     
     if (!clients || clients.length === 0) {
-        placeholder.classList.remove('hidden');
-        listContainer.innerHTML = '';
+        if (placeholder) {
+            placeholder.classList.remove('hidden');
+            const q = (document.getElementById('clients-search')?.value || '').trim();
+            placeholder.querySelector('p') && (placeholder.querySelector('p').textContent = q
+                ? 'No hay fichas que coincidan con la búsqueda.'
+                : 'No hay clientas registradas aún. Usá el formulario para agregar la primera.');
+        }
+        if (listContainer) listContainer.innerHTML = '';
         return;
     }
     
-    placeholder.classList.add('hidden');
+    if (placeholder) placeholder.classList.add('hidden');
     listContainer.innerHTML = '';
     
     clients.forEach(client => {
         const card = document.createElement('div');
         card.className = 'client-card';
         
-        const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-AR') : '';
+        const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-CL') : '';
         const notesHtml = client.notes ? `<div class="client-notes-text">📝 ${client.notes}</div>` : '';
+        const safeName = (client.name || '').replace(/'/g, "\\'");
         
         const m = [
-            { label: 'Frente/Cabeza (1)', val: client.forehead },
-            { label: 'Cuello (2)', val: client.neck },
-            { label: 'Hombros (3)', val: client.shoulder_blade },
-            { label: 'Pecho (4)', val: client.chest || client.bust },
-            { label: 'Bajo Busto', val: client.underbust },
-            { label: 'Cintura (5)', val: client.waist },
-            { label: 'Cadera (6)', val: client.hips },
-            { label: 'Muslo (7)', val: client.thigh },
-            { label: 'Rodilla (8)', val: client.knee },
-            { label: 'Pantorrilla (9)', val: client.calf },
-            { label: 'Tobillo (10)', val: client.ankle },
-            { label: 'Calzado (11)', val: client.shoe_size },
-            { label: 'Suela (12)', val: client.sole_length },
-            { label: 'Entrep. Tobillo (13)', val: client.crotch_ankle },
-            { label: 'Bícep (14)', val: client.bicep },
-            { label: 'Codo (15)', val: client.elbow },
-            { label: 'Antebrazo (16)', val: client.forearm },
-            { label: 'Muñeca (17)', val: client.wrist },
-            { label: 'Palma (18)', val: client.palm },
-            { label: 'Tiro U (19)', val: client.u_seam },
-            { label: 'Brazo (20)', val: client.arm_length },
-            { label: 'Estatura (21)', val: client.height }
+            { label: 'Frente/Cabeza', val: client.forehead },
+            { label: 'Cuello', val: client.neck },
+            { label: 'Hombros', val: client.shoulder_blade },
+            { label: 'Pecho', val: client.chest || client.bust },
+            { label: 'Bajo busto', val: client.underbust },
+            { label: 'Cintura', val: client.waist },
+            { label: 'Cadera', val: client.hips },
+            { label: 'Muslo', val: client.thigh },
+            { label: 'Rodilla', val: client.knee },
+            { label: 'Pantorrilla', val: client.calf },
+            { label: 'Tobillo', val: client.ankle },
+            { label: 'Calzado', val: client.shoe_size },
+            { label: 'Suela', val: client.sole_length },
+            { label: 'Entrep. tobillo', val: client.crotch_ankle },
+            { label: 'Bícep', val: client.bicep },
+            { label: 'Codo', val: client.elbow },
+            { label: 'Antebrazo', val: client.forearm },
+            { label: 'Muñeca', val: client.wrist },
+            { label: 'Palma', val: client.palm },
+            { label: 'Tiro U', val: client.u_seam },
+            { label: 'Brazo', val: client.arm_length },
+            { label: 'Estatura', val: client.height }
         ].filter(item => item.val && parseFloat(item.val) > 0);
 
         const chipsHtml = m.length > 0
@@ -2677,20 +2796,26 @@ function renderClientList(clients) {
                 <div class="client-card-info">
                     <h4>${client.name}</h4>
                     ${client.contact ? `<div class="client-contact">${client.contact}</div>` : ''}
-                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talla: ${client.preferred_size} · Actualizado: ${dateStr}</div>
+                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talle: ${client.preferred_size || '—'} · Act.: ${dateStr}</div>
                 </div>
                 <div class="client-card-actions">
-                    <button class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al Escalado">
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInOrder('${client.id}')" title="Usar en una orden">
+                        📋 Orden
+                    </button>
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInQuote('${client.id}')" title="Usar en cotizador">
+                        💰 Cotizar
+                    </button>
+                    <button type="button" class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al escalado">
                         ↗ Escalar
                     </button>
-                    <button class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha de medidas">
-                        📄 Ficha
+                    <button type="button" class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha">
+                        📄
                     </button>
-                    <button class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar cliente">
-                        ✏ Editar
+                    <button type="button" class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar">
+                        ✏
                     </button>
-                    <button class="client-action-btn delete-btn" onclick="deleteClient('${client.id}', '${client.name}')" title="Eliminar cliente">
-                        ✕ Borrar
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteClient('${client.id}', '${safeName}')" title="Eliminar">
+                        ✕
                     </button>
                 </div>
             </div>
@@ -4574,7 +4699,7 @@ const ORDER_NEXT_ACTION = {
 };
 const PAYMENT_LABELS = {
     sin_pago: 'Sin pago',
-    'seña': 'Seña',
+    'adelanto': 'Adelanto', 'seña': 'Adelanto',
     pagado: 'Pagado',
 };
 
@@ -4627,7 +4752,7 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
         ? new Date(order.due_date + 'T00:00:00').toLocaleDateString('es-AR')
         : '—';
     const pay = order.payment_status || 'sin_pago';
-    const payClass = pay === 'seña' ? 'sena' : pay;
+    const payClass = (pay === 'adelanto' || pay === 'seña') ? 'adelanto' : pay;
     const balance = order.balance_amount != null
         ? order.balance_amount
         : Math.max(0, (order.quoted_price || 0) - (order.amount_paid_total || order.deposit_amount || 0));
@@ -4655,7 +4780,7 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
             <span class="order-price">${formatMoney(order.quoted_price)}</span>
         </div>
         <div class="order-money-row">
-            <span>Seña ${formatMoney(order.deposit_amount || 0)}</span>
+            <span>Adelanto ${formatMoney(order.deposit_amount || 0)}</span>
             <span>Saldo ${formatMoney(balance)}</span>
         </div>
         <div class="order-actions">
@@ -5222,7 +5347,7 @@ function printClientMeasurements(clientId) {
         <div style="font-size:12px;color:#555;">${client.notes || ''}</div>
     </div>
     <div class="footer">
-        <span>Tormenta Indumentaria · Buenos Aires, Argentina</span>
+        <span>Tormenta Indumentaria · Santiago, Chile</span>
         <span>Medidas en centímetros · No reproducir</span>
     </div>
     <script>window.onload = () => window.print();</script>
