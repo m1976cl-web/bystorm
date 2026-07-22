@@ -64,9 +64,16 @@
   },
   {
     "item_key": "cuerina_rollo",
-    "name": "Cuerina en rollo",
+    "name": "Cuerina vegana en rollo",
     "stock": 20.0,
     "min_stock": 3.0,
+    "unit": "metros"
+  },
+  {
+    "item_key": "charol_rollo",
+    "name": "Charol vegano en rollo",
+    "stock": 8.0,
+    "min_stock": 2.0,
     "unit": "metros"
   }
 ]

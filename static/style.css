@@ -231,24 +231,112 @@ body {
     height: 18px;
 }
 
-/* Paneles de Contenido */
+/* Catálogo Tormenta — categorías y badges de marca */
+.catalog-category-heading {
+    grid-column: 1 / -1;
+    margin: 1.25rem 0 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.catalog-category-heading h3 {
+    margin: 0;
+    font-family: var(--font-heading, inherit);
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-crimson-hover, #e85a6b);
+}
+
+.catalog-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.item-tag.tag-vegan {
+    background: rgba(80, 180, 120, 0.2);
+    color: #7ddea8;
+    border: 1px solid rgba(80, 180, 120, 0.35);
+}
+
+.item-tag.tag-mto {
+    background: rgba(180, 140, 80, 0.15);
+    color: #e0c48a;
+    border: 1px solid rgba(180, 140, 80, 0.3);
+}
+
+.catalog-product-desc {
+    margin: 0.4rem 0 0.2rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary, #aaa);
+    line-height: 1.35;
+}
+
+.catalog-product-material {
+    margin: 0.15rem 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-muted, #888);
+}
+
+/* Etiquetas de grupo en la barra de módulos */
+.nav-group-label {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    margin-right: 0.15rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary, #888);
+    opacity: 0.75;
+    border-left: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+}
+
+.nav-group-label:first-child {
+    margin-left: 0;
+    border-left: none;
+    padding-left: 0;
+}
+
+/* Paneles de Contenido — aislamiento estricto por módulo */
 .tab-content-wrapper {
     position: relative;
 }
 
 .tab-pane {
-    display: none;
+    display: none !important;
     opacity: 0;
     visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
     transform: translateY(10px);
     transition: opacity var(--transition-smooth), transform var(--transition-smooth);
 }
 
-.tab-pane.active {
+.tab-pane.active,
+.tab-pane.active[hidden] {
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
     transform: translateY(0) !important;
+}
+
+/* Garantía: nada de un panel oculto debe verse en otro */
+.tab-pane:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 /* -------------------------------------------------------------

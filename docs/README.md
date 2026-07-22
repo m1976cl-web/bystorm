@@ -8,6 +8,7 @@ Repo: https://github.com/m1976cl-web/bystorm
 | Documento | Estado | Audiencia |
 |-----------|--------|-----------|
 | [PLAN_IMPLEMENTACION_PEDIDOS.md](./PLAN_IMPLEMENTACION_PEDIDOS.md) | **Activo** — release v2.1 `pedidos-punta-a-punta` | Humanos + agentes de código |
+| [MARCA_TORMENTA.md](./MARCA_TORMENTA.md) | Contexto de marca e Instagram (catálogo alineado) | Humanos + agentes |
 
 ## Para desarrolladores humanos
 
