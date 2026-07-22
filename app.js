@@ -1635,24 +1635,30 @@ async function exportToPDF(elementId, filename) {
 
 // --- MANEJO DE PESTAÑAS (TABS) ---
 function switchTab(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(pane => {
+    console.log("Cambiando a pestaña:", tabId);
+    
+    // Ocultar todas las pestañas y quitar clase activa
+    const allBtns = document.querySelectorAll('.tab-btn');
+    const allPanes = document.querySelectorAll('.tab-pane');
+    
+    allBtns.forEach(btn => btn.classList.remove('active'));
+    allPanes.forEach(pane => {
         pane.classList.remove('active');
-        pane.style.display = '';
+        pane.style.display = 'none';
     });
 
     const activeBtn = document.getElementById(`tab-${tabId}`);
     const activePane = document.getElementById(`pane-${tabId}`);
     
-    if (activeBtn && activePane) {
+    if (activeBtn) {
         activeBtn.classList.add('active');
+    }
+    
+    if (activePane) {
         activePane.classList.add('active');
         activePane.style.display = 'block';
-        
-        // Auto-desplazar la barra de navegación para enfocar la pestaña activa si queda fuera de vista
-        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        console.warn(`No se encontró el panel con ID: pane-${tabId}`);
     }
 
     try {
@@ -4881,7 +4887,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners para pestañas de navegación (fail-safe)
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.preventDefault();
             const tabId = btn.id.replace('tab-', '');
             if (tabId) switchTab(tabId);
         });
