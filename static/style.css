@@ -3802,3 +3802,24 @@ input[type="date"]:focus {
     }
 }
 
+/* --- MODO TALLER (#1) --- */
+body.workshop-mode-active .financial-metric,
+body.workshop-mode-active .order-price,
+body.workshop-mode-active .kpi-card,
+body.workshop-mode-active .price-value,
+body.workshop-mode-active .price-note,
+body.workshop-mode-active [data-financial] {
+    display: none !important;
+}
+
+body.workshop-mode-active .order-product {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: #c5a059 !important;
+}
+
+body.workshop-mode-active input[id^="client_"] {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+}
+

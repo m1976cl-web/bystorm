@@ -2628,6 +2628,25 @@ async function handleQuote(event) {
             }
         };
 
+        let igDmBtn = document.getElementById('btn-quote-ig-dm');
+        if (!igDmBtn) {
+            igDmBtn = document.createElement('button');
+            igDmBtn.type = 'button';
+            igDmBtn.id = 'btn-quote-ig-dm';
+            igDmBtn.className = 'btn-secondary';
+            igDmBtn.style.marginTop = '0.5rem';
+            igDmBtn.style.width = '100%';
+            igDmBtn.textContent = '💬 Copiar Respuesta para DM Instagram';
+            document.querySelector('#quote-results').appendChild(igDmBtn);
+        }
+
+        igDmBtn.onclick = () => {
+            const igMessage = `¡Hola! ⚡ Te paso la cotización a medida para ${productName}:\n\n💰 PRECIO TOTAL: $${data.suggested_retail_price.toLocaleString('es-CL')}\n💵 Reserva de confección (50%): $${adelantoMsg.toLocaleString('es-CL')}\n⏱️ Plazo de confección: 7-10 días hábiles\n✨ Hecho a mano en Santiago · Vegan · Slow Fashion\n\n¿Te gustaría agendar tu confección?`;
+            navigator.clipboard.writeText(igMessage).then(() => {
+                showToast('¡Texto para DM copiado al portapapeles!', 'success');
+            });
+        };
+
         regBtn.onclick = () => {
             const prodSelect = document.getElementById('prod_product_key');
             if (prodSelect) {
@@ -5632,8 +5651,131 @@ function printClientMeasurements(clientId) {
     }
 }
 
+// --- FEATURE 1: MODO TALLER ---
+function toggleWorkshopMode() {
+    const isModeActive = document.body.classList.toggle('workshop-mode-active');
+    const btn = document.getElementById('btn-workshop-toggle');
+    if (btn) {
+        btn.style.backgroundColor = isModeActive ? '#c5a059' : 'rgba(197,160,89,0.2)';
+        btn.style.color = isModeActive ? '#000' : '#c5a059';
+    }
+    triggerHaptic('medium');
+    showToast(
+        isModeActive 
+            ? '✂️ Modo Taller activado (Medidas grandes · Precios ocultos)' 
+            : 'Modo Taller desactivado',
+        isModeActive ? 'success' : 'info'
+    );
+}
+
+// --- FEATURE 2: BUSCADOR GLOBAL (Ctrl + K) ---
+function openGlobalSearch() {
+    const modal = document.getElementById('global-search-modal');
+    const input = document.getElementById('global-search-input');
+    if (!modal || !input) return;
+    modal.classList.remove('hidden');
+    input.value = '';
+    input.focus();
+    handleGlobalSearch('');
+    triggerHaptic('light');
+}
+
+function closeGlobalSearch(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handleGlobalSearch(query) {
+    const resultsContainer = document.getElementById('global-search-results');
+    if (!resultsContainer) return;
+    const q = (query || '').toLowerCase().trim();
+    
+    if (!q) {
+        resultsContainer.innerHTML = '<div style="color:var(--color-text-muted);font-size:0.85rem;text-align:center;padding:1.5rem 0;">Escribí el nombre de un cliente, número de orden, prenda o insumo...</div>';
+        return;
+    }
+
+    let clients = [], orders = [], products = [], inventory = [];
+    try {
+        const cRes = await fetch('/api/clients'); if (cRes.ok) clients = await cRes.json();
+        const oRes = await fetch('/api/orders'); if (oRes.ok) orders = await oRes.json();
+        const pRes = await fetch('/api/products'); if (pRes.ok) products = await pRes.json();
+        const iRes = await fetch('/api/inventory'); if (iRes.ok) inventory = await iRes.json();
+    } catch (e) {
+        clients = getMockData('clients') || [];
+        orders = getMockData('orders') || [];
+        products = getMockData('products') || [];
+        inventory = getMockData('inventory') || [];
+    }
+
+    const matchedClients = clients.filter(c => (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q));
+    const matchedOrders = orders.filter(o => (o.client_name || '').toLowerCase().includes(q) || (o.product_name || '').toLowerCase().includes(q) || (o.id || '').toLowerCase().includes(q));
+    const matchedProducts = products.filter(p => (p.name || '').toLowerCase().includes(q) || (p.product_key || '').toLowerCase().includes(q));
+    const matchedInventory = inventory.filter(i => (i.name || '').toLowerCase().includes(q) || (i.item_key || '').toLowerCase().includes(q));
+
+    let html = '';
+
+    matchedClients.forEach(c => {
+        html += `<div onclick="closeGlobalSearch();switchTab('clients');selectClientForEdit('${c.id}')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
+            <div><strong>👤 ${c.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${c.contact || c.email || 'Ficha de Cliente'}</div></div>
+            <span style="font-size:0.7rem;color:#c5a059;">Ver Ficha →</span>
+        </div>`;
+    });
+
+    matchedOrders.forEach(o => {
+        html += `<div onclick="closeGlobalSearch();switchTab('orders')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
+            <div><strong>📋 Orden #${o.id}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${o.client_name} · ${o.product_name || o.product_key}</div></div>
+            <span style="font-size:0.7rem;color:#4caf50;">$${(o.quoted_price || 0).toLocaleString('es-CL')} →</span>
+        </div>`;
+    });
+
+    matchedProducts.forEach(p => {
+        html += `<div onclick="closeGlobalSearch();switchTab('catalog')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
+            <div><strong>🏷️ ${p.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${p.category || 'Catálogo'}</div></div>
+            <span style="font-size:0.7rem;color:#c5a059;">Ver Catálogo →</span>
+        </div>`;
+    });
+
+    matchedInventory.forEach(i => {
+        html += `<div onclick="closeGlobalSearch();switchTab('inventory')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
+            <div><strong>📦 ${i.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">Stock actual: ${i.stock} ${i.unit}</div></div>
+            <span style="font-size:0.7rem;color:#2196f3;">Ajustar Stock →</span>
+        </div>`;
+    });
+
+    resultsContainer.innerHTML = html || '<div style="color:var(--color-text-muted);font-size:0.85rem;text-align:center;padding:1.5rem 0;">No se encontraron resultados para tu búsqueda.</div>';
+}
+
+// --- FEATURE 3: LISTA DE COMPRAS A PROVEEDORES ---
+async function generateSupplierOrderList() {
+    try {
+        const response = await fetch('/api/inventory/supplier-order-list');
+        if (!response.ok) throw new Error('Error al generar lista de compras');
+        const data = await response.json();
+        
+        navigator.clipboard.writeText(data.text_message).then(() => {
+            showToast('¡Lista de compras a proveedores copiada al portapapeles!', 'success');
+        });
+        
+        alert(`📦 LISTA DE COMPRAS A PROVEEDORES\n(Basada en ${data.active_orders_count} órdenes activas del taller)\n\n${data.text_message}`);
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Teclado Ctrl + K para buscador global
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            openGlobalSearch();
+        } else if (e.key === 'Escape') {
+            closeGlobalSearch();
+        }
+    });
+
     // Restore theme
     const savedTheme = localStorage.getItem('tormenta-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
