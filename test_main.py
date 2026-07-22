@@ -598,3 +598,25 @@ def test_supplier_order_list():
     assert "missing_items" in data
     assert "text_message" in data
 
+
+def test_update_product_bom():
+    """Prueba la edición de ficha técnica BOM desde el catálogo."""
+    payload = {
+        "bom": {
+            "cinta": 3.0,
+            "argollas": 8,
+            "hebillas": 4,
+            "remaches": 16,
+            "ojalillos": 0,
+            "varillas": 0,
+            "cadenas": 0.0,
+            "tachas": 10,
+            "mosquetones": 2
+        }
+    }
+    r = client.put("/api/products/arnes", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["argollas"] == 8
+    assert data["cinta"] == 3.0
+
