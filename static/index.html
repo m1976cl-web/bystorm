@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.2.0">
+    <link rel="stylesheet" href="style.css?v=1.2.1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -1669,78 +1669,116 @@
 
             <!-- PESTAÑA: ÓRDENES -->
             <section class="tab-pane" id="pane-orders">
-                <div class="glass-card" style="margin-bottom:1.5rem;">
-                    <div class="card-header">
-                        <h2 class="card-title">Nueva Orden de Trabajo</h2>
-                        <p class="card-desc">Crea una orden asociada a un cliente y producto del catálogo.</p>
+                <div class="orders-toolbar">
+                    <div class="orders-filters" role="group" aria-label="Filtrar órdenes">
+                        <button type="button" class="orders-filter-btn active" data-orders-filter="activas" onclick="setOrdersFilter('activas')">Activas</button>
+                        <button type="button" class="orders-filter-btn" data-orders-filter="atrasadas" onclick="setOrdersFilter('atrasadas')">Atrasadas</button>
+                        <button type="button" class="orders-filter-btn" data-orders-filter="todas" onclick="setOrdersFilter('todas')">Todas</button>
                     </div>
-                    <form id="order-form" onsubmit="handleCreateOrder(event)">
+                    <div class="orders-view-toggle" role="group" aria-label="Vista de órdenes">
+                        <button type="button" class="orders-view-btn active" data-orders-view="kanban" onclick="setOrdersView('kanban')">Kanban</button>
+                        <button type="button" class="orders-view-btn" data-orders-view="lista" onclick="setOrdersView('lista')">Lista</button>
+                    </div>
+                </div>
+
+                <details class="orders-new-panel glass-card" id="orders-new-panel" open>
+                    <summary class="orders-new-summary">
+                        <span>+ Nueva orden de trabajo</span>
+                        <small>Cliente · prenda · seña · fecha</small>
+                    </summary>
+                    <form id="order-form" onsubmit="handleCreateOrder(event)" class="orders-new-form">
                         <div class="inputs-grid compact cols-3">
                             <div class="form-group">
                                 <label for="order_client">Cliente</label>
-                                <select id="order_client"><!-- Dinámico --></select>
+                                <select id="order_client" required><!-- Dinámico --></select>
                             </div>
                             <div class="form-group">
-                                <label for="order_product">Producto</label>
-                                <select id="order_product"><!-- Dinámico --></select>
+                                <label for="order_product">Prenda (catálogo)</label>
+                                <select id="order_product" required><!-- Dinámico --></select>
                             </div>
                             <div class="form-group">
-                                <label for="order_size">Talla</label>
+                                <label for="order_size">Talle</label>
                                 <select id="order_size">
-                                    <option value="S">S</option><option value="M" selected>M</option><option value="L">L</option><option value="XL">XL</option>
+                                    <option value="S">S</option>
+                                    <option value="M" selected>M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="a medida">A medida</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="order_price">Precio Cotizado ($)</label>
-                                <input type="number" id="order_price" min="0" step="100" value="5000">
+                                <label for="order_qty">Cantidad</label>
+                                <input type="number" id="order_qty" min="1" step="1" value="1">
                             </div>
                             <div class="form-group">
-                                <label for="order_due">Fecha de Entrega</label>
+                                <label for="order_price">Precio total ($)</label>
+                                <input type="number" id="order_price" min="0" step="100" value="0" placeholder="Acordado con la clienta">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_deposit">Seña cobrada ($)</label>
+                                <input type="number" id="order_deposit" min="0" step="100" value="0" placeholder="0 si aún no hay seña">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_due">Fecha de entrega</label>
                                 <input type="date" id="order_due" required>
                             </div>
                             <div class="form-group">
-                                <label for="order_notes">Notas</label>
-                                <input type="text" id="order_notes" placeholder="Detalles especiales">
+                                <label for="order_phone">WhatsApp / teléfono</label>
+                                <input type="text" id="order_phone" placeholder="Ej: 54911… (opcional)">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="order_notes">Notas del pedido</label>
+                                <input type="text" id="order_notes" placeholder="Hebillas negras, sin níquel, color…">
                             </div>
                         </div>
-                        <button type="submit" class="btn-primary" id="btn-create-order" style="margin-top:1rem;">
-                            <span class="btn-text">Crear Orden</span>
-                            <div class="btn-loader"></div>
-                        </button>
+                        <div class="orders-form-actions">
+                            <button type="submit" class="btn-primary" id="btn-create-order">
+                                <span class="btn-text">Crear orden</span>
+                                <div class="btn-loader"></div>
+                            </button>
+                            <p class="orders-form-hint">La seña y el saldo se muestran en cada tarjeta. Al pasar a <strong>Terminado</strong> se descuenta el BOM del inventario.</p>
+                        </div>
                     </form>
+                </details>
+
+                <div id="orders-list-view" class="orders-list-view hidden" aria-live="polite"></div>
+
+                <div id="orders-kanban-wrap">
+                    <h3 class="section-subtitle orders-section-title">Tablero de estados</h3>
+                    <p class="orders-section-hint">Deslizá horizontal en el celu. Cada tarjeta tiene el próximo paso grande.</p>
+                    <div class="kanban-board" id="kanban-board">
+                        <div class="kanban-col" data-status="pendiente">
+                            <div class="kanban-col-header">Pendiente <span class="col-count" id="count-pendiente">0</span></div>
+                            <div id="kanban-pendiente" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="en_confeccion">
+                            <div class="kanban-col-header">En confección <span class="col-count" id="count-en_confeccion">0</span></div>
+                            <div id="kanban-en_confeccion" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="terminado">
+                            <div class="kanban-col-header">Terminado <span class="col-count" id="count-terminado">0</span></div>
+                            <div id="kanban-terminado" class="kanban-col-body"></div>
+                        </div>
+                        <div class="kanban-col" data-status="entregado">
+                            <div class="kanban-col-header">Entregado <span class="col-count" id="count-entregado">0</span></div>
+                            <div id="kanban-entregado" class="kanban-col-body"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <h3 class="section-subtitle" style="margin-bottom:1rem;">Tablero Kanban</h3>
-                <div class="kanban-board" id="kanban-board">
-                    <div class="kanban-col" data-status="pendiente">
-                        <div class="kanban-col-header">Pendiente <span class="col-count" id="count-pendiente">0</span></div>
-                        <div id="kanban-pendiente"></div>
+                <details class="orders-calendar-panel">
+                    <summary class="section-subtitle" style="cursor:pointer;">Calendario de entregas</summary>
+                    <div class="calendar-container">
+                        <div class="calendar-nav">
+                            <button type="button" onclick="changeCalendarMonth(-1)">← Anterior</button>
+                            <span class="calendar-month-label" id="calendar-month-label"></span>
+                            <button type="button" onclick="changeCalendarMonth(1)">Siguiente →</button>
+                        </div>
+                        <div class="calendar-grid-wrap">
+                            <div class="calendar-grid" id="calendar-grid"><!-- Dinámico --></div>
+                        </div>
                     </div>
-                    <div class="kanban-col" data-status="en_confeccion">
-                        <div class="kanban-col-header">En Confección <span class="col-count" id="count-en_confeccion">0</span></div>
-                        <div id="kanban-en_confeccion"></div>
-                    </div>
-                    <div class="kanban-col" data-status="terminado">
-                        <div class="kanban-col-header">Terminado <span class="col-count" id="count-terminado">0</span></div>
-                        <div id="kanban-terminado"></div>
-                    </div>
-                    <div class="kanban-col" data-status="entregado">
-                        <div class="kanban-col-header">Entregado <span class="col-count" id="count-entregado">0</span></div>
-                        <div id="kanban-entregado"></div>
-                    </div>
-                </div>
-
-                <h3 class="section-subtitle" style="margin-bottom:1rem;">Calendario de Entregas</h3>
-                <div class="calendar-container">
-                    <div class="calendar-nav">
-                        <button onclick="changeCalendarMonth(-1)">← Anterior</button>
-                        <span class="calendar-month-label" id="calendar-month-label"></span>
-                        <button onclick="changeCalendarMonth(1)">Siguiente →</button>
-                    </div>
-                    <div class="calendar-grid-wrap">
-                        <div class="calendar-grid" id="calendar-grid"><!-- Dinámico --></div>
-                    </div>
-                </div>
+                </details>
             </section>
 
         </div>
@@ -1772,6 +1810,6 @@
         <p>&copy; 2026 <strong>Tormenta Indumentaria</strong>. Herramienta de Soporte Tecnológico para Slow Fashion & Zero Waste. Diseñado con orgullo para optimización artesanal.</p>
     </footer>
 
-    <script src="app.js?v=1.1.1"></script>
+    <script src="app.js?v=1.2.1"></script>
 </body>
 </html>

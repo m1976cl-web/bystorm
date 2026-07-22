@@ -4506,12 +4506,17 @@ async function loadPriceComparison() {
 // --- MÓDULO: ÓRDENES ---
 async function loadOrderFormDropdowns() {
     try {
-        // Load clients
         const cRes = await fetch('/api/clients');
         const clients = await cRes.json();
         const clientSel = document.getElementById('order_client');
         if (clientSel) {
             clientSel.innerHTML = '';
+            const ph = document.createElement('option');
+            ph.value = '';
+            ph.textContent = clients.length ? '— Elegir cliente —' : '— Sin clientes: creá uno en Clientes —';
+            ph.disabled = true;
+            ph.selected = true;
+            clientSel.appendChild(ph);
             clients.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
@@ -4521,54 +4526,193 @@ async function loadOrderFormDropdowns() {
             });
         }
 
-        // Load products
         const pRes = await fetch('/api/products');
         const products = await pRes.json();
         const prodSel = document.getElementById('order_product');
         if (prodSel) {
-            prodSel.innerHTML = '';
-            for (const [key, prod] of Object.entries(products)) {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = prod.name;
-                opt.dataset.name = prod.name;
-                prodSel.appendChild(opt);
+            // Reutilizar agrupación por categoría si está disponible
+            if (typeof fillProductSelect === 'function') {
+                fillProductSelect(prodSel, products, {
+                    placeholder: '— Elegir prenda Tormenta —',
+                });
+            } else {
+                prodSel.innerHTML = '';
+                for (const [key, prod] of Object.entries(products)) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = prod.name;
+                    opt.dataset.name = prod.name;
+                    prodSel.appendChild(opt);
+                }
             }
+            // dataset.name en opciones (optgroup)
+            prodSel.querySelectorAll('option[value]').forEach(opt => {
+                if (opt.value && products[opt.value]) {
+                    opt.dataset.name = products[opt.value].name || opt.textContent;
+                }
+            });
         }
     } catch (error) {
         console.error('Error loading order dropdowns:', error);
     }
 }
 
+let ordersFilter = 'activas'; // activas | atrasadas | todas
+let ordersView = 'kanban'; // kanban | lista
+
+const ORDER_STATUS_FLOW = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
+const ORDER_STATUS_LABELS = {
+    pendiente: 'Pendiente',
+    en_confeccion: 'En confección',
+    terminado: 'Terminado',
+    entregado: 'Entregado',
+};
+const ORDER_NEXT_ACTION = {
+    pendiente: 'Empezar confección',
+    en_confeccion: 'Marcar terminado',
+    terminado: 'Marcar entregado',
+};
+const PAYMENT_LABELS = {
+    sin_pago: 'Sin pago',
+    'seña': 'Seña',
+    pagado: 'Pagado',
+};
+
+function isOrderOverdue(order) {
+    if (!order || order.status === 'entregado' || !order.due_date) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(order.due_date + 'T00:00:00');
+    return due < today;
+}
+
+function filterOrdersList(orders) {
+    const list = Array.isArray(orders) ? orders : [];
+    if (ordersFilter === 'atrasadas') return list.filter(isOrderOverdue);
+    if (ordersFilter === 'activas') return list.filter(o => o.status !== 'entregado');
+    return list;
+}
+
+function setOrdersFilter(filter) {
+    ordersFilter = filter;
+    document.querySelectorAll('[data-orders-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-orders-filter') === filter);
+    });
+    renderOrdersViews();
+}
+window.setOrdersFilter = setOrdersFilter;
+
+function setOrdersView(view) {
+    ordersView = view;
+    document.querySelectorAll('[data-orders-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-orders-view') === view);
+    });
+    const listEl = document.getElementById('orders-list-view');
+    const kanbanWrap = document.getElementById('orders-kanban-wrap');
+    if (listEl) listEl.classList.toggle('hidden', view !== 'lista');
+    if (kanbanWrap) kanbanWrap.classList.toggle('hidden', view !== 'kanban');
+    renderOrdersViews();
+}
+window.setOrdersView = setOrdersView;
+
+function formatMoney(n) {
+    const v = Number(n) || 0;
+    return `$${v.toLocaleString('es-AR')}`;
+}
+
+function buildOrderCardHTML(order, { compact = false } = {}) {
+    const status = order.status || 'pendiente';
+    const overdue = isOrderOverdue(order);
+    const dueStr = order.due_date
+        ? new Date(order.due_date + 'T00:00:00').toLocaleDateString('es-AR')
+        : '—';
+    const pay = order.payment_status || 'sin_pago';
+    const payClass = pay === 'seña' ? 'sena' : pay;
+    const balance = order.balance_amount != null
+        ? order.balance_amount
+        : Math.max(0, (order.quoted_price || 0) - (order.amount_paid_total || order.deposit_amount || 0));
+    const qty = order.quantity || 1;
+    const nextLabel = ORDER_NEXT_ACTION[status];
+    const showAdvance = status !== 'entregado' && nextLabel;
+    const notes = order.notes || order.custom_notes || '';
+    const stockBadge = order.stock_deducted
+        ? '<span class="order-badge badge-stock-ok">Stock descontado</span>'
+        : (status === 'terminado' || status === 'entregado'
+            ? '<span class="order-badge badge-stock-warn">Sin descuento</span>'
+            : '');
+
+    return `
+        <div class="order-client">${order.client_name || 'Cliente'}</div>
+        <div class="order-product">${order.product_name || order.product_key || 'Prenda'} · ${order.size || 'M'}${qty > 1 ? ` · ×${qty}` : ''}</div>
+        ${notes ? `<div class="order-notes">📝 ${notes}</div>` : ''}
+        <div class="order-badges">
+            <span class="order-badge badge-pay-${payClass}">${PAYMENT_LABELS[pay] || pay}</span>
+            ${overdue ? '<span class="order-badge badge-overdue">Atrasada</span>' : ''}
+            ${stockBadge}
+        </div>
+        <div class="order-meta">
+            <span class="${overdue ? 'order-due-overdue' : ''}">📅 ${dueStr}</span>
+            <span class="order-price">${formatMoney(order.quoted_price)}</span>
+        </div>
+        <div class="order-money-row">
+            <span>Seña ${formatMoney(order.deposit_amount || 0)}</span>
+            <span>Saldo ${formatMoney(balance)}</span>
+        </div>
+        <div class="order-actions">
+            ${showAdvance ? `<button type="button" class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ ${nextLabel}</button>` : '<span class="order-done-label">Entregada</span>'}
+            <button type="button" class="kanban-delete-btn" onclick="deleteOrder('${order.id}')" title="Eliminar orden">✕</button>
+        </div>
+    `;
+}
+
 async function loadOrders() {
     try {
         const response = await fetch('/api/orders');
         ordersCache = await response.json();
-        renderKanban(ordersCache);
+        renderOrdersViews();
         renderCalendar(calendarMonth, calendarYear);
     } catch (error) {
         console.error('Error loading orders:', error);
     }
 }
 
+function renderOrdersViews() {
+    const filtered = filterOrdersList(ordersCache);
+    renderKanban(filtered, ordersCache);
+    renderOrdersList(filtered);
+}
+
 async function handleCreateOrder(event) {
     event.preventDefault();
     const clientSel = document.getElementById('order_client');
     const prodSel = document.getElementById('order_product');
-    const clientName = clientSel.options[clientSel.selectedIndex]?.dataset.name || clientSel.options[clientSel.selectedIndex]?.text || '';
-    const prodName = prodSel.options[prodSel.selectedIndex]?.dataset.name || prodSel.options[prodSel.selectedIndex]?.text || '';
+    if (!clientSel?.value) {
+        showToast('Elegí un cliente (o crealo en Clientes)', 'warning');
+        return;
+    }
+    if (!prodSel?.value) {
+        showToast('Elegí una prenda del catálogo', 'warning');
+        return;
+    }
+    const clientName = clientSel.options[clientSel.selectedIndex]?.dataset.name
+        || clientSel.options[clientSel.selectedIndex]?.text || '';
+    const prodName = prodSel.options[prodSel.selectedIndex]?.dataset.name
+        || prodSel.options[prodSel.selectedIndex]?.text || '';
 
     const payload = {
         client_id: clientSel.value,
         client_name: clientName,
         product_key: prodSel.value,
         product_name: prodName,
+        quantity: parseInt(document.getElementById('order_qty')?.value, 10) || 1,
         size: document.getElementById('order_size').value,
         custom_notes: document.getElementById('order_notes').value.trim(),
+        notes: document.getElementById('order_notes').value.trim(),
         quoted_price: parseFloat(document.getElementById('order_price').value) || 0,
+        deposit_amount: parseFloat(document.getElementById('order_deposit')?.value) || 0,
+        contact_phone: (document.getElementById('order_phone')?.value || '').trim(),
         due_date: document.getElementById('order_due').value,
         status: 'pendiente',
-        status_updated_at: new Date().toISOString()
     };
 
     try {
@@ -4577,32 +4721,48 @@ async function handleCreateOrder(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error'); }
-        showToast('Orden creada exitosamente', 'success');
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Error al crear la orden');
+        }
+        showToast('Orden creada', 'success');
         document.getElementById('order-form').reset();
+        const qty = document.getElementById('order_qty');
+        if (qty) qty.value = '1';
+        const panel = document.getElementById('orders-new-panel');
+        if (panel && window.matchMedia('(max-width: 768px)').matches) panel.open = false;
         await loadOrders();
+        await loadOrderFormDropdowns();
     } catch (error) {
         showToast(error.message, 'error');
     }
 }
 
 async function advanceOrderStatus(orderId, currentStatus) {
-    const flow = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
-    const statusLabels = { pendiente: 'Pendiente', en_confeccion: 'En Confección', terminado: 'Terminado', entregado: 'Entregado' };
-    const idx = flow.indexOf(currentStatus);
-    if (idx < 0 || idx >= flow.length - 1) return;
-    const nextStatus = flow[idx + 1];
+    const idx = ORDER_STATUS_FLOW.indexOf(currentStatus);
+    if (idx < 0 || idx >= ORDER_STATUS_FLOW.length - 1) return;
+    const nextStatus = ORDER_STATUS_FLOW[idx + 1];
+    const fromL = ORDER_STATUS_LABELS[currentStatus] || currentStatus;
+    const toL = ORDER_STATUS_LABELS[nextStatus] || nextStatus;
 
-    if (!confirm(`¿Avanzar orden de "${statusLabels[currentStatus] || currentStatus}" a "${statusLabels[nextStatus] || nextStatus}"?`)) return;
+    let msg = `¿Pasar de «${fromL}» a «${toL}»?`;
+    if (nextStatus === 'terminado') {
+        msg = `Al marcar TERMINADO se descontará el BOM del inventario (una sola vez).\n\n¿Continuar?`;
+    }
+    if (!confirm(msg)) return;
 
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: nextStatus, status_updated_at: new Date().toISOString() })
+            body: JSON.stringify({ status: nextStatus })
         });
-        if (!response.ok) throw new Error('Error al avanzar estado');
-        showToast(`Orden avanzada a: ${statusLabels[nextStatus] || nextStatus.replace('_',' ')}`, 'success');
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const detail = err.detail || 'Error al avanzar estado';
+            throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+        }
+        showToast(`Orden → ${toL}`, 'success');
         await loadOrders();
     } catch (error) {
         showToast(error.message, 'error');
@@ -4610,7 +4770,7 @@ async function advanceOrderStatus(orderId, currentStatus) {
 }
 
 async function deleteOrder(orderId) {
-    if (!confirm('¿Eliminar esta orden?')) return;
+    if (!confirm('¿Eliminar esta orden? No se puede deshacer.')) return;
     try {
         const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Error al eliminar');
@@ -4621,50 +4781,62 @@ async function deleteOrder(orderId) {
     }
 }
 
-function renderKanban(orders) {
-    const statuses = ['pendiente', 'en_confeccion', 'terminado', 'entregado'];
-    const statusLabels = { pendiente: 'Pendiente', en_confeccion: 'En Confección', terminado: 'Terminado', entregado: 'Entregado' };
+function renderKanban(filteredOrders, allOrders) {
+    const statuses = ORDER_STATUS_FLOW;
+    const sourceCounts = Array.isArray(allOrders) ? allOrders : filteredOrders;
 
     statuses.forEach(status => {
         const container = document.getElementById(`kanban-${status}`);
         const countEl = document.getElementById(`count-${status}`);
         if (!container) return;
         container.innerHTML = '';
-        const filtered = orders.filter(o => o.status === status);
-        if (countEl) countEl.textContent = filtered.length;
+        const filtered = filteredOrders.filter(o => o.status === status);
+        // Contador: con filtro "activas/atrasadas" muestra las del filtro; si no, total por columna
+        if (countEl) {
+            countEl.textContent = sourceCounts.filter(o => o.status === status).length;
+        }
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'kanban-empty';
+            empty.textContent = 'Sin órdenes aquí';
+            container.appendChild(empty);
+            return;
+        }
 
         filtered.forEach(order => {
             const card = document.createElement('div');
             card.className = 'kanban-card';
-            
-            // Check if overdue
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const orderDueDate = order.due_date ? new Date(order.due_date + 'T00:00:00') : null;
-            const isOverdue = status !== 'entregado' && orderDueDate && orderDueDate < today;
-            if (isOverdue) {
-                card.classList.add('overdue');
-            }
-
-            const dueStr = order.due_date ? new Date(order.due_date).toLocaleDateString('es-AR') : '—';
-            const showAdvance = status !== 'entregado';
-            card.innerHTML = `
-                <div class="order-client">${order.client_name || 'Cliente'}</div>
-                <div class="order-product">${order.product_name || order.product_key} · Talla ${order.size || 'M'}</div>
-                ${order.custom_notes ? `<div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:0.2rem;">📝 ${order.custom_notes}</div>` : ''}
-                <div class="order-meta">
-                    <span style="${isOverdue ? 'color:#e57373;font-weight:bold;' : ''}">📅 ${dueStr} ${isOverdue ? '<span style="background:#d32f2f;color:white;font-size:0.55rem;padding:2px 4px;border-radius:3px;margin-left:4px;display:inline-block;vertical-align:middle;font-weight:bold;">ATRASADA</span>' : ''}</span>
-                    <span class="order-price">$${(order.quoted_price || 0).toLocaleString()}</span>
-                </div>
-                ${order.status_updated_at ? `<div style="font-size:0.65rem;color:var(--color-text-muted);margin-top:0.3rem;">🕒 Actualizado: ${new Date(order.status_updated_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'})}</div>` : ''}
-                <div class="order-actions">
-                    ${showAdvance ? `<button class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ Avanzar</button>` : ''}
-                    <button class="kanban-delete-btn" onclick="deleteOrder('${order.id}')">✕</button>
-                </div>
-            `;
+            if (isOrderOverdue(order)) card.classList.add('overdue');
+            card.innerHTML = buildOrderCardHTML(order);
             container.appendChild(card);
         });
     });
+}
+
+function renderOrdersList(orders) {
+    const el = document.getElementById('orders-list-view');
+    if (!el) return;
+    if (!orders.length) {
+        el.innerHTML = '<p class="orders-list-empty">No hay órdenes con este filtro.</p>';
+        return;
+    }
+    // Prioridad: atrasadas primero, luego por fecha
+    const sorted = [...orders].sort((a, b) => {
+        const ao = isOrderOverdue(a) ? 0 : 1;
+        const bo = isOrderOverdue(b) ? 0 : 1;
+        if (ao !== bo) return ao - bo;
+        return (a.due_date || '9999').localeCompare(b.due_date || '9999');
+    });
+    el.innerHTML = sorted.map(order => {
+        const st = order.status || 'pendiente';
+        return `
+            <article class="orders-list-card ${isOrderOverdue(order) ? 'overdue' : ''}">
+                <div class="orders-list-status status-${st}">${ORDER_STATUS_LABELS[st] || st}</div>
+                ${buildOrderCardHTML(order)}
+            </article>
+        `;
+    }).join('');
 }
 
 // --- CALENDAR ---

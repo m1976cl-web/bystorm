@@ -2422,8 +2422,220 @@ html[data-theme="light"] .article-title {
 }
 
 /* =============================================================
-   ORDERS TAB - KANBAN & CALENDAR
+   ORDERS TAB - TOOLBAR, LISTA, KANBAN & CALENDAR
    ============================================================= */
+.orders-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.orders-filters,
+.orders-view-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.25rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+}
+
+.orders-filter-btn,
+.orders-view-btn {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.5rem 0.85rem;
+    min-height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.orders-filter-btn.active,
+.orders-view-btn.active {
+    background: rgba(211, 47, 47, 0.15);
+    color: var(--accent-crimson-hover);
+}
+
+.orders-new-panel {
+    margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem 1rem;
+}
+
+.orders-new-panel summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.orders-new-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.orders-new-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.35rem 0;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.orders-new-summary small {
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.orders-new-form {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.orders-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.orders-form-hint {
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.orders-section-title {
+    margin-bottom: 0.35rem !important;
+}
+
+.orders-section-hint {
+    margin: 0 0 0.85rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.orders-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.orders-list-view.hidden,
+#orders-kanban-wrap.hidden {
+    display: none !important;
+}
+
+.orders-list-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 1.5rem;
+}
+
+.orders-list-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.orders-list-card.overdue {
+    border-left: 4px solid #d32f2f;
+}
+
+.orders-list-status {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.45rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+}
+
+.orders-list-status.status-pendiente { background: rgba(255, 179, 0, 0.15); color: #ffb300; }
+.orders-list-status.status-en_confeccion { background: rgba(66, 165, 245, 0.15); color: #42a5f5; }
+.orders-list-status.status-terminado { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+.orders-list-status.status-entregado { background: rgba(120, 144, 156, 0.15); color: #90a4ae; }
+
+.order-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+}
+
+.order-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.badge-pay-sin_pago { background: rgba(255,255,255,0.06); color: #aaa; }
+.badge-pay-sena { background: rgba(197, 160, 89, 0.15); color: #c5a059; border-color: rgba(197, 160, 89, 0.3); }
+.badge-pay-pagado { background: rgba(76, 175, 80, 0.15); color: #66bb6a; border-color: rgba(76, 175, 80, 0.3); }
+.badge-overdue { background: rgba(211, 47, 47, 0.2); color: #ef5350; }
+.badge-stock-ok { background: rgba(76, 175, 80, 0.12); color: #81c784; }
+.badge-stock-warn { background: rgba(255, 179, 0, 0.12); color: #ffb300; }
+
+.order-notes {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+.order-money-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+}
+
+.order-due-overdue {
+    color: #e57373 !important;
+    font-weight: 700;
+}
+
+.order-done-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 0.35rem 0;
+}
+
+.kanban-empty {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 0.75rem 0.4rem;
+    opacity: 0.8;
+}
+
+.orders-calendar-panel {
+    margin-top: 1.5rem;
+}
+
+.orders-calendar-panel > summary {
+    margin-bottom: 0.75rem;
+}
+
 .kanban-board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2522,39 +2734,46 @@ html[data-theme="light"] .article-title {
 
 .kanban-card .order-actions {
     display: flex;
-    gap: 0.3rem;
-    margin-top: 0.5rem;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+    align-items: stretch;
 }
 
 .kanban-advance-btn {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    color: var(--accent-steel);
+    flex: 1;
+    background: rgba(211, 47, 47, 0.12);
+    border: 1px solid rgba(211, 47, 47, 0.35);
+    border-radius: 8px;
+    color: var(--accent-crimson-hover);
     font-family: var(--font-body);
-    font-size: 0.65rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.55rem 0.65rem;
+    min-height: 44px;
     cursor: pointer;
     transition: var(--transition-fast);
-    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.2;
 }
 
 .kanban-advance-btn:hover {
-    background: rgba(211, 47, 47, 0.1);
+    background: rgba(211, 47, 47, 0.22);
     border-color: var(--accent-crimson);
-    color: var(--accent-crimson-hover);
+    color: #fff;
 }
 
 .kanban-delete-btn {
+    flex: 0 0 44px;
     background: rgba(239, 83, 80, 0.05);
-    border: 1px solid rgba(239, 83, 80, 0.2);
-    border-radius: 4px;
+    border: 1px solid rgba(239, 83, 80, 0.25);
+    border-radius: 8px;
     color: #ef5350;
     font-family: var(--font-body);
-    font-size: 0.65rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.4rem;
     cursor: pointer;
     transition: var(--transition-fast);
 }
@@ -3059,8 +3278,30 @@ input[type="date"]:focus {
     }
 
     .kanban-col {
-        flex: 0 0 280px;
+        flex: 0 0 min(85vw, 300px);
         scroll-snap-align: start;
+    }
+
+    .orders-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .orders-filters,
+    .orders-view-toggle {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .orders-filter-btn,
+    .orders-view-btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .kanban-advance-btn {
+        font-size: 0.82rem;
+        padding: 0.65rem 0.5rem;
     }
 }
 
