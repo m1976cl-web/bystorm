@@ -2648,9 +2648,9 @@ async function handleQuote(event) {
         }
 
         igDmBtn.onclick = () => {
-            const igMessage = `¡Hola! ⚡ Te paso la cotización a medida para ${productName}:\n\n💰 PRECIO TOTAL: $${data.suggested_retail_price.toLocaleString('es-CL')}\n💵 Reserva de confección (50%): $${adelantoMsg.toLocaleString('es-CL')}\n⏱️ Plazo de confección: 7-10 días hábiles\n✨ Hecho a mano en Santiago · Vegan · Slow Fashion\n\n¿Te gustaría agendar tu confección?`;
+            const igMessage = `¡Hola! ⚡ Te paso la cotización a medida de *Tormenta Indumentaria* para *${productName}*:\n\n💰 PRECIO TOTAL: $${data.suggested_retail_price.toLocaleString('es-CL')}\n💵 Reserva de confección (50%): $${adelantoMsg.toLocaleString('es-CL')}\n⏱️ Plazo estimado: 7 a 10 días hábiles\n🧵 Confección a mano · Medidas personalizadas · Slow Fashion SCL\n\n¿Te gustaría reservar la prenda o coordinar algún ajuste en las medidas? 🖤`;
             navigator.clipboard.writeText(igMessage).then(() => {
-                showToast('¡Texto para DM copiado al portapapeles!', 'success');
+                showToast('¡Texto para DM de Instagram copiado al portapapeles!', 'success');
             });
         };
 
