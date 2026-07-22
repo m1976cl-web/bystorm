@@ -476,7 +476,11 @@ async function ensureBackendChecked() {
 window.fetch = async function(resource, options) {
     if (typeof resource === 'string' && resource.startsWith('/api/')) {
         await ensureBackendChecked();
-        if (!backendAvailable) {
+        if (backendAvailable) {
+            // Prepend base path for real backend requests on GitHub Pages
+            resource = `${BASE_PATH}${resource}`;
+        } else {
+            // Use mock API when backend is unavailable
             return mockApiHandler(resource, options);
         }
     }
