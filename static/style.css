@@ -3778,7 +3778,7 @@ input[type="date"]:focus {
         font-size: 16px !important;
     }
 
-    /* Target táctil cómodo */
+    /* Target táctil cómodo min 44px */
     .tab-btn,
     .btn-primary,
     .btn-secondary,
@@ -3799,6 +3799,24 @@ input[type="date"]:focus {
     .kanban-card:active {
         transform: scale(0.96) !important;
         transition: transform 0.08s ease;
+    }
+
+    /* Ajuste de márgenes de tarjeta para pantallas estrechas */
+    .glass-card {
+        padding: 1.1rem !important;
+        border-radius: 12px !important;
+    }
+
+    /* Optimización de navegación de pestañas horizontales en móvil */
+    .tab-navigation {
+        padding: 0.4rem 0.5rem 0.5rem 0.5rem;
+        gap: 0.4rem;
+        border-bottom-color: var(--border-color);
+    }
+
+    /* Scrollbars invisibles o ultra finos para swipe fluido */
+    .tab-navigation::-webkit-scrollbar {
+        display: none;
     }
 }
 
