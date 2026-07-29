@@ -1042,7 +1042,14 @@ async function mockApiHandler(resource, options) {
             if (!products[body.product_key]) {
                 return makeResponse({ detail: "Producto no reconocido." }, 400);
             }
-            bom = products[body.product_key];
+            const prod = products[body.product_key];
+            bom = prod;
+            if (body.variant_id && Array.isArray(prod.variants)) {
+                const v = prod.variants.find(item => item.id === body.variant_id);
+                if (v && v.bom_override) {
+                    bom = { ...prod, ...v.bom_override };
+                }
+            }
         }
         
         const p = body.pricing;
@@ -2490,6 +2497,7 @@ async function handleQuote(event) {
 
     const payload = {
         product_key: document.getElementById('quote_product').value,
+        variant_id: document.getElementById('quote_variant')?.value || null,
         pricing: {
             cost_cinta_per_m: parseFloat(document.getElementById('cost_cinta').value) || 0,
             cost_panel_per_m2: parseFloat(document.getElementById('cost_panel_m2').value) || 0,
@@ -3161,6 +3169,17 @@ function renderCatalogList(catalog) {
             </ul>
         `;
 
+        let variantsHtml = '';
+        if (Array.isArray(prod.variants) && prod.variants.length > 0) {
+            const chips = prod.variants.map(v => `
+                <span class="item-tag" style="background:rgba(255,255,255,0.05);border:1px solid ${v.color_hex || '#c5a059'};color:var(--color-text-main);font-size:0.75rem;padding:2px 6px;display:inline-flex;align-items:center;gap:4px;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${v.color_hex || '#c5a059'};"></span>
+                    ${v.name}
+                </span>
+            `).join(' ');
+            variantsHtml = `<div class="catalog-variants-list" style="margin-top:0.4rem;display:flex;gap:4px;flex-wrap:wrap;">${chips}</div>`;
+        }
+
         const safeName = (prod.name || key).replace(/'/g, "\\'");
         card.innerHTML = `
             <div class="client-card-header">
@@ -3170,11 +3189,13 @@ function renderCatalogList(catalog) {
                     <div class="client-date">Clave: <em>${key}</em></div>
                     ${prod.description ? `<p class="catalog-product-desc">${prod.description}</p>` : ''}
                     ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${prod.material}</p>` : ''}
+                    ${variantsHtml}
                 </div>
                 <div class="client-card-actions">
                     <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${key}')" title="Usar en orden">📋</button>
                     <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${key}')" title="Usar en cotizador">💰</button>
                     <button type="button" class="client-action-btn edit-btn" onclick="openBOMEditModal('${key}')" title="Editar Ficha Técnica BOM">✏️ BOM</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="openVariantModal('${key}')" title="Gestionar Variantes">🎨 Variantes</button>
                     ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕</button>` : ''}
                 </div>
             </div>
@@ -5055,6 +5076,9 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
         : (status === 'terminado' || status === 'entregado'
             ? '<span class="order-badge badge-stock-warn">Sin descuento</span>'
             : '');
+    const variantBadge = (order.variant_name && order.variant_name !== 'Standard / Base')
+        ? `<span class="order-badge" style="border:1px solid #c5a059;color:#c5a059;background:rgba(197,160,89,0.1);">🎨 ${order.variant_name}</span>`
+        : '';
 
     return `
         <div class="order-client">${order.client_name || 'Cliente'}</div>
@@ -5062,6 +5086,7 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
         ${notes ? `<div class="order-notes">📝 ${notes}</div>` : ''}
         <div class="order-badges">
             <span class="order-badge badge-pay-${payClass}">${PAYMENT_LABELS[pay] || pay}</span>
+            ${variantBadge}
             ${overdue ? '<span class="order-badge badge-overdue">Atrasada</span>' : ''}
             ${stockBadge}
         </div>
@@ -5113,12 +5138,19 @@ async function handleCreateOrder(event) {
         || clientSel.options[clientSel.selectedIndex]?.text || '';
     const prodName = prodSel.options[prodSel.selectedIndex]?.dataset.name
         || prodSel.options[prodSel.selectedIndex]?.text || '';
+    const variantSel = document.getElementById('order_variant');
+    const variantId = variantSel?.value || '';
+    const variantName = (variantSel && variantSel.selectedIndex >= 0 && variantSel.value)
+        ? (variantSel.options[variantSel.selectedIndex]?.dataset?.name || variantSel.options[variantSel.selectedIndex]?.text || '')
+        : '';
 
     const payload = {
         client_id: clientSel.value,
         client_name: clientName,
         product_key: prodSel.value,
         product_name: prodName,
+        variant_id: variantId,
+        variant_name: variantName,
         quantity: parseInt(document.getElementById('order_qty')?.value, 10) || 1,
         size: document.getElementById('order_size').value,
         custom_notes: document.getElementById('order_notes').value.trim(),
@@ -5895,6 +5927,222 @@ async function handleSaveBOMEdit(e) {
         if (typeof loadCatalog === 'function') await loadCatalog();
     } catch (error) {
         showToast(error.message, 'error');
+    }
+}
+
+// --- GESTIÓN Y PREVISUALIZACIÓN DE VARIANTES DE PRODUCTO ---
+let currentProductVariants = [];
+
+async function openVariantModal(productKey) {
+    let products = {};
+    try {
+        const res = await fetch('/api/products');
+        if (res.ok) products = await res.json();
+    } catch (e) {
+        products = getMockData('products') || {};
+    }
+
+    const prod = products[productKey] || {};
+    const modal = document.getElementById('variant-manage-modal');
+    if (!modal) return;
+
+    document.getElementById('variant_product_key').value = productKey;
+    document.getElementById('variant-modal-title').textContent = `🎨 Gestión de Variantes: ${prod.name || productKey}`;
+
+    currentProductVariants = Array.isArray(prod.variants) ? [...prod.variants] : [];
+    renderVariantList(currentProductVariants);
+    resetVariantForm();
+
+    modal.classList.remove('hidden');
+    triggerHaptic('light');
+}
+
+function closeVariantModal(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('variant-manage-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function renderVariantList(variants) {
+    const container = document.getElementById('variant-list-container');
+    if (!container) return;
+
+    if (!variants || variants.length === 0) {
+        container.innerHTML = '<p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;padding:0.5rem;text-align:center;">No hay variantes registradas para este producto.</p>';
+        return;
+    }
+
+    container.innerHTML = variants.map(v => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.8rem;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:14px;height:14px;border-radius:50%;background:${v.color_hex || '#c5a059'};border:1px solid rgba(255,255,255,0.2);"></span>
+                <div>
+                    <strong style="font-size:0.85rem;color:var(--color-text-main);">${v.name}</strong>
+                    <div style="font-size:0.75rem;color:var(--color-text-muted);">${v.material || ''} ${v.hardware_color ? '· ' + v.hardware_color : ''}</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:4px;">
+                <button type="button" class="client-action-btn edit-btn" onclick="editVariant('${v.id}')" title="Editar">✏️</button>
+                <button type="button" class="client-action-btn delete-btn" onclick="deleteVariant('${v.id}')" title="Eliminar">✕</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function editVariant(variantId) {
+    const v = currentProductVariants.find(item => item.id === variantId);
+    if (!v) return;
+
+    document.getElementById('variant_edit_id').value = v.id;
+    document.getElementById('variant_name').value = v.name || '';
+    document.getElementById('variant_material').value = v.material || '';
+    document.getElementById('variant_hardware_color').value = v.hardware_color || '';
+    document.getElementById('variant_color_hex').value = v.color_hex || '#c5a059';
+    document.getElementById('variant_color_picker').value = v.color_hex || '#c5a059';
+    document.getElementById('variant_image_url').value = v.image_url || '';
+
+    document.getElementById('variant-form-heading').textContent = `✏️ Modificar Variante: ${v.name}`;
+    document.getElementById('btn-save-variant').textContent = 'Guardar Cambios de Variante';
+}
+
+function resetVariantForm() {
+    document.getElementById('variant_edit_id').value = '';
+    document.getElementById('variant_name').value = '';
+    document.getElementById('variant_material').value = '';
+    document.getElementById('variant_hardware_color').value = '';
+    document.getElementById('variant_color_hex').value = '#c5a059';
+    document.getElementById('variant_color_picker').value = '#c5a059';
+    document.getElementById('variant_image_url').value = '';
+
+    document.getElementById('variant-form-heading').textContent = '➕ Añadir Nueva Variante';
+    document.getElementById('btn-save-variant').textContent = 'Guardar Variante';
+}
+
+async function deleteVariant(variantId) {
+    if (!confirm('¿Eliminar esta variante?')) return;
+    currentProductVariants = currentProductVariants.filter(v => v.id !== variantId);
+    renderVariantList(currentProductVariants);
+    await saveVariantsToProduct();
+}
+
+async function handleSaveVariant(e) {
+    e.preventDefault();
+    const productKey = document.getElementById('variant_product_key').value;
+    if (!productKey) return;
+
+    const variantId = document.getElementById('variant_edit_id').value || `var_${Date.now().toString(36)}`;
+    const name = document.getElementById('variant_name').value.trim();
+    const material = document.getElementById('variant_material').value.trim();
+    const hardwareColor = document.getElementById('variant_hardware_color').value.trim();
+    const colorHex = document.getElementById('variant_color_hex').value.trim() || '#c5a059';
+    const imageUrl = document.getElementById('variant_image_url').value.trim();
+
+    const newVariant = {
+        id: variantId,
+        name: name,
+        material: material,
+        hardware_color: hardwareColor,
+        color_hex: colorHex,
+        image_url: imageUrl
+    };
+
+    const existingIdx = currentProductVariants.findIndex(v => v.id === variantId);
+    if (existingIdx !== -1) {
+        currentProductVariants[existingIdx] = { ...currentProductVariants[existingIdx], ...newVariant };
+    } else {
+        currentProductVariants.push(newVariant);
+    }
+
+    renderVariantList(currentProductVariants);
+    await saveVariantsToProduct();
+    resetVariantForm();
+}
+
+async function saveVariantsToProduct() {
+    const productKey = document.getElementById('variant_product_key').value;
+    if (!productKey) return;
+
+    const payload = {
+        variants: currentProductVariants
+    };
+
+    try {
+        const response = await fetch(`/api/products/${productKey}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Error al guardar variantes');
+
+        showToast('¡Variantes del producto actualizadas!', 'success');
+        if (typeof loadCatalog === 'function') await loadCatalog();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+async function handleQuoteProductChange() {
+    const productSelect = document.getElementById('quote_product');
+    const variantGroup = document.getElementById('quote_variant_group');
+    const variantSelect = document.getElementById('quote_variant');
+    if (!productSelect || !variantSelect) return;
+
+    const productKey = productSelect.value;
+    if (!productKey || productKey === 'custom') {
+        if (variantGroup) variantGroup.style.display = 'none';
+        variantSelect.innerHTML = '<option value="">Standard / Variante Base</option>';
+        return;
+    }
+
+    let products = {};
+    try {
+        const res = await fetch('/api/products');
+        if (res.ok) products = await res.json();
+    } catch (e) {
+        products = getMockData('products') || {};
+    }
+
+    const prod = products[productKey];
+    if (prod && Array.isArray(prod.variants) && prod.variants.length > 0) {
+        variantSelect.innerHTML = '<option value="">— Variante Standard / Base —</option>' +
+            prod.variants.map(v => `<option value="${v.id}">${v.name} (${v.hardware_color || v.material || 'Custom'})</option>`).join('');
+        if (variantGroup) variantGroup.style.display = 'block';
+    } else {
+        if (variantGroup) variantGroup.style.display = 'none';
+        variantSelect.innerHTML = '<option value="">Standard / Variante Base</option>';
+    }
+}
+
+async function handleOrderProductChange() {
+    const productSelect = document.getElementById('order_product');
+    const variantGroup = document.getElementById('order_variant_group');
+    const variantSelect = document.getElementById('order_variant');
+    if (!productSelect || !variantSelect) return;
+
+    const productKey = productSelect.value;
+    if (!productKey || productKey === 'custom') {
+        if (variantGroup) variantGroup.style.display = 'none';
+        variantSelect.innerHTML = '<option value="">Standard / Base</option>';
+        return;
+    }
+
+    let products = {};
+    try {
+        const res = await fetch('/api/products');
+        if (res.ok) products = await res.json();
+    } catch (e) {
+        products = getMockData('products') || {};
+    }
+
+    const prod = products[productKey];
+    if (prod && Array.isArray(prod.variants) && prod.variants.length > 0) {
+        variantSelect.innerHTML = '<option value="">— Variante Standard / Base —</option>' +
+            prod.variants.map(v => `<option value="${v.id}" data-name="${v.name}">${v.name}</option>`).join('');
+        if (variantGroup) variantGroup.style.display = 'block';
+    } else {
+        if (variantGroup) variantGroup.style.display = 'none';
+        variantSelect.innerHTML = '<option value="">Standard / Base</option>';
     }
 }
 

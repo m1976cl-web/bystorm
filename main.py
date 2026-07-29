@@ -90,6 +90,7 @@ class PricingConfig(BaseModel):
 
 class QuoteRequest(BaseModel):
     product_key: str = Field(..., description="Clave del producto (arnes, mascara, corset)")
+    variant_id: Optional[str] = Field(None, description="ID opcional de la variante de producto")
     pricing: PricingConfig = Field(default_factory=PricingConfig)
     custom_bom: Optional[BOMItem] = None
 
@@ -265,6 +266,20 @@ def _product_to_bom(prod_data: dict) -> BOMItem:
     """Extrae solo campos BOM de un producto del catálogo (ignora metadatos de marca)."""
     payload = {k: v for k, v in prod_data.items() if k in BOM_FIELD_KEYS}
     return BOMItem(**payload)
+
+
+def get_product_bom(prod_data: dict, variant_id: Optional[str] = None) -> BOMItem:
+    """Extrae BOM de un producto del catálogo, considerando bom_override de variante si aplica."""
+    if variant_id and isinstance(prod_data.get("variants"), list):
+        for v in prod_data["variants"]:
+            if isinstance(v, dict) and v.get("id") == variant_id and v.get("bom_override"):
+                override = v["bom_override"]
+                if isinstance(override, dict):
+                    payload = {k: val for k, val in override.items() if k in BOM_FIELD_KEYS}
+                    return BOMItem(**payload)
+                elif isinstance(override, BOMItem):
+                    return override
+    return _product_to_bom(prod_data)
 
 # --- PERSISTENCIA DE PRODUCTOS (JSON local) ---
 
@@ -594,7 +609,7 @@ def generate_quote(request: QuoteRequest):
         if request.product_key not in products:
             raise HTTPException(status_code=400, detail="Producto no reconocido.")
         prod_data = products[request.product_key]
-        bom = _product_to_bom(prod_data)
+        bom = get_product_bom(prod_data, request.variant_id)
     
     p = request.pricing
     breakdown = []
@@ -649,6 +664,17 @@ def generate_quote(request: QuoteRequest):
 
 # --- PRODUCTOS DE CATALOGO (CRUD) ---
 
+class ProductVariant(BaseModel):
+    id: str = Field(..., description="ID único de la variante")
+    name: str = Field(..., description="Nombre de la variante")
+    material: str = Field("", description="Material específico de la variante")
+    hardware_color: str = Field("", description="Color o acabado de herrajes")
+    color_hex: str = Field("#c5a059", description="Color hexadecimal para vista previa")
+    image_url: str = Field("", description="URL de la imagen de referencia")
+    bom_override: Optional[BOMItem] = None
+    price_override: Optional[float] = None
+
+
 class ProductCreate(BaseModel):
     key: str = Field(..., description="Clave única del producto")
     name: str = Field(..., description="Nombre del producto")
@@ -659,6 +685,7 @@ class ProductCreate(BaseModel):
     vegan: bool = True
     made_to_order: bool = True
     core: bool = False
+    variants: List[ProductVariant] = Field(default_factory=list)
 
 
 class ProductUpdate(BaseModel):
@@ -669,6 +696,7 @@ class ProductUpdate(BaseModel):
     material: Optional[str] = None
     vegan: Optional[bool] = None
     made_to_order: Optional[bool] = None
+    variants: Optional[List[ProductVariant]] = None
     # BOM fields (mismo shape que BOMItem; opcionales para no forzar todo)
     cinta: Optional[float] = None
     argollas: Optional[int] = None
@@ -694,6 +722,7 @@ def create_product(product: ProductCreate):
     if product.key in products:
         raise HTTPException(status_code=400, detail="Ya existe un producto con esa clave.")
     
+    variants_dump = [v.model_dump() for v in product.variants] if product.variants else []
     products[product.key] = {
         "name": product.name,
         "category": product.category or "general",
@@ -702,6 +731,7 @@ def create_product(product: ProductCreate):
         "vegan": product.vegan,
         "made_to_order": product.made_to_order,
         "core": product.core,
+        "variants": variants_dump,
         **product.bom.model_dump(),
     }
     _save_products(products)
@@ -718,7 +748,7 @@ def update_product(product_key: str, product: dict):
     # Si viene envuelto como { bom: {...}, name, category } del frontend nuevo
     if isinstance(product.get("bom"), dict):
         bom_data = product["bom"]
-        meta = {k: product[k] for k in ("name", "category", "description", "material", "vegan", "made_to_order", "core") if k in product}
+        meta = {k: product[k] for k in ("name", "category", "description", "material", "vegan", "made_to_order", "core", "variants") if k in product}
         merged = {**existing, **meta, **bom_data}
     else:
         # Plano: puede ser solo BOM o campos mezclados
@@ -1270,8 +1300,8 @@ def _log_movement(item_key: str, quantity: float, movement_type: str, reference:
     return new_movement
 
 
-def _bom_requirements(product_key: str, quantity: int) -> Dict[str, float]:
-    """Calcula insumos requeridos (item_key → qty) para quantity unidades del producto."""
+def _bom_requirements(product_key: str, quantity: int, variant_id: Optional[str] = None) -> Dict[str, float]:
+    """Calcula insumos requeridos (item_key → qty) para quantity unidades del producto, considerando variante."""
     if quantity < 1:
         raise HTTPException(status_code=400, detail="La cantidad debe ser al menos 1.")
     products = _load_products()
@@ -1281,7 +1311,7 @@ def _bom_requirements(product_key: str, quantity: int) -> Dict[str, float]:
             detail=f"Producto '{product_key}' no encontrado en el catálogo para descontar stock.",
         )
     prod_data = products[product_key]
-    bom = _product_to_bom(prod_data)
+    bom = get_product_bom(prod_data, variant_id)
     needed: Dict[str, float] = {
         "cinta": round(bom.cinta * quantity, 2),
         "cadenas": round(bom.cadenas * quantity, 2),
@@ -1300,9 +1330,9 @@ def _bom_requirements(product_key: str, quantity: int) -> Dict[str, float]:
     return {k: v for k, v in needed.items() if v and v > 0}
 
 
-def check_bom_stock(product_key: str, quantity: int) -> List[str]:
+def check_bom_stock(product_key: str, quantity: int, variant_id: Optional[str] = None) -> List[str]:
     """Devuelve lista de faltantes legibles; vacía si el stock alcanza."""
-    needed = _bom_requirements(product_key, quantity)
+    needed = _bom_requirements(product_key, quantity, variant_id)
     if not needed:
         return []
     inventory = _load_inventory()
@@ -1323,6 +1353,7 @@ def deduct_bom_for_product(
     product_key: str,
     quantity: int,
     reference: str = "",
+    variant_id: Optional[str] = None,
 ) -> List[dict]:
     """Descuenta el BOM del inventario y registra movimientos tipo produccion.
 
@@ -1333,14 +1364,14 @@ def deduct_bom_for_product(
     if not product_key or product_key == "custom":
         return []
 
-    shortages = check_bom_stock(product_key, quantity)
+    shortages = check_bom_stock(product_key, quantity, variant_id)
     if shortages:
         raise HTTPException(
             status_code=400,
             detail="Falta stock de materiales: " + ", ".join(shortages),
         )
 
-    needed = _bom_requirements(product_key, quantity)
+    needed = _bom_requirements(product_key, quantity, variant_id)
     if not needed:
         return []
 
@@ -1439,6 +1470,8 @@ class OrderCreate(BaseModel):
     client_name: str
     product_key: str
     product_name: str
+    variant_id: Optional[str] = ""
+    variant_name: Optional[str] = ""
     quantity: int = Field(1, ge=1)
     size: str = "M"
     custom_notes: str = ""
@@ -1525,6 +1558,8 @@ def _normalize_order(order: dict) -> dict:
     o = dict(order)
     defaults = {
         "client_id": "",
+        "variant_id": "",
+        "variant_name": "",
         "quantity": 1,
         "size": "M",
         "custom_notes": "",
@@ -1967,6 +2002,7 @@ def update_order_status(order_id: str, body: OrderStatusUpdate):
         # --- Orquestación al terminar ---
         if new_status == "terminado" and not order.get("stock_deducted"):
             product_key = order.get("product_key") or ""
+            variant_id = order.get("variant_id") or None
             qty = int(order.get("quantity") or 1)
             product_name = order.get("product_name") or product_key or "prenda"
             reference = f"Orden {order_id}: confección de {qty}x {product_name}"
@@ -1977,6 +2013,7 @@ def update_order_status(order_id: str, body: OrderStatusUpdate):
                     product_key=product_key,
                     quantity=qty,
                     reference=reference,
+                    variant_id=variant_id,
                 )
 
             prod = _create_production_from_order(order)

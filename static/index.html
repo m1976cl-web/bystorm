@@ -878,8 +878,14 @@
                             <div class="inputs-grid compact">
                                 <div class="form-group">
                                     <label for="quote_product">Prenda / accesorio</label>
-                                    <select id="quote_product">
+                                    <select id="quote_product" onchange="handleQuoteProductChange()">
                                         <option value="" disabled selected>Cargando catálogo...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="quote_variant_group" style="display: none;">
+                                    <label for="quote_variant">Variante de producto</label>
+                                    <select id="quote_variant">
+                                        <option value="">Standard / Variante Base</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -1807,7 +1813,13 @@
                             </div>
                             <div class="form-group">
                                 <label for="order_product">Prenda (catálogo)</label>
-                                <select id="order_product" required><!-- Dinámico --></select>
+                                <select id="order_product" onchange="handleOrderProductChange()" required><!-- Dinámico --></select>
+                            </div>
+                            <div class="form-group" id="order_variant_group" style="display: none;">
+                                <label for="order_variant">Variante</label>
+                                <select id="order_variant">
+                                    <option value="">Standard / Base</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="order_size">Talle</label>
@@ -1984,6 +1996,66 @@
                 <div style="display:flex;gap:0.5rem;margin-top:1rem;">
                     <button type="submit" class="btn-primary" style="margin-top:0;flex:1;">Guardar Cambios BOM</button>
                     <button type="button" class="btn-secondary" onclick="closeBOMEditModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestión de Variantes de Producto (Catálogo) -->
+    <div id="variant-manage-modal" class="modal-backdrop hidden" onclick="closeVariantModal(event)">
+        <div class="modal-card" style="max-width:620px;margin-top:4vh;max-height:90vh;overflow-y:auto;background:rgba(20,20,25,0.96);backdrop-filter:blur(15px);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:0.8rem;margin-bottom:1rem;">
+                <h3 style="margin:0;font-size:1.1rem;color:var(--color-text-main);" id="variant-modal-title">🎨 Gestión de Variantes</h3>
+                <button type="button" onclick="closeVariantModal()" style="background:none;border:none;color:var(--color-text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+            </div>
+            
+            <input type="hidden" id="variant_product_key">
+            
+            <!-- Lista de Variantes Existentes -->
+            <div style="margin-bottom:1.2rem;">
+                <h4 style="margin:0 0 0.5rem 0;font-size:0.9rem;color:var(--color-text-secondary);">Variantes Registradas:</h4>
+                <div id="variant-list-container" style="display:flex;flex-direction:column;gap:0.5rem;max-height:180px;overflow-y:auto;">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <div class="divider" style="margin:1rem 0;"></div>
+
+            <!-- Formulario de Agregar / Editar Variante -->
+            <form id="variant-edit-form" onsubmit="handleSaveVariant(event)">
+                <h4 style="margin:0 0 0.8rem 0;font-size:0.95rem;color:var(--color-text-primary);" id="variant-form-heading">➕ Añadir Nueva Variante</h4>
+                <input type="hidden" id="variant_edit_id">
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div class="form-group">
+                        <label for="variant_name">Nombre de Variante</label>
+                        <input type="text" id="variant_name" placeholder="Ej: Charol Negro / Herrajes Plata" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="variant_material">Material Específico</label>
+                        <input type="text" id="variant_material" placeholder="Ej: Charol vegano negro">
+                    </div>
+                    <div class="form-group">
+                        <label for="variant_hardware_color">Color de Herrajes</label>
+                        <input type="text" id="variant_hardware_color" placeholder="Ej: Niquelado / Dorado">
+                    </div>
+                    <div class="form-group">
+                        <label for="variant_color_hex">Color Muestra (Hex)</label>
+                        <div style="display:flex;gap:0.5rem;align-items:center;">
+                            <input type="color" id="variant_color_picker" value="#c5a059" style="width:40px;height:38px;padding:0;border:none;background:none;cursor:pointer;" oninput="document.getElementById('variant_color_hex').value=this.value">
+                            <input type="text" id="variant_color_hex" value="#c5a059" placeholder="#c5a059" style="flex:1;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="variant_image_url">URL Imagen de Referencia (Opcional)</label>
+                        <input type="url" id="variant_image_url" placeholder="https://... URL de foto o Instagram">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;margin-top:1.2rem;">
+                    <button type="submit" class="btn-primary" style="margin-top:0;flex:1;" id="btn-save-variant">Guardar Variante</button>
+                    <button type="button" class="btn-secondary" onclick="resetVariantForm()">Limpiar</button>
+                    <button type="button" class="btn-secondary" onclick="closeVariantModal()">Cerrar</button>
                 </div>
             </form>
         </div>

@@ -620,3 +620,98 @@ def test_update_product_bom():
     assert data["argollas"] == 8
     assert data["cinta"] == 3.0
 
+    # Restore arnes BOM
+    restore_payload = {
+        "bom": {
+            "cinta": 2.5,
+            "argollas": 6,
+            "hebillas": 4,
+            "remaches": 12,
+            "ojalillos": 0,
+            "varillas": 0,
+            "cadenas": 0.0,
+            "tachas": 8,
+            "mosquetones": 2
+        }
+    }
+    client.put("/api/products/arnes", json=restore_payload)
+
+
+def test_product_variants():
+    """Prueba la actualización de variantes de producto, cotización con variante y deducción de stock."""
+    # 1. Agregar variante con BOM override
+    variant_payload = {
+        "variants": [
+            {
+                "id": "arnes_heavy_cadenas",
+                "name": "Charol Heavy Cadenas",
+                "material": "Charol vegano",
+                "hardware_color": "Niquelado",
+                "color_hex": "#111111",
+                "image_url": "",
+                "bom_override": {
+                    "cinta": 3.0,
+                    "argollas": 10,
+                    "hebillas": 4,
+                    "remaches": 16,
+                    "ojalillos": 0,
+                    "varillas": 0,
+                    "cadenas": 2.5,
+                    "tachas": 10,
+                    "mosquetones": 4
+                }
+            }
+        ]
+    }
+    r1 = client.put("/api/products/arnes", json=variant_payload)
+    assert r1.status_code == 200
+    data1 = r1.json()
+    assert "variants" in data1
+    assert len(data1["variants"]) == 1
+    assert data1["variants"][0]["id"] == "arnes_heavy_cadenas"
+
+    # 2. Cotizar usando la variante
+    quote_req = {
+        "product_key": "arnes",
+        "variant_id": "arnes_heavy_cadenas",
+        "pricing": {
+            "cost_cinta_per_m": 800,
+            "cost_cadena_per_m": 1200,
+            "cost_argolla": 300,
+            "cost_hebilla": 500,
+            "cost_remache": 50,
+            "cost_mosqueton": 500,
+            "labor_hours": 3.0,
+            "labor_rate_per_hour": 2000,
+            "profit_margin_percent": 60
+        }
+    }
+    r2 = client.post("/api/quote", json=quote_req)
+    assert r2.status_code == 200
+    q_data = r2.json()
+    # Verificar que el desglose incluye la cadena del bom_override (2.5 m)
+    cadena_item = next((item for item in q_data["breakdown"] if item["item"] == "Cadena Metálica"), None)
+    assert cadena_item is not None
+    assert cadena_item["qty"] == "2.5 m"
+
+    # 3. Crear orden con variante
+    order_req = {
+        "client_name": "Test Client Variant",
+        "product_key": "arnes",
+        "product_name": "Arnés pechera Tormenta",
+        "variant_id": "arnes_heavy_cadenas",
+        "variant_name": "Charol Heavy Cadenas",
+        "quantity": 1,
+        "quoted_price": q_data["suggested_retail_price"],
+        "status": "pendiente"
+    }
+    r3 = client.post("/api/orders", json=order_req)
+    assert r3.status_code == 201
+    ord_data = r3.json()
+    assert ord_data["variant_id"] == "arnes_heavy_cadenas"
+    assert ord_data["variant_name"] == "Charol Heavy Cadenas"
+
+    # Limpieza
+    client.delete(f"/api/orders/{ord_data['id']}")
+
+

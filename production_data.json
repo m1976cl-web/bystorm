@@ -510,5 +510,101 @@
     "profit": 12000.0,
     "product_key": "choker_dring",
     "order_id": "0494c310"
+  },
+  {
+    "id": "fac08177",
+    "date": "2026-07-29T18:47:38.482293",
+    "product_name": "Arnés Tormenta Test",
+    "quantity": 1,
+    "materials_cost": 1000.0,
+    "labor_cost": 2000.0,
+    "retail_price": 5000.0,
+    "profit": 2000.0,
+    "product_key": "arnes",
+    "order_id": null
+  },
+  {
+    "id": "6e3faa51",
+    "date": "2026-07-29T18:47:39.400384",
+    "product_name": "Arnés Test T4",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "arnes",
+    "order_id": "2f045891"
+  },
+  {
+    "id": "25a5f508",
+    "date": "2026-07-29T18:47:39.759988",
+    "product_name": "Arnés Sin Stock",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "arnes",
+    "order_id": "766a5147"
+  },
+  {
+    "id": "818e2c1a",
+    "date": "2026-07-29T18:47:40.118049",
+    "product_name": "Choker T6",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "choker_dring",
+    "order_id": "cf41c29e"
+  },
+  {
+    "id": "370afb27",
+    "date": "2026-07-29T18:47:40.415730",
+    "product_name": "Choker T6",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "choker_dring",
+    "order_id": "64e924c1"
+  },
+  {
+    "id": "ce96cba9",
+    "date": "2026-07-29T18:48:23.872007",
+    "product_name": "Arnés Tormenta Test",
+    "quantity": 1,
+    "materials_cost": 1000.0,
+    "labor_cost": 2000.0,
+    "retail_price": 5000.0,
+    "profit": 2000.0,
+    "product_key": "arnes",
+    "order_id": null
+  },
+  {
+    "id": "0b77c6e7",
+    "date": "2026-07-29T18:48:24.574574",
+    "product_name": "Arnés Test T4",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "arnes",
+    "order_id": "96ea221f"
+  },
+  {
+    "id": "3e0e9da7",
+    "date": "2026-07-29T18:48:25.313042",
+    "product_name": "Choker T6",
+    "quantity": 1,
+    "materials_cost": 5000.0,
+    "labor_cost": 3000.0,
+    "retail_price": 20000.0,
+    "profit": 12000.0,
+    "product_key": "choker_dring",
+    "order_id": "3a080495"
   }
 ]

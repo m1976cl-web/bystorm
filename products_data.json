@@ -7,18 +7,39 @@
     "vegan": true,
     "made_to_order": true,
     "core": true,
-    "cinta": 3.0,
-    "argollas": 8,
+    "cinta": 2.5,
+    "argollas": 6,
     "hebillas": 4,
-    "remaches": 16,
+    "remaches": 12,
     "ojalillos": 0,
     "varillas": 0,
     "cadenas": 0.0,
-    "tachas": 10,
+    "tachas": 8,
     "mosquetones": 2,
     "panels_count": 0,
     "panel_width": 0.0,
-    "panel_height": 0.0
+    "panel_height": 0.0,
+    "variants": [
+      {
+        "id": "arnes_heavy_cadenas",
+        "name": "Charol Heavy Cadenas",
+        "material": "Charol vegano",
+        "hardware_color": "Niquelado",
+        "color_hex": "#111111",
+        "image_url": "",
+        "bom_override": {
+          "cinta": 3.0,
+          "argollas": 10,
+          "hebillas": 4,
+          "remaches": 16,
+          "ojalillos": 0,
+          "varillas": 0,
+          "cadenas": 2.5,
+          "tachas": 10,
+          "mosquetones": 4
+        }
+      }
+    ]
   },
   "arnes_body": {
     "name": "Arnés corporal integral (body harness)",
@@ -39,7 +60,39 @@
     "mosquetones": 4,
     "panels_count": 0,
     "panel_width": 0.0,
-    "panel_height": 0.0
+    "panel_height": 0.0,
+    "variants": [
+      {
+        "id": "body_negro_mate",
+        "name": "Negro Total (Herrajes Negro Mate)",
+        "material": "Cinta elastizada negra",
+        "hardware_color": "Negro Mate",
+        "color_hex": "#1a1a1a",
+        "image_url": ""
+      },
+      {
+        "id": "body_charol_cadenas",
+        "name": "Charol + Cadenas Extra Heavy",
+        "material": "Charol vegano + cadenas pesadas",
+        "hardware_color": "Plateado Niquelado",
+        "color_hex": "#c0c0c0",
+        "image_url": "",
+        "bom_override": {
+          "cinta": 5.5,
+          "argollas": 14,
+          "hebillas": 8,
+          "remaches": 28,
+          "ojalillos": 0,
+          "varillas": 0,
+          "cadenas": 2.0,
+          "tachas": 20,
+          "mosquetones": 6,
+          "panels_count": 0,
+          "panel_width": 0.0,
+          "panel_height": 0.0
+        }
+      }
+    ]
   },
   "arnes_muslo": {
     "name": "Ligas de muslo con O-ring",

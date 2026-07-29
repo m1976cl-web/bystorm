@@ -2,56 +2,56 @@
   {
     "item_key": "argollas",
     "name": "Argollas metálicas",
-    "stock": 2639.0,
+    "stock": 485.0,
     "min_stock": 20,
     "unit": "uds"
   },
   {
     "item_key": "hebillas",
     "name": "Hebillas reguladoras",
-    "stock": 2691.0,
+    "stock": 469.0,
     "min_stock": 15,
     "unit": "uds"
   },
   {
     "item_key": "remaches",
     "name": "Remaches de unión",
-    "stock": 2868.0,
+    "stock": 664.0,
     "min_stock": 50,
     "unit": "uds"
   },
   {
     "item_key": "ojalillos",
     "name": "Ojalillos metálicos",
-    "stock": 1400.0,
+    "stock": 500.0,
     "min_stock": 30,
     "unit": "uds"
   },
   {
     "item_key": "varillas",
     "name": "Varillas de soporte",
-    "stock": 1250.0,
+    "stock": 350.0,
     "min_stock": 10,
     "unit": "uds"
   },
   {
     "item_key": "cadenas",
     "name": "Cadenas metálicas",
-    "stock": 1218.0,
+    "stock": 310.0,
     "min_stock": 2.0,
     "unit": "metros"
   },
   {
     "item_key": "tachas",
     "name": "Tachas decorativas",
-    "stock": 1112.0,
+    "stock": 616.0,
     "min_stock": 25,
     "unit": "uds"
   },
   {
     "item_key": "mosquetones",
     "name": "Mosquetones de enganche",
-    "stock": 1198.0,
+    "stock": 436.0,
     "min_stock": 8,
     "unit": "uds"
   },
@@ -65,7 +65,7 @@
   {
     "item_key": "cuerina_rollo",
     "name": "Cuerina vegana en rollo",
-    "stock": 1220.0,
+    "stock": 515.0,
     "min_stock": 3.0,
     "unit": "metros"
   },
