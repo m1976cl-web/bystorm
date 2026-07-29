@@ -715,3 +715,22 @@ def test_product_variants():
     client.delete(f"/api/orders/{ord_data['id']}")
 
 
+def test_pwa_endpoints():
+    """Prueba que los assets de PWA (manifest, service worker e iconos) se sirvan correctamente."""
+    r_man = client.get("/manifest.json")
+    assert r_man.status_code == 200
+    assert "Bystorm" in r_man.text
+
+    r_sw = client.get("/sw.js")
+    assert r_sw.status_code == 200
+    assert "bystorm-pwa-v1" in r_sw.text
+    assert r_sw.headers.get("Service-Worker-Allowed") == "/"
+
+    r_icon192 = client.get("/icon-192.png")
+    assert r_icon192.status_code == 200
+
+    r_icon512 = client.get("/icon-512.png")
+    assert r_icon512.status_code == 200
+
+
+

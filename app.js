@@ -6146,8 +6146,47 @@ async function handleOrderProductChange() {
     }
 }
 
+// --- PWA SERVICE WORKER & INSTALACIÓN NATIVA ---
+let deferredPWAInstallPrompt = null;
+
+function registerPWA() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Bystorm Service Worker activo:', reg.scope))
+                .catch(err => console.log('SW error:', err));
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPWAInstallPrompt = e;
+        const installBtn = document.getElementById('btn-pwa-install');
+        if (installBtn) installBtn.classList.remove('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredPWAInstallPrompt = null;
+        const installBtn = document.getElementById('btn-pwa-install');
+        if (installBtn) installBtn.classList.add('hidden');
+        showToast('¡Bystorm se instaló correctamente en tu dispositivo!', 'success');
+    });
+}
+
+async function triggerPWAInstall() {
+    if (!deferredPWAInstallPrompt) return;
+    deferredPWAInstallPrompt.prompt();
+    const { outcome } = await deferredPWAInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+        showToast('Instalando Bystorm en tu pantalla de inicio...', 'info');
+    }
+    deferredPWAInstallPrompt = null;
+}
+
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
+    registerPWA();
+
     // Teclado Ctrl + K para buscador global
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {

@@ -2180,6 +2180,22 @@ def get_style():
 def get_app():
     return FileResponse(os.path.join(static_dir, "app.js"))
 
+@app.get("/manifest.json")
+def get_manifest():
+    return FileResponse(os.path.join(static_dir, "manifest.json"), media_type="application/json")
+
+@app.get("/sw.js")
+def get_service_worker():
+    return FileResponse(os.path.join(static_dir, "sw.js"), media_type="application/javascript", headers={"Service-Worker-Allowed": "/"})
+
+@app.get("/icon-192.png")
+def get_icon_192():
+    return FileResponse(os.path.join(static_dir, "icon-192.png"), media_type="image/png")
+
+@app.get("/icon-512.png")
+def get_icon_512():
+    return FileResponse(os.path.join(static_dir, "icon-512.png"), media_type="image/png")
+
 # Registrar la carpeta estática para servir otros archivos (CSS, JS, imágenes)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 

@@ -9,6 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=1.2.4">
+    <!-- PWA Capacidad y Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a0c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bystorm">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -24,6 +31,9 @@
         <div class="header-status">
             <span class="status-indicator online"></span>
             <span class="status-text hide-mobile">Taller Conectado</span>
+            <button class="pwa-install-btn hidden" id="btn-pwa-install" onclick="triggerPWAInstall()" title="Instalar Bystorm en tu teléfono/pantalla de inicio" style="background:rgba(197,160,89,0.25);border:1px solid #c5a059;color:#c5a059;border-radius:6px;padding:4px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                <span>📱</span> <span>Instalar App</span>
+            </button>
             <button class="workshop-mode-btn" id="btn-workshop-toggle" onclick="toggleWorkshopMode()" title="Activar Modo Taller (medidas grandes, sin montos)" style="background:rgba(197,160,89,0.2);border:1px solid #c5a059;color:#c5a059;border-radius:6px;padding:4px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
                 <span>✂️</span> <span>Modo Taller</span>
             </button>
