@@ -1486,6 +1486,60 @@ async function mockApiHandler(resource, options) {
         });
     }
 
+    // --- RUTAS: FINANZAS Y CASHFLOW ---
+    if (path === '/api/finances/transactions' && method === 'GET') {
+        const txs = getMockData('transactions') || [];
+        return makeResponse(txs);
+    }
+
+    if (path === '/api/finances/transactions' && method === 'POST') {
+        const txs = getMockData('transactions') || [];
+        const newTx = {
+            id: 'tx_' + Math.random().toString(36).substring(2, 10),
+            order_id: body.order_id || null,
+            client_name: body.client_name || '',
+            type: body.type || 'ingreso',
+            category: body.category || 'seña',
+            amount: parseFloat(body.amount) || 0,
+            payment_method: body.payment_method || 'transferencia',
+            date: body.date || new Date().toISOString(),
+            notes: body.notes || ''
+        };
+        txs.unshift(newTx);
+        setMockData('transactions', txs);
+        return makeResponse(newTx, 201);
+    }
+
+    if (path === '/api/finances/summary' && method === 'GET') {
+        const txs = getMockData('transactions') || [];
+        const orders = getMockData('orders') || [];
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+        txs.forEach(t => {
+            const amt = parseFloat(t.amount || 0);
+            if (t.type === 'ingreso') totalIncome += amt;
+            else if (t.type === 'egreso') totalExpense += amt;
+        });
+
+        let pendingReceivables = 0;
+        orders.forEach(o => {
+            if (o.status !== 'entregado' && o.status !== 'cancelado') {
+                const price = parseFloat(o.quoted_price || 0);
+                const paid = parseFloat(o.amount_paid_total || o.deposit_amount || 0);
+                pendingReceivables += Math.max(0, price - paid);
+            }
+        });
+
+        return makeResponse({
+            total_income: Math.round(totalIncome * 100) / 100,
+            total_expense: Math.round(totalExpense * 100) / 100,
+            net_balance: Math.round((totalIncome - totalExpense) * 100) / 100,
+            pending_receivables: Math.round(pendingReceivables * 100) / 100,
+            transactions_count: txs.length
+        });
+    }
+
     // --- RUTA: COPIA DE SEGURIDAD (BACKUP) ---
     if (path === '/api/backup' && method === 'GET') {
         const backup = {
@@ -4091,6 +4145,7 @@ async function loadDashboard() {
         
         renderProductAnalytics();
         renderRestockPredictions();
+        if (typeof loadFinances === 'function') await loadFinances();
     } catch (error) {
         console.error('Error loading dashboard:', error);
     }
@@ -5080,6 +5135,12 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
         ? `<span class="order-badge" style="border:1px solid #c5a059;color:#c5a059;background:rgba(197,160,89,0.1);">🎨 ${order.variant_name}</span>`
         : '';
 
+    const shippingBadge = order.shipping_agency
+        ? `<span class="order-badge" style="border:1px solid #4fc3f7;color:#4fc3f7;background:rgba(79,195,247,0.1);">🚚 ${order.shipping_agency} ${order.tracking_number ? '· ' + order.tracking_number : ''}</span>`
+        : '';
+
+    const safeClient = (order.client_name || 'Cliente').replace(/'/g, "\\'");
+
     return `
         <div class="order-client">${order.client_name || 'Cliente'}</div>
         <div class="order-product">${order.product_name || order.product_key || 'Prenda'} · ${order.size || 'M'}${qty > 1 ? ` · ×${qty}` : ''}</div>
@@ -5087,6 +5148,7 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
         <div class="order-badges">
             <span class="order-badge badge-pay-${payClass}">${PAYMENT_LABELS[pay] || pay}</span>
             ${variantBadge}
+            ${shippingBadge}
             ${overdue ? '<span class="order-badge badge-overdue">Atrasada</span>' : ''}
             ${stockBadge}
         </div>
@@ -5098,8 +5160,11 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
             <span>Adelanto ${formatMoney(order.deposit_amount || 0)}</span>
             <span>Saldo ${formatMoney(balance)}</span>
         </div>
-        <div class="order-actions">
+        <div class="order-actions" style="flex-wrap:wrap;gap:4px;">
             ${showAdvance ? `<button type="button" class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ ${nextLabel}</button>` : '<span class="order-done-label">Entregada</span>'}
+            <button type="button" class="client-action-btn load-btn" onclick="openShippingModal('${order.id}')" title="Guía de Despacho PDF">📦 Despacho</button>
+            <button type="button" class="client-action-btn load-btn" onclick="openQRModal('${order.id}')" title="Etiqueta QR Taller">📱 QR</button>
+            ${balance > 0 ? `<button type="button" class="client-action-btn edit-btn" onclick="openTransactionModal('${order.id}','${safeClient}',${balance},'saldo')" title="Registrar Pago de Saldo">💰 Cobrar</button>` : ''}
             <button type="button" class="kanban-delete-btn" onclick="deleteOrder('${order.id}')" title="Eliminar orden">✕</button>
         </div>
     `;
@@ -6144,6 +6209,377 @@ async function handleOrderProductChange() {
         if (variantGroup) variantGroup.style.display = 'none';
         variantSelect.innerHTML = '<option value="">Standard / Base</option>';
     }
+}
+
+// =========================================================================
+// MÓDULO A: CASHFLOW Y GESTIÓN DE FINANZAS
+// =========================================================================
+
+async function loadFinances() {
+    let summary = { total_income: 0, total_expense: 0, net_balance: 0, pending_receivables: 0 };
+    let transactions = [];
+    try {
+        const resSum = await fetch('/api/finances/summary');
+        if (resSum.ok) summary = await resSum.json();
+
+        const resTx = await fetch('/api/finances/transactions');
+        if (resTx.ok) transactions = await resTx.json();
+    } catch (e) {
+        summary = getMockSummary();
+        transactions = getMockData('transactions') || [];
+    }
+
+    renderFinancesSummary(summary);
+    renderTransactionsTable(transactions);
+}
+
+function getMockSummary() {
+    const txs = getMockData('transactions') || [];
+    const orders = getMockData('orders') || [];
+    let inc = 0, exp = 0;
+    txs.forEach(t => {
+        const a = parseFloat(t.amount || 0);
+        if (t.type === 'ingreso') inc += a;
+        else if (t.type === 'egreso') exp += a;
+    });
+    let pend = 0;
+    orders.forEach(o => {
+        if (o.status !== 'entregado' && o.status !== 'cancelado') {
+            const p = parseFloat(o.quoted_price || 0);
+            const paid = parseFloat(o.amount_paid_total || o.deposit_amount || 0);
+            pend += Math.max(0, p - paid);
+        }
+    });
+    return {
+        total_income: Math.round(inc * 100) / 100,
+        total_expense: Math.round(exp * 100) / 100,
+        net_balance: Math.round((inc - exp) * 100) / 100,
+        pending_receivables: Math.round(pend * 100) / 100,
+        transactions_count: txs.length
+    };
+}
+
+function renderFinancesSummary(summary) {
+    const elInc = document.getElementById('kpi-fin-income');
+    const elExp = document.getElementById('kpi-fin-expense');
+    const elBal = document.getElementById('kpi-fin-balance');
+    const elPend = document.getElementById('kpi-fin-pending');
+
+    if (elInc) elInc.textContent = formatMoney(summary.total_income || 0);
+    if (elExp) elExp.textContent = formatMoney(summary.total_expense || 0);
+    if (elBal) elBal.textContent = formatMoney(summary.net_balance || 0);
+    if (elPend) elPend.textContent = formatMoney(summary.pending_receivables || 0);
+}
+
+function renderTransactionsTable(transactions) {
+    const tableBody = document.getElementById('finances-transactions-table');
+    if (!tableBody) return;
+
+    if (!transactions || transactions.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--color-text-muted);">No hay transacciones registradas.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = transactions.map(t => {
+        const isInc = t.type === 'ingreso';
+        const color = isInc ? '#81c784' : '#e57373';
+        const dateStr = t.date ? new Date(t.date).toLocaleDateString('es-AR') : '—';
+        return `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:6px;color:var(--color-text-muted);">${dateStr}</td>
+                <td style="padding:6px;"><span style="color:${color};font-weight:600;">${isInc ? 'Ingreso (+)' : 'Egreso (-)'}</span></td>
+                <td style="padding:6px;"><span class="item-tag">${t.category || 'otro'}</span></td>
+                <td style="padding:6px;">${t.client_name || '—'} ${t.notes ? `<small style="color:var(--color-text-muted);">(${t.notes})</small>` : ''}</td>
+                <td style="padding:6px;text-align:right;font-weight:600;color:${color};">${isInc ? '+' : '-'}${formatMoney(t.amount)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function openTransactionModal(orderId = '', clientName = '', defaultAmount = 0, category = 'seña') {
+    const modal = document.getElementById('transaction-modal');
+    if (!modal) return;
+
+    document.getElementById('tx_order_id').value = orderId || '';
+    document.getElementById('tx_client_name').value = clientName || '';
+    document.getElementById('tx_amount').value = defaultAmount || '';
+    document.getElementById('tx_category').value = category || 'seña';
+    document.getElementById('tx_type').value = (category === 'compra_insumos' || category === 'gasto_fijo') ? 'egreso' : 'ingreso';
+
+    modal.classList.remove('hidden');
+    triggerHaptic('light');
+}
+
+function closeTransactionModal(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('transaction-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateTxCategories() {
+    const type = document.getElementById('tx_type').value;
+    const cat = document.getElementById('tx_category');
+    if (!cat) return;
+    if (type === 'egreso') {
+        cat.innerHTML = `
+            <option value="compra_insumos" selected>Compra de Insumos / Cueros</option>
+            <option value="gasto_fijo">Gasto Fijo / Servicios</option>
+            <option value="otro">Otro Egreso</option>
+        `;
+    } else {
+        cat.innerHTML = `
+            <option value="seña" selected>Seña / Adelanto 50%</option>
+            <option value="saldo">Pago de Saldo Final</option>
+            <option value="otro">Otro Ingreso</option>
+        `;
+    }
+}
+
+async function handleSaveTransaction(e) {
+    e.preventDefault();
+    const payload = {
+        order_id: document.getElementById('tx_order_id').value || null,
+        client_name: document.getElementById('tx_client_name').value.trim(),
+        type: document.getElementById('tx_type').value,
+        category: document.getElementById('tx_category').value,
+        amount: parseFloat(document.getElementById('tx_amount').value) || 0,
+        payment_method: document.getElementById('tx_payment_method').value,
+        notes: document.getElementById('tx_notes').value.trim()
+    };
+
+    try {
+        const res = await fetch('/api/finances/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Error al guardar transacción');
+
+        showToast('¡Movimiento de caja registrado!', 'success');
+        closeTransactionModal();
+        await loadFinances();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// =========================================================================
+// MÓDULO B: GUÍA DE DESPACHO & ETIQUETAS PDF CON FICHA DE CUIDADOS VEGANOS
+// =========================================================================
+
+function openShippingModal(orderId) {
+    const order = (ordersCache || []).find(o => o.id === orderId);
+    if (!order) {
+        showToast('Orden no encontrada', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('shipping-label-modal');
+    if (!modal) return;
+
+    document.getElementById('ship_order_id').value = orderId;
+    document.getElementById('ship_agency').value = order.shipping_agency || 'Starken';
+    document.getElementById('ship_tracking').value = order.tracking_number || '';
+
+    const preview = document.getElementById('ship_order_preview');
+    if (preview) {
+        preview.innerHTML = `
+            <strong>Orden #${order.id}</strong> — ${order.client_name || 'Cliente'}<br>
+            <strong>Prenda:</strong> ${order.product_name || order.product_key} (${order.size || 'M'}) ${order.variant_name ? '· ' + order.variant_name : ''}<br>
+            <strong>Teléfono:</strong> ${order.contact_phone || 'Sin registrar'}<br>
+            <strong>Estado de Pago:</strong> <span style="color:#81c784;">${order.payment_status === 'pagado' ? 'PAGADO 100%' : 'Adelanto 50%'}</span>
+        `;
+    }
+
+    modal.classList.remove('hidden');
+    triggerHaptic('light');
+}
+
+function closeShippingModal(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('shipping-label-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function generateShippingPDFFromModal() {
+    const orderId = document.getElementById('ship_order_id').value;
+    exportShippingLabelPDF(orderId);
+    closeShippingModal();
+}
+
+function exportShippingLabelPDF(orderId) {
+    const order = (ordersCache || []).find(o => o.id === orderId);
+    if (!order) return;
+
+    const agency = document.getElementById('ship_agency')?.value || order.shipping_agency || 'Starken';
+    const tracking = document.getElementById('ship_tracking')?.value || order.tracking_number || 'STK-00000';
+
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+        showToast('Librería jsPDF no disponible', 'error');
+        return;
+    }
+
+    const doc = new jsPDF({ unit: 'mm', format: [105, 148] });
+
+    doc.setFillColor(15, 15, 20);
+    doc.rect(0, 0, 105, 24, 'F');
+
+    doc.setTextColor(197, 160, 89);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('TORMENTA INDUMENTARIA', 52.5, 10, { align: 'center' });
+
+    doc.setTextColor(200, 200, 200);
+    doc.setFontSize(7);
+    doc.text('DELICIAS DEL DESEO · SLOW FASHION · SCL', 52.5, 16, { align: 'center' });
+
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.rect(6, 28, 93, 40);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DESTINATARIO:', 10, 34);
+
+    doc.setFontSize(11);
+    doc.text(String(order.client_name || 'Cliente').toUpperCase(), 10, 41);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Contacto: ${order.contact_phone || 'Sin número registrado'}`, 10, 47);
+    doc.text(`Agencia: ${agency}`, 10, 53);
+    doc.text(`N° Seguimiento: ${tracking}`, 10, 59);
+
+    doc.rect(6, 72, 93, 26);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('DETALLE DEL PAQUETE:', 10, 78);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Prenda: ${order.product_name || order.product_key}`, 10, 84);
+    doc.text(`Talle: ${order.size || 'M'} ${order.variant_name ? '· ' + order.variant_name : ''}`, 10, 90);
+    doc.text(`Estado de Pago: PAGADO (100%)`, 10, 95);
+
+    doc.setFillColor(245, 245, 245);
+    doc.rect(6, 102, 93, 38, 'F');
+    doc.rect(6, 102, 93, 38, 'S');
+
+    doc.setTextColor(139, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('🖤 GUÍA DE CUIDADO DE PRENDAS VEGANAS:', 10, 108);
+
+    doc.setTextColor(40, 40, 40);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('• Limpiar suavemente con un paño microfibra apenas húmedo.', 10, 114);
+    doc.text('• No aplicar alcohol, perfume, acetona ni solventes en el charol/cuerina.', 10, 119);
+    doc.text('• Guardar la prenda colgada o estirada en funda de género.', 10, 124);
+    doc.text('• Mantener alejada del calor directo y del sol prolongado.', 10, 129);
+    doc.text('• ¡Hecho a mano en Santiago con amor y obsesión artesanal! ✨', 10, 135);
+
+    doc.save(`Guia_Despacho_Tormenta_${order.id}.pdf`);
+    showToast('¡Guía de Despacho descargada en PDF!', 'success');
+}
+
+// =========================================================================
+// MÓDULO D: CÓDIGOS QR Y ETIQUETA DE CONFECCIÓN EN TALLER
+// =========================================================================
+
+function generateQRCodeSVG(text, size = 110) {
+    const str = String(text || 'TORMENTA');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = (hash << 5) - hash + str.charCodeAt(i);
+    const modules = 21;
+    const cellSize = size / modules;
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
+    svg += `<rect width="${size}" height="${size}" fill="#ffffff"/>`;
+
+    const drawFinderPattern = (x, y) => {
+        svg += `<rect x="${x*cellSize}" y="${y*cellSize}" width="${7*cellSize}" height="${7*cellSize}" fill="#000000"/>`;
+        svg += `<rect x="${(x+1)*cellSize}" y="${(y+1)*cellSize}" width="${5*cellSize}" height="${5*cellSize}" fill="#ffffff"/>`;
+        svg += `<rect x="${(x+2)*cellSize}" y="${(y+2)*cellSize}" width="${3*cellSize}" height="${3*cellSize}" fill="#000000"/>`;
+    };
+    drawFinderPattern(0, 0);
+    drawFinderPattern(14, 0);
+    drawFinderPattern(0, 14);
+
+    for (let r = 0; r < modules; r++) {
+        for (let c = 0; c < modules; c++) {
+            if ((r < 8 && c < 8) || (r < 8 && c > 12) || (r > 12 && c < 8)) continue;
+            const bit = Math.abs((hash ^ (r * 31 + c * 17)) % 3) === 0;
+            if (bit) {
+                svg += `<rect x="${c*cellSize}" y="${r*cellSize}" width="${cellSize+0.2}" height="${cellSize+0.2}" fill="#000000"/>`;
+            }
+        }
+    }
+    svg += `</svg>`;
+    return svg;
+}
+
+function openQRModal(orderId) {
+    const order = (ordersCache || []).find(o => o.id === orderId);
+    if (!order) return;
+
+    const modal = document.getElementById('qr-tag-modal');
+    if (!modal) return;
+
+    const container = document.getElementById('qr-code-svg-container');
+    if (container) {
+        container.innerHTML = generateQRCodeSVG(`BYSTORM-ORDER-${order.id}`);
+    }
+
+    document.getElementById('qr-order-id-label').textContent = `ORDEN #${order.id}`;
+    document.getElementById('qr-product-label').textContent = order.product_name || order.product_key;
+    document.getElementById('qr-client-label').textContent = `Clienta: ${order.client_name || 'Sin nombre'}`;
+    document.getElementById('qr-specs-label').textContent = `Talle: ${order.size || 'M'} ${order.variant_name ? '· ' + order.variant_name : ''}`;
+
+    modal.classList.remove('hidden');
+    triggerHaptic('light');
+}
+
+function closeQRModal(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const modal = document.getElementById('qr-tag-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function printQRTag() {
+    const tagEl = document.getElementById('qr-tag-printable');
+    if (!tagEl) return;
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <html>
+        <head><title>Etiqueta QR Tormenta</title></head>
+        <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5;">
+            ${tagEl.outerHTML}
+        </body>
+        </html>
+    `);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 300);
+}
+
+function useClientMeasurements(clientId) {
+    let clients = getMockData('clients') || [];
+    const client = clients.find(c => c.id === clientId || c.name === clientId);
+    if (!client || !client.measurements) {
+        showToast('Esta clienta no posee medidas guardadas aún', 'warning');
+        return;
+    }
+
+    const m = client.measurements;
+    if (m.bust && document.getElementById('bust')) document.getElementById('bust').value = m.bust;
+    if (m.underbust && document.getElementById('underbust')) document.getElementById('underbust').value = m.underbust;
+    if (m.waist && document.getElementById('waist')) document.getElementById('waist').value = m.waist;
+    if (m.neck && document.getElementById('client_neck')) document.getElementById('client_neck').value = m.neck;
+
+    showToast(`¡Medidas de ${client.name} cargadas en el taller!`, 'success');
 }
 
 // --- PWA SERVICE WORKER & INSTALACIÓN NATIVA ---

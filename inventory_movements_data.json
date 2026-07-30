@@ -918,5 +918,853 @@
     "movement_type": "produccion",
     "reference": "Orden 58f17272: confección de 1x Choker T6",
     "date": "2026-07-29T19:43:46.390008"
+  },
+  {
+    "id": "9c56f5f1",
+    "item_key": "argollas",
+    "quantity": 10.0,
+    "movement_type": "Compra de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.698173"
+  },
+  {
+    "id": "84517152",
+    "item_key": "argollas",
+    "quantity": -10.0,
+    "movement_type": "Correccion de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.731110"
+  },
+  {
+    "id": "7e3f15ad",
+    "item_key": "argollas",
+    "quantity": 5.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-30T00:29:12.785407"
+  },
+  {
+    "id": "b1b8faf4",
+    "item_key": "argollas",
+    "quantity": -5.0,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.825079"
+  },
+  {
+    "id": "5976836c",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.847560"
+  },
+  {
+    "id": "1edba3a8",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.907690"
+  },
+  {
+    "id": "e3ed935e",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.954111"
+  },
+  {
+    "id": "f66a47ae",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:12.999805"
+  },
+  {
+    "id": "31b63e06",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.047306"
+  },
+  {
+    "id": "f37906ae",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.085573"
+  },
+  {
+    "id": "522fe8aa",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.119307"
+  },
+  {
+    "id": "d0f34230",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.146991"
+  },
+  {
+    "id": "c3e27be6",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.180700"
+  },
+  {
+    "id": "2294b5ab",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.221293"
+  },
+  {
+    "id": "041a8f4f",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.284090"
+  },
+  {
+    "id": "0b96559c",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.305282"
+  },
+  {
+    "id": "72464c7a",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.316456"
+  },
+  {
+    "id": "3c577cbe",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.331757"
+  },
+  {
+    "id": "7fa933fd",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.361665"
+  },
+  {
+    "id": "9ed5be0d",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:13.383737"
+  },
+  {
+    "id": "938ab385",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.689289"
+  },
+  {
+    "id": "c1696e62",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.734178"
+  },
+  {
+    "id": "e0a2af71",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.781920"
+  },
+  {
+    "id": "52862ed0",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.828742"
+  },
+  {
+    "id": "5e8fe4b4",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.870277"
+  },
+  {
+    "id": "c424a115",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.929607"
+  },
+  {
+    "id": "513b68df",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:13.974414"
+  },
+  {
+    "id": "7dd2506c",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.003710"
+  },
+  {
+    "id": "c626ce1e",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.038547"
+  },
+  {
+    "id": "6f4ee142",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.073836"
+  },
+  {
+    "id": "c4590ea8",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.179871"
+  },
+  {
+    "id": "8c852e0f",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.196134"
+  },
+  {
+    "id": "fd8077a5",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.210103"
+  },
+  {
+    "id": "8b9b05e1",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.228943"
+  },
+  {
+    "id": "4800a85e",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.246173"
+  },
+  {
+    "id": "c17f5caa",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Orden 2488467e: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:14.264987"
+  },
+  {
+    "id": "3e295f39",
+    "item_key": "cinta",
+    "quantity": -344.6,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.386710"
+  },
+  {
+    "id": "45901adc",
+    "item_key": "cinta",
+    "quantity": 50.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-30T00:29:14.467388"
+  },
+  {
+    "id": "678388b5",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.522034"
+  },
+  {
+    "id": "88bcff0c",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.555797"
+  },
+  {
+    "id": "54e8481f",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.601088"
+  },
+  {
+    "id": "5fea46ce",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.639856"
+  },
+  {
+    "id": "3cfe4893",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.681811"
+  },
+  {
+    "id": "d660be5f",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.720956"
+  },
+  {
+    "id": "6f558c42",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.759558"
+  },
+  {
+    "id": "e0705a7a",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.806416"
+  },
+  {
+    "id": "2028a067",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.842095"
+  },
+  {
+    "id": "fdfbdb27",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:14.867646"
+  },
+  {
+    "id": "b028aeac",
+    "item_key": "cinta",
+    "quantity": -0.4,
+    "movement_type": "produccion",
+    "reference": "Orden 3053477f: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:14.928161"
+  },
+  {
+    "id": "2c4bf40b",
+    "item_key": "argollas",
+    "quantity": -1,
+    "movement_type": "produccion",
+    "reference": "Orden 3053477f: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:14.948691"
+  },
+  {
+    "id": "f38e6c14",
+    "item_key": "hebillas",
+    "quantity": -1,
+    "movement_type": "produccion",
+    "reference": "Orden 3053477f: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:14.970436"
+  },
+  {
+    "id": "0f8b9ddc",
+    "item_key": "remaches",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Orden 3053477f: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:14.989321"
+  },
+  {
+    "id": "991e618c",
+    "item_key": "tachas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Orden 3053477f: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:15.007431"
+  },
+  {
+    "id": "abc317dd",
+    "item_key": "argollas",
+    "quantity": 10.0,
+    "movement_type": "Compra de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.696635"
+  },
+  {
+    "id": "aa7984e0",
+    "item_key": "argollas",
+    "quantity": -10.0,
+    "movement_type": "Correccion de prueba",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.733395"
+  },
+  {
+    "id": "38b17666",
+    "item_key": "argollas",
+    "quantity": 5.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-30T00:29:21.786102"
+  },
+  {
+    "id": "22549333",
+    "item_key": "argollas",
+    "quantity": -5.0,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.840922"
+  },
+  {
+    "id": "f1fbc1d4",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.873811"
+  },
+  {
+    "id": "4533cb52",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.910118"
+  },
+  {
+    "id": "374afa58",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.938103"
+  },
+  {
+    "id": "4743dca5",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:21.978071"
+  },
+  {
+    "id": "d8498c4a",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.011700"
+  },
+  {
+    "id": "c3415ef4",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.048305"
+  },
+  {
+    "id": "d39e81cf",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.086517"
+  },
+  {
+    "id": "3105c6d1",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.123489"
+  },
+  {
+    "id": "3c4f8dd7",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.162062"
+  },
+  {
+    "id": "141e8fa6",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.196868"
+  },
+  {
+    "id": "0c5dc840",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.243749"
+  },
+  {
+    "id": "39bb19f0",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.265083"
+  },
+  {
+    "id": "b40f64bb",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.282665"
+  },
+  {
+    "id": "0bdc1382",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.304225"
+  },
+  {
+    "id": "e1dc479a",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.323572"
+  },
+  {
+    "id": "06c49e15",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Confección de 1x Arnés Tormenta Test",
+    "date": "2026-07-30T00:29:22.341774"
+  },
+  {
+    "id": "bf9d443f",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.561618"
+  },
+  {
+    "id": "3a2b6550",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.603067"
+  },
+  {
+    "id": "d98fe2f3",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.642350"
+  },
+  {
+    "id": "bc72a6f4",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.680131"
+  },
+  {
+    "id": "f8469694",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.716594"
+  },
+  {
+    "id": "4d2f3443",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.753854"
+  },
+  {
+    "id": "7ad76a4f",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.796368"
+  },
+  {
+    "id": "f3356112",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.834766"
+  },
+  {
+    "id": "5230cc5c",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.875224"
+  },
+  {
+    "id": "138e3e91",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:22.913518"
+  },
+  {
+    "id": "660e6ae4",
+    "item_key": "cinta",
+    "quantity": -2.5,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.025594"
+  },
+  {
+    "id": "0d55a728",
+    "item_key": "argollas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.046728"
+  },
+  {
+    "id": "ff600a56",
+    "item_key": "hebillas",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.064196"
+  },
+  {
+    "id": "1ba0881c",
+    "item_key": "remaches",
+    "quantity": -12,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.082786"
+  },
+  {
+    "id": "a504ed72",
+    "item_key": "tachas",
+    "quantity": -8,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.101998"
+  },
+  {
+    "id": "c249b624",
+    "item_key": "mosquetones",
+    "quantity": -2,
+    "movement_type": "produccion",
+    "reference": "Orden 03563360: confección de 1x Arnés Test T4",
+    "date": "2026-07-30T00:29:23.120255"
+  },
+  {
+    "id": "a736f7da",
+    "item_key": "cinta",
+    "quantity": -344.6,
+    "movement_type": "ajuste",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.237794"
+  },
+  {
+    "id": "c10dea4d",
+    "item_key": "cinta",
+    "quantity": 50.0,
+    "movement_type": "compra",
+    "reference": "Compra de insumos",
+    "date": "2026-07-30T00:29:23.306720"
+  },
+  {
+    "id": "5674d7ef",
+    "item_key": "cinta",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.357513"
+  },
+  {
+    "id": "fc0c2161",
+    "item_key": "argollas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.399094"
+  },
+  {
+    "id": "6aa0f667",
+    "item_key": "hebillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.433258"
+  },
+  {
+    "id": "434e7bc1",
+    "item_key": "remaches",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.465521"
+  },
+  {
+    "id": "24d342be",
+    "item_key": "ojalillos",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.500621"
+  },
+  {
+    "id": "44570158",
+    "item_key": "varillas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.536467"
+  },
+  {
+    "id": "ff27d91f",
+    "item_key": "cadenas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.577800"
+  },
+  {
+    "id": "6b31b2eb",
+    "item_key": "tachas",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.615256"
+  },
+  {
+    "id": "0c09e06c",
+    "item_key": "mosquetones",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.661405"
+  },
+  {
+    "id": "608b0e99",
+    "item_key": "cuerina_rollo",
+    "quantity": 100.0,
+    "movement_type": "setup",
+    "reference": "Ajuste manual de stock",
+    "date": "2026-07-30T00:29:23.705933"
+  },
+  {
+    "id": "e09873bb",
+    "item_key": "cinta",
+    "quantity": -0.4,
+    "movement_type": "produccion",
+    "reference": "Orden 6f55e07e: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:23.802949"
+  },
+  {
+    "id": "0dbd85b2",
+    "item_key": "argollas",
+    "quantity": -1,
+    "movement_type": "produccion",
+    "reference": "Orden 6f55e07e: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:23.835031"
+  },
+  {
+    "id": "57ce2800",
+    "item_key": "hebillas",
+    "quantity": -1,
+    "movement_type": "produccion",
+    "reference": "Orden 6f55e07e: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:23.861309"
+  },
+  {
+    "id": "afabc2a9",
+    "item_key": "remaches",
+    "quantity": -4,
+    "movement_type": "produccion",
+    "reference": "Orden 6f55e07e: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:23.885186"
+  },
+  {
+    "id": "2d9eb47b",
+    "item_key": "tachas",
+    "quantity": -6,
+    "movement_type": "produccion",
+    "reference": "Orden 6f55e07e: confección de 1x Choker T6",
+    "date": "2026-07-30T00:29:23.908523"
   }
 ]

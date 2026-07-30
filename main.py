@@ -98,9 +98,13 @@ class ClientCreate(BaseModel):
     name: str = Field(..., min_length=1, description="Nombre del cliente")
     contact: str = Field("", description="Teléfono, email o Instagram")
     notes: str = Field("", description="Notas del taller")
+    internal_notes: str = Field("", description="Notas privadas de preferencia del taller")
+    preferred_hardware: str = Field("", description="Herraje preferido (plata, dorado, negro)")
+    vip_badge: bool = Field(False, description="Insignia de clienta VIP / recurrente")
     preferred_size: str = Field("M")
     gender: str = Field("Unisex", description="Género / Identidad de talle")
-    pin: str = Field(..., min_length=4, max_length=8, regex="^[0-9]{4,8}$", description="PIN de acceso al perfil")
+    pin: Optional[str] = Field(None, description="PIN de acceso al perfil")
+    measurements: Optional[dict] = None
     
     # 22 Medidas Corporales (cm) - Gráfico de Referencia EuroCatLatex / Tormenta
     forehead: float = Field(0.0, ge=0)
@@ -131,6 +135,19 @@ class ClientResponse(ClientCreate):
     id: str
     created_at: str
     updated_at: str
+
+class TransactionCreate(BaseModel):
+    order_id: Optional[str] = None
+    client_name: Optional[str] = ""
+    type: str = Field("ingreso", description="ingreso o egreso")
+    category: str = Field("seña", description="seña, saldo, compra_insumos, gasto_fijo, otro")
+    amount: float = Field(..., gt=0)
+    payment_method: str = "transferencia"
+    date: Optional[str] = None
+    notes: Optional[str] = ""
+
+class Transaction(TransactionCreate):
+    id: str
 
 class BatchItem(BaseModel):
     product_key: str
@@ -424,6 +441,23 @@ def _load_clients() -> List[dict]:
 def _save_clients(clients: List[dict]):
     with open(CLIENTS_FILE, "w", encoding="utf-8") as f:
         json.dump(clients, f, ensure_ascii=False, indent=2)
+
+# --- PERSISTENCIA DE TRANSACCIONES / CASHFLOW ---
+
+TRANSACTIONS_FILE = os.path.join(os.path.dirname(__file__), "transactions_data.json")
+
+def _load_transactions() -> List[dict]:
+    if not os.path.exists(TRANSACTIONS_FILE):
+        return []
+    try:
+        with open(TRANSACTIONS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return []
+
+def _save_transactions(transactions: List[dict]):
+    with open(TRANSACTIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(transactions, f, ensure_ascii=False, indent=2)
 
 # --- RUTAS DE API ---
 
@@ -1494,6 +1528,9 @@ class OrderCreate(BaseModel):
     # WhatsApp
     contact_phone: str = ""
     whatsapp_ready_sent_at: Optional[str] = None
+    # Despacho y Envío
+    tracking_number: str = ""
+    shipping_agency: str = ""
 
 
 class OrderResponse(OrderCreate):
@@ -1578,6 +1615,8 @@ def _normalize_order(order: dict) -> dict:
         "production_id": None,
         "contact_phone": "",
         "whatsapp_ready_sent_at": None,
+        "tracking_number": "",
+        "shipping_agency": "",
     }
     for key, value in defaults.items():
         if key not in o:
@@ -1699,7 +1738,8 @@ def backup_all_data():
         "inventory": _load_inventory(),
         "suppliers": _load_suppliers(),
         "orders": _load_orders(),
-        "inventory_movements": _load_movements()
+        "inventory_movements": _load_movements(),
+        "transactions": _load_transactions()
     }
 
 
@@ -1720,6 +1760,8 @@ def restore_all_data(data: dict):
         _save_orders(data["orders"])
     if "inventory_movements" in data:
         _save_movements(data["inventory_movements"])
+    if "transactions" in data:
+        _save_transactions(data["transactions"])
     return {"restored": True}
 
 
@@ -1908,6 +1950,53 @@ def delete_supplier(supplier_id: str):
         raise HTTPException(status_code=404, detail="Proveedor no encontrado.")
     _save_suppliers(suppliers)
     return {"deleted": True, "id": supplier_id}
+
+
+# --- ENDPOINTS DE FINANZAS & CASHFLOW ---
+
+@app.get("/api/finances/transactions")
+def list_transactions():
+    """Lista todas las transacciones financieras (ingresos y egresos)."""
+    return _load_transactions()
+
+@app.post("/api/finances/transactions", status_code=201)
+def create_transaction(tx: TransactionCreate):
+    """Registra una nueva transacción financiera."""
+    txs = _load_transactions()
+    now_str = datetime.now().isoformat()
+    new_tx = {
+        "id": f"tx_{uuid.uuid4().hex[:8]}",
+        **tx.model_dump(),
+        "date": tx.date or now_str
+    }
+    txs.insert(0, new_tx)
+    _save_transactions(txs)
+    return new_tx
+
+@app.get("/api/finances/summary")
+def get_finances_summary():
+    """Obtiene un resumen consolidado del estado financiero del taller."""
+    txs = _load_transactions()
+    orders = _load_orders()
+
+    total_income = sum(float(t.get("amount", 0)) for t in txs if t.get("type") == "ingreso")
+    total_expense = sum(float(t.get("amount", 0)) for t in txs if t.get("type") == "egreso")
+    net_balance = round(total_income - total_expense, 2)
+
+    pending_receivables = 0.0
+    for o in orders:
+        if o.get("status") not in ["entregado", "cancelado"]:
+            price = float(o.get("quoted_price", 0))
+            paid = float(o.get("amount_paid_total") or o.get("deposit_amount") or 0)
+            pending_receivables += max(0.0, price - paid)
+
+    return {
+        "total_income": round(total_income, 2),
+        "total_expense": round(total_expense, 2),
+        "net_balance": net_balance,
+        "pending_receivables": round(pending_receivables, 2),
+        "transactions_count": len(txs)
+    }
 
 
 # --- ENDPOINTS DE PEDIDOS / ÓRDENES DE PRODUCCIÓN ---

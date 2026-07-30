@@ -269,6 +269,63 @@
                     </div>
                     <div id="restock-predictions" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:1rem;"></div>
                 </div>
+
+                <!-- MÓDULO A: CONTROL DE CASHFLOW & FINANZAS DEL TALLER -->
+                <div class="glass-card" style="margin-top:1.5rem;">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                        <div>
+                            <h2 class="card-title">💰 Flujo de Caja & Cobranzas del Taller</h2>
+                            <p class="card-desc">Control de ingresos por señas/saldos, egresos por compras e insumos, y saldos a cobrar.</p>
+                        </div>
+                        <button type="button" class="btn-primary" onclick="openTransactionModal()" style="margin:0;font-size:0.85rem;padding:6px 12px;">
+                            ➕ Registrar Movimiento de Caja
+                        </button>
+                    </div>
+
+                    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top:1rem;">
+                        <div class="kpi-card">
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-fin-income" style="color:#81c784;">$0</span>
+                                <span class="kpi-label">Ingresos Totales</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-fin-expense" style="color:#e57373;">$0</span>
+                                <span class="kpi-label">Egresos Totales</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-fin-balance" style="color:#c5a059;">$0</span>
+                                <span class="kpi-label">Balance Neto en Caja</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-fin-pending" style="color:#ffb74d;">$0</span>
+                                <span class="kpi-label">Saldos por Cobrar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1.2rem;max-height:220px;overflow-y:auto;background:rgba(0,0,0,0.15);border-radius:8px;padding:0.5rem;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;color:var(--color-text-main);">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--border-color);text-align:left;color:var(--color-text-secondary);">
+                                    <th style="padding:6px;">Fecha</th>
+                                    <th style="padding:6px;">Tipo</th>
+                                    <th style="padding:6px;">Categoría</th>
+                                    <th style="padding:6px;">Detalle / Cliente</th>
+                                    <th style="padding:6px;text-align:right;">Monto ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finances-transactions-table">
+                                <tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--color-text-muted);">Cargando transacciones...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
             
             <!-- PESTAÑA: ESCALADO DE PATRONES -->
@@ -1177,6 +1234,23 @@
                                     <label for="client_height">21. Estatura Total (cm)</label>
                                     <input type="number" id="client_height" min="0" max="250" step="0.5" value="0" placeholder="Ej: 170">
                                 </div>
+                                <div class="form-group">
+                                    <label for="client_preferred_hardware">Herraje Preferido</label>
+                                    <select id="client_preferred_hardware">
+                                        <option value="">Indistinto / Estándar</option>
+                                        <option value="plateado">Plateado / Niquelado</option>
+                                        <option value="dorado">Dorado brillante</option>
+                                        <option value="negro">Negro Mate</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;">
+                                    <input type="checkbox" id="client_vip_badge" style="width:20px;height:20px;cursor:pointer;">
+                                    <label for="client_vip_badge" style="margin:0;cursor:pointer;font-weight:600;color:#c5a059;">👑 Clienta VIP / Recurrente</label>
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label for="client_internal_notes">Notas Privadas CRM del Taller</label>
+                                    <input type="text" id="client_internal_notes" placeholder="Ej: Le gustan los herrajes dorados pesados, regalo sorpresa en próximo pedido...">
+                                </div>
                             </div>
 
                             <h3 class="section-subtitle">🔴 Cabeza, Cuello & Torso (Medidas #1 a #6 y #19)</h3>
@@ -1859,7 +1933,21 @@
                             </div>
                             <div class="form-group">
                                 <label for="order_phone">WhatsApp / teléfono</label>
-                                <input type="text" id="order_phone" placeholder="Ej: 54911… (opcional)">
+                                <input type="text" id="order_phone" placeholder="Ej: +56987654321">
+                            </div>
+                            <div class="form-group">
+                                <label for="order_shipping_agency">Envío / Retiro</label>
+                                <select id="order_shipping_agency">
+                                    <option value="Starken" selected>Starken (Envío)</option>
+                                    <option value="Chilexpress">Chilexpress</option>
+                                    <option value="Correos Chile">Correos Chile</option>
+                                    <option value="Delivery SCL">Delivery Urbano SCL</option>
+                                    <option value="Retiro Taller">Retiro en Taller (Santiago)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_tracking_number">N° Seguimiento / Remito</label>
+                                <input type="text" id="order_tracking_number" placeholder="Ej: STK-98765432">
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label for="order_notes">Notas del pedido</label>
@@ -2068,6 +2156,124 @@
                     <button type="button" class="btn-secondary" onclick="closeVariantModal()">Cerrar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Registró Movimiento de Caja (Cashflow) -->
+    <div id="transaction-modal" class="modal-backdrop hidden" onclick="closeTransactionModal(event)">
+        <div class="modal-card" style="max-width:500px;margin-top:8vh;background:rgba(20,20,25,0.96);backdrop-filter:blur(15px);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:0.8rem;margin-bottom:1rem;">
+                <h3 style="margin:0;font-size:1.1rem;color:var(--color-text-main);">💰 Registrar Movimiento de Caja</h3>
+                <button type="button" onclick="closeTransactionModal()" style="background:none;border:none;color:var(--color-text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+            </div>
+            <form id="transaction-form" onsubmit="handleSaveTransaction(event)">
+                <input type="hidden" id="tx_order_id" value="">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div class="form-group">
+                        <label for="tx_type">Tipo de Movimiento</label>
+                        <select id="tx_type" required onchange="updateTxCategories()">
+                            <option value="ingreso" selected>💚 Ingreso (+)</option>
+                            <option value="egreso">❤️ Egreso (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tx_category">Categoría</label>
+                        <select id="tx_category" required>
+                            <option value="seña">Seña / Adelanto 50%</option>
+                            <option value="saldo">Pago de Saldo Final</option>
+                            <option value="compra_insumos">Compra de Insumos / Cueros</option>
+                            <option value="gasto_fijo">Gasto Fijo / Servicios</option>
+                            <option value="otro">Otro Movimiento</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tx_amount">Monto ($)</label>
+                        <input type="number" id="tx_amount" min="1" step="100" required placeholder="Ej: 15000">
+                    </div>
+                    <div class="form-group">
+                        <label for="tx_payment_method">Medio de Pago</label>
+                        <select id="tx_payment_method">
+                            <option value="transferencia" selected>Transferencia Bancaria</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="tarjeta">Tarjeta / MercadoPago</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="tx_client_name">Cliente / Proveedor / Referencia</label>
+                        <input type="text" id="tx_client_name" placeholder="Ej: Valentina Gómez o Proveedor Cueros">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="tx_notes">Notas adicionales</label>
+                        <input type="text" id="tx_notes" placeholder="Ej: Pago de saldo arnés pechera">
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.5rem;margin-top:1.2rem;">
+                    <button type="submit" class="btn-primary" style="margin-top:0;flex:1;">Guardar Movimiento</button>
+                    <button type="button" class="btn-secondary" onclick="closeTransactionModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Guía de Despacho & Etiqueta de Envío PDF -->
+    <div id="shipping-label-modal" class="modal-backdrop hidden" onclick="closeShippingModal(event)">
+        <div class="modal-card" style="max-width:540px;margin-top:6vh;background:rgba(20,20,25,0.96);backdrop-filter:blur(15px);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:0.8rem;margin-bottom:1rem;">
+                <h3 style="margin:0;font-size:1.1rem;color:var(--color-text-main);">📦 Guía de Despacho & Etiqueta de Envío</h3>
+                <button type="button" onclick="closeShippingModal()" style="background:none;border:none;color:var(--color-text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+            </div>
+            <input type="hidden" id="ship_order_id" value="">
+            <div id="ship_order_preview" style="background:rgba(255,255,255,0.03);padding:0.8rem;border-radius:8px;margin-bottom:1rem;font-size:0.85rem;color:var(--color-text-secondary);">
+                <!-- Dinámico -->
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="form-group">
+                    <label for="ship_agency">Agencia de Envío / Retiro</label>
+                    <select id="ship_agency">
+                        <option value="Starken" selected>Starken (Envío a Domicilio/Sucursal)</option>
+                        <option value="Chilexpress">Chilexpress</option>
+                        <option value="Correos Chile">Correos Chile</option>
+                        <option value="Delivery SCL">Delivery Urbano SCL</option>
+                        <option value="Retiro Taller">Retiro en Taller (Santiago)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ship_tracking">N° de Seguimiento / Remito</label>
+                    <input type="text" id="ship_tracking" placeholder="Ej: STK-98765432">
+                </div>
+            </div>
+            <div style="margin-top:1rem;padding:0.8rem;background:rgba(197,160,89,0.08);border:1px dashed #c5a059;border-radius:8px;font-size:0.8rem;color:var(--color-text-main);">
+                <strong>🖤 Incluye Ficha de Cuidados Veganos (Charol/Cuerina):</strong> Instuye a la clienta sobre limpieza con paño húmedo, secado a la sombra y guardado colgado sin solventes.
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-top:1.2rem;">
+                <button type="button" class="btn-primary" style="margin-top:0;flex:1;" onclick="generateShippingPDFFromModal()">📄 Descargar PDF Guía de Despacho</button>
+                <button type="button" class="btn-secondary" onclick="closeShippingModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ficha y Código QR para Taller -->
+    <div id="qr-tag-modal" class="modal-backdrop hidden" onclick="closeQRModal(event)">
+        <div class="modal-card" style="max-width:440px;margin-top:8vh;text-align:center;background:rgba(20,20,25,0.96);backdrop-filter:blur(15px);border:1px solid var(--border-color);border-radius:12px;padding:1.4rem;" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:0.8rem;margin-bottom:1rem;">
+                <h3 style="margin:0;font-size:1.1rem;color:var(--color-text-main);">📱 Etiqueta QR de Confección</h3>
+                <button type="button" onclick="closeQRModal()" style="background:none;border:none;color:var(--color-text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+            </div>
+            
+            <div id="qr-tag-printable" style="background:#ffffff;color:#111111;padding:1.2rem;border-radius:10px;margin-bottom:1rem;border:2px solid #111;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:1.1rem;letter-spacing:1px;">TORMENTA INDUMENTARIA</div>
+                <div style="font-size:0.75rem;margin-bottom:0.5rem;color:#555;">TALLER ARTESANAL · SLOW FASHION</div>
+                <div id="qr-code-svg-container" style="display:flex;justify-content:center;margin:0.8rem 0;"></div>
+                <div style="font-weight:700;font-size:1rem;" id="qr-order-id-label">ORD-XXXX</div>
+                <div style="font-size:0.9rem;font-weight:600;margin-top:0.3rem;" id="qr-product-label">Arnés Pechera</div>
+                <div style="font-size:0.8rem;color:#333;" id="qr-client-label">Cliente: Valentina G.</div>
+                <div style="font-size:0.75rem;color:#666;margin-top:0.3rem;" id="qr-specs-label">Talle: M · Herrajes Plata</div>
+            </div>
+
+            <div style="display:flex;gap:0.5rem;">
+                <button type="button" class="btn-primary" style="margin-top:0;flex:1;" onclick="printQRTag()">🖨️ Imprimir Etiqueta</button>
+                <button type="button" class="btn-secondary" onclick="closeQRModal()">Cerrar</button>
+            </div>
         </div>
     </div>
 

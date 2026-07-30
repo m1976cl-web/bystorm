@@ -733,4 +733,88 @@ def test_pwa_endpoints():
     assert r_icon512.status_code == 200
 
 
+def test_finances_and_cashflow():
+    """Prueba el registro de transacciones de caja y el resumen financiero del taller."""
+    # 1. Registrar un ingreso (seña)
+    tx_in = {
+        "client_name": "Test Client Cashflow",
+        "type": "ingreso",
+        "category": "seña",
+        "amount": 20000.0,
+        "payment_method": "transferencia",
+        "notes": "Prueba unitaria ingreso"
+    }
+    r1 = client.post("/api/finances/transactions", json=tx_in)
+    assert r1.status_code == 201
+    d1 = r1.json()
+    assert d1["amount"] == 20000.0
+    assert d1["type"] == "ingreso"
+
+    # 2. Registrar un egreso (compra de herrajes)
+    tx_out = {
+        "client_name": "Proveedor Test",
+        "type": "egreso",
+        "category": "compra_insumos",
+        "amount": 5000.0,
+        "payment_method": "efectivo",
+        "notes": "Prueba unitaria egreso"
+    }
+    r2 = client.post("/api/finances/transactions", json=tx_out)
+    assert r2.status_code == 201
+
+    # 3. Verificar resumen financiero
+    r3 = client.get("/api/finances/summary")
+    assert r3.status_code == 200
+    summary = r3.json()
+    assert "total_income" in summary
+    assert "total_expense" in summary
+    assert "net_balance" in summary
+    assert summary["total_income"] >= 20000.0
+
+
+def test_shipping_fields_and_crm():
+    """Prueba los nuevos campos de envío de órdenes y medidas CRM de clientas."""
+    # 1. Crear clienta con medidas y campos CRM
+    client_payload = {
+        "name": "Clienta VIP Test",
+        "contact": "@clienta_vip",
+        "vip_badge": True,
+        "preferred_hardware": "dorado",
+        "internal_notes": "Le encantan los remaches pesados",
+        "measurements": {
+            "bust": 92.0,
+            "underbust": 76.0,
+            "waist": 70.0,
+            "hips": 98.0
+        }
+    }
+    r_cli = client.post("/api/clients", json=client_payload)
+    assert r_cli.status_code == 201
+    cli_data = r_cli.json()
+    assert cli_data["vip_badge"] is True
+    assert cli_data["preferred_hardware"] == "dorado"
+    assert cli_data["measurements"]["bust"] == 92.0
+
+    # 2. Crear orden con agencia de envío y tracking number
+    order_payload = {
+        "client_name": "Clienta VIP Test",
+        "product_key": "arnes",
+        "product_name": "Arnés pechera Tormenta",
+        "quantity": 1,
+        "quoted_price": 28000,
+        "shipping_agency": "Starken",
+        "tracking_number": "STK-123456"
+    }
+    r_ord = client.post("/api/orders", json=order_payload)
+    assert r_ord.status_code == 201
+    ord_data = r_ord.json()
+    assert ord_data["shipping_agency"] == "Starken"
+    assert ord_data["tracking_number"] == "STK-123456"
+
+    # Limpieza
+    client.delete(f"/api/clients/{cli_data['id']}")
+    client.delete(f"/api/orders/{ord_data['id']}")
+
+
+
 

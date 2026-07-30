@@ -1,0 +1,68 @@
+[
+  {
+    "id": "tx_8ab52f9c",
+    "order_id": null,
+    "client_name": "Proveedor Test",
+    "type": "egreso",
+    "category": "compra_insumos",
+    "amount": 5000.0,
+    "payment_method": "efectivo",
+    "date": "2026-07-30T00:29:24.277149",
+    "notes": "Prueba unitaria egreso"
+  },
+  {
+    "id": "tx_2a17528a",
+    "order_id": null,
+    "client_name": "Test Client Cashflow",
+    "type": "ingreso",
+    "category": "seña",
+    "amount": 20000.0,
+    "payment_method": "transferencia",
+    "date": "2026-07-30T00:29:24.249166",
+    "notes": "Prueba unitaria ingreso"
+  },
+  {
+    "id": "tx_df1b2bc3",
+    "order_id": null,
+    "client_name": "Proveedor Test",
+    "type": "egreso",
+    "category": "compra_insumos",
+    "amount": 5000.0,
+    "payment_method": "efectivo",
+    "date": "2026-07-30T00:29:15.351414",
+    "notes": "Prueba unitaria egreso"
+  },
+  {
+    "id": "tx_3090eb80",
+    "order_id": null,
+    "client_name": "Test Client Cashflow",
+    "type": "ingreso",
+    "category": "seña",
+    "amount": 20000.0,
+    "payment_method": "transferencia",
+    "date": "2026-07-30T00:29:15.326633",
+    "notes": "Prueba unitaria ingreso"
+  },
+  {
+    "id": "tx_seed_1",
+    "order_id": "ord_sample_1",
+    "client_name": "Valentina Gómez",
+    "type": "ingreso",
+    "category": "seña",
+    "amount": 14000.0,
+    "payment_method": "transferencia",
+    "date": "2026-07-28T14:30:00",
+    "notes": "Adelanto 50% Arnés Pechera"
+  },
+  {
+    "id": "tx_seed_2",
+    "order_id": null,
+    "client_name": "Proveedor Cueros S.A.",
+    "type": "egreso",
+    "category": "compra_insumos",
+    "amount": 25000.0,
+    "payment_method": "transferencia",
+    "date": "2026-07-25T10:15:00",
+    "notes": "Compra de rollo cuerina mate vegana 10m"
+  }
+]
