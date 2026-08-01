@@ -4,13 +4,13 @@
 
 | Meta | Value |
 |------|--------|
-| **Status** | `ready-to-implement` |
+| **Status** | `completed (100% done)` |
 | **Release** | `pedidos-punta-a-punta` / Bystorm v2.1 |
 | **Repo** | https://github.com/m1976cl-web/bystorm |
 | **Beneficiary** | [Tormenta Indumentaria](https://www.instagram.com/tormenta_indumentaria/) |
 | **Horizon** | 8–10 effective days |
-| **Plan date** | 2026-07-21 |
-| **Primary paths** | `main.py`, `test_main.py`, `static/app.js`, `static/index.html`, `static/style.css` (sync root copies if still used) |
+| **Plan date** | 2026-07-21 (Completado: 2026-08-01) |
+| **Primary paths** | `main.py`, `test_main.py`, `static/app.js`, `static/index.html`, `static/style.css` |
 
 **Proyecto:** [bystorm](https://github.com/m1976cl-web/bystorm)  
 **Beneficiaria:** [Tormenta Indumentaria](https://www.instagram.com/tormenta_indumentaria/)  
@@ -308,23 +308,23 @@ Aprovechar el trabajo reciente de responsive (commits de 2026-07-21).
 
 ### Semana 1 — Núcleo de datos y backend
 
-| Día | Entrega | Detalle |
-|-----|---------|--------|
-| **D1** | Modelo + migración suave | Extender `OrderCreate` / records; defaults; no romper órdenes viejas |
-| **D2** | `deduct_bom` compartido | Refactor de producción actual + tests de regresión |
-| **D3** | Status orquestado | `PUT /status` con descuento + production; flag `stock_deducted` |
-| **D4** | `from-quote` + pagos embebidos | Crear orden desde presupuesto; payment_status |
-| **D5** | Tests API | Ver sección 8; dejar verde en CI local |
+| Día | Entrega | Detalle | Estado |
+|-----|---------|--------|--------|
+| **D1** | Modelo + migración suave | Extender `OrderCreate` / records; defaults; no romper órdenes viejas | **HECHO** |
+| **D2** | `deduct_bom` compartido | Refactor de producción actual + tests de regresión | **HECHO** |
+| **D3** | Status orquestado | `PUT /status` con descuento + production; flag `stock_deducted` | **HECHO** |
+| **D4** | `from-quote` + pagos embebidos | Crear orden desde presupuesto; payment_status | **HECHO** |
+| **D5** | Tests API | Ver sección 8; dejar verde en CI local | **HECHO** |
 
 ### Semana 2 — UI, offline, pulido taller
 
-| Día | Entrega | Detalle |
-|-----|---------|--------|
-| **D6** | Mock offline paridad | Mismas rutas y reglas en `mockApiHandler` |
-| **D7** | UI Cotizador → Orden | Botón + modal prellenado |
-| **D8** | UI Órdenes enriquecida | Seña/saldo, badges, confirmación terminar |
-| **D9** | WhatsApp listo + móvil | Endpoint/texto + botones + checklist touch |
-| **D10** | QA con datos reales de taller | Seed de demo Tormenta; fix bugs; README del flujo |
+| Día | Entrega | Detalle | Estado |
+|-----|---------|--------|--------|
+| **D6** | Mock offline paridad | Mismas rutas y reglas en `mockApiHandler` | **HECHO** |
+| **D7** | UI Cotizador → Orden | Botón + modal prellenado | **HECHO** |
+| **D8** | UI Órdenes enriquecida | Seña/saldo, badges, confirmación terminar | **HECHO** |
+| **D9** | WhatsApp listo + móvil | Endpoint/texto + botones + checklist touch | **HECHO** |
+| **D10** | QA con datos reales de taller | Seed de demo Tormenta; fix bugs; README del flujo | **HECHO** |
 
 **Buffer:** si algo se atrasa, recortar en este orden (primero se corta lo de abajo):
 

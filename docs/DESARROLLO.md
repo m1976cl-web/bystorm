@@ -9,8 +9,8 @@
 | **Beneficiaria** | [Tormenta Indumentaria](https://www.instagram.com/tormenta_indumentaria/) |
 | **Producto** | Sistema operativo del taller (no ERP genérico, no e-commerce) |
 | **Release activo** | `pedidos-punta-a-punta` / **Bystorm v2.1** |
-| **Estado del núcleo** | D1–D3 **hechos** · D4–D10 **pendientes** |
-| **Última actualización de este doc** | 2026-07-22 |
+| **Estado del núcleo** | D1–D10 **hechos** (v2.1 completado + PWA + Módulos A–E) |
+| **Última actualización de este doc** | 2026-08-01 |
 
 ---
 
@@ -103,18 +103,18 @@ Sin backend: abrir el frontend estático; el interceptor de `fetch` usa el mock 
 
 ```text
 main.py
-  ├── modelos (Order*, BOM, Client, …)
-  ├── *_data.json (products, clients, inventory, orders, …)
-  ├── deduct_bom_for_product / check_bom_stock   ← D2
-  ├── PUT /api/orders/{id}/status                ← D3 (side-effects en terminado)
-  └── resto de API taller
+  ├── modelos (Order*, BOM, Client, Transaction, …)
+  ├── *_data.json (products, clients, inventory, orders, transactions, …)
+  ├── deduct_bom_for_product / check_bom_stock
+  ├── PUT /api/orders/{id}/status (side-effects en terminado)
+  └── resto de API taller (/api/finances/*)
 
 static/
   ├── index.html   # un .tab-pane por módulo; menú agrupado
   ├── app.js       # UI + mockApiHandler (paridad offline)
   └── style.css
 
-test_main.py       # regresión + T1–T9 del plan de pedidos
+test_main.py       # regresión + 22/22 tests pasados
 ```
 
 ### Módulos de UI (orden de menú)
@@ -147,13 +147,13 @@ Actualizar esta tabla **y** la de `PLAN_IMPLEMENTACION_PEDIDOS.md` al cerrar un 
 | **D1** | Modelo de orden + defaults + `static/` canónico | **done** | Adelanto, saldo, `payment_status`, `stock_deducted`, T1/T9 |
 | **D2** | `deduct_bom_for_product` compartido | **done** | Producción y órdenes comparten lógica |
 | **D3** | `PUT .../status` orquestado al `terminado` | **done** | Stock + production + idempotencia; T3–T6 |
-| **D4** | `POST /api/orders/from-quote` + pagos embebidos | **pending** | ← **siguiente backend** |
-| **D5** | Tests API T1–T9 completos / verdes | **pending** | Faltan T2, T7 (y consolidar) |
-| **D6** | Mock offline paridad (`mockApiHandler`) | **pending** | Misma semántica que FastAPI |
-| **D7** | UI Cotizador → “Crear orden de este presupuesto” | **pending** | |
-| **D8** | UI Órdenes (seña/saldo, badges, confirmar terminar) | **pending** | |
-| **D9** | WhatsApp “pedido listo” + móvil | **pending** | Endpoint + botón `wa.me` |
-| **D10** | QA con flujo real de taller + README del flujo | **pending** | |
+| **D4** | `POST /api/orders/from-quote` + pagos embebidos | **done** | Cotizador y órdenes integrados |
+| **D5** | Tests API T1–T9 completos / verdes | **done** | 22/22 tests verdes en `test_main.py` |
+| **D6** | Mock offline paridad (`mockApiHandler`) | **done** | Misma semántica que FastAPI en `app.js` |
+| **D7** | UI Cotizador → “Crear orden de este presupuesto” | **done** | Cotización auto-rellena orden con adelanto 50% |
+| **D8** | UI Órdenes (seña/saldo, badges, confirmar terminar) | **done** | Tarjetas con badges de variante, envío y botón cobrar saldo |
+| **D9** | WhatsApp “pedido listo” + móvil | **done** | Formateador e integración directa wa.me |
+| **D10** | QA con flujo real de taller + README del flujo | **done** | Verificado flujo extremo a extremo online/offline |
 
 ### Extra ya hecho (fuera de la numeración D, pero en main)
 
