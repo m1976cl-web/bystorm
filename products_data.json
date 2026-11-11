@@ -18,28 +18,7 @@
     "mosquetones": 2,
     "panels_count": 0,
     "panel_width": 0.0,
-    "panel_height": 0.0,
-    "variants": [
-      {
-        "id": "arnes_heavy_cadenas",
-        "name": "Charol Heavy Cadenas",
-        "material": "Charol vegano",
-        "hardware_color": "Niquelado",
-        "color_hex": "#111111",
-        "image_url": "",
-        "bom_override": {
-          "cinta": 3.0,
-          "argollas": 10,
-          "hebillas": 4,
-          "remaches": 16,
-          "ojalillos": 0,
-          "varillas": 0,
-          "cadenas": 2.5,
-          "tachas": 10,
-          "mosquetones": 4
-        }
-      }
-    ]
+    "panel_height": 0.0
   },
   "arnes_body": {
     "name": "Arnés corporal integral (body harness)",

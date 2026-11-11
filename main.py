@@ -25,6 +25,53 @@ app = FastAPI(
     version="2.1.0"
 )
 
+# Persistencia JSON. Default: directorio del módulo (comportamiento histórico).
+# Los tests redirigen con BYSTORM_DATA_DIR a un tmp_path para no tocar los JSON del repo.
+DATA_DIR_ENV = "BYSTORM_DATA_DIR"
+DATA_FILENAMES = (
+    "products_data.json",
+    "clients_data.json",
+    "transactions_data.json",
+    "production_data.json",
+    "inventory_data.json",
+    "inventory_movements_data.json",
+    "suppliers_data.json",
+    "orders_data.json",
+)
+
+
+def _data_dir() -> str:
+    configured = os.environ.get(DATA_DIR_ENV, "").strip()
+    if configured:
+        os.makedirs(configured, exist_ok=True)
+        return configured
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _data_file(filename: str) -> str:
+    return os.path.join(_data_dir(), filename)
+
+
+_DATA_FILE_ALIASES = {
+    "PRODUCTS_FILE": "products_data.json",
+    "CLIENTS_FILE": "clients_data.json",
+    "TRANSACTIONS_FILE": "transactions_data.json",
+    "PRODUCTION_FILE": "production_data.json",
+    "INVENTORY_FILE": "inventory_data.json",
+    "INVENTORY_MOVEMENTS_FILE": "inventory_movements_data.json",
+    "SUPPLIERS_FILE": "suppliers_data.json",
+    "ORDERS_FILE": "orders_data.json",
+}
+
+
+def __getattr__(name: str):
+    """Lazy aliases so `from main import ORDERS_FILE` sees the current data dir."""
+    filename = _DATA_FILE_ALIASES.get(name)
+    if filename:
+        return _data_file(filename)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 # Servir archivos estáticos del frontend
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if not os.path.exists(static_dir):
@@ -300,10 +347,9 @@ def get_product_bom(prod_data: dict, variant_id: Optional[str] = None) -> BOMIte
 
 # --- PERSISTENCIA DE PRODUCTOS (JSON local) ---
 
-PRODUCTS_FILE = os.path.join(os.path.dirname(__file__), "products_data.json")
-
 def _load_products() -> Dict[str, dict]:
-    if not os.path.exists(PRODUCTS_FILE):
+    products_path = _data_file("products_data.json")
+    if not os.path.exists(products_path):
         initial_data = {
             k: {
                 "name": DEFAULT_PRODUCT_NAMES.get(k, k),
@@ -320,13 +366,13 @@ def _load_products() -> Dict[str, dict]:
         _save_products(initial_data)
         return initial_data
     try:
-        with open(PRODUCTS_FILE, "r", encoding="utf-8") as f:
+        with open(products_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return {}
 
 def _save_products(products: Dict[str, dict]):
-    with open(PRODUCTS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("products_data.json"), "w", encoding="utf-8") as f:
         json.dump(products, f, ensure_ascii=False, indent=2)
 
 # --- LÓGICA DE ESCALADO ---
@@ -427,36 +473,34 @@ def calculate_cuerina_consumed_m(panel_width: float, panel_height: float, needed
 
 # --- PERSISTENCIA DE CLIENTES (JSON local) ---
 
-CLIENTS_FILE = os.path.join(os.path.dirname(__file__), "clients_data.json")
-
 def _load_clients() -> List[dict]:
-    if not os.path.exists(CLIENTS_FILE):
+    clients_path = _data_file("clients_data.json")
+    if not os.path.exists(clients_path):
         return []
     try:
-        with open(CLIENTS_FILE, "r", encoding="utf-8") as f:
+        with open(clients_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
 def _save_clients(clients: List[dict]):
-    with open(CLIENTS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("clients_data.json"), "w", encoding="utf-8") as f:
         json.dump(clients, f, ensure_ascii=False, indent=2)
 
 # --- PERSISTENCIA DE TRANSACCIONES / CASHFLOW ---
 
-TRANSACTIONS_FILE = os.path.join(os.path.dirname(__file__), "transactions_data.json")
-
 def _load_transactions() -> List[dict]:
-    if not os.path.exists(TRANSACTIONS_FILE):
+    transactions_path = _data_file("transactions_data.json")
+    if not os.path.exists(transactions_path):
         return []
     try:
-        with open(TRANSACTIONS_FILE, "r", encoding="utf-8") as f:
+        with open(transactions_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
 def _save_transactions(transactions: List[dict]):
-    with open(TRANSACTIONS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("transactions_data.json"), "w", encoding="utf-8") as f:
         json.dump(transactions, f, ensure_ascii=False, indent=2)
 
 # --- RUTAS DE API ---
@@ -869,19 +913,18 @@ def delete_client(client_id: str):
 
 # --- PERSISTENCIA DE PRODUCCIÓN (JSON local) ---
 
-PRODUCTION_FILE = os.path.join(os.path.dirname(__file__), "production_data.json")
-
 def _load_production() -> List[dict]:
-    if not os.path.exists(PRODUCTION_FILE):
+    production_path = _data_file("production_data.json")
+    if not os.path.exists(production_path):
         return []
     try:
-        with open(PRODUCTION_FILE, "r", encoding="utf-8") as f:
+        with open(production_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
 def _save_production(records: List[dict]):
-    with open(PRODUCTION_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("production_data.json"), "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
 
@@ -1247,8 +1290,6 @@ def search_trends(q: str = Query(..., min_length=2)):
 
 # --- PERSISTENCIA DE INVENTARIO (JSON local) ---
 
-INVENTORY_FILE = os.path.join(os.path.dirname(__file__), "inventory_data.json")
-
 DEFAULT_INVENTORY = [
     {"item_key": "argollas", "name": "Argollas metálicas", "stock": 100, "min_stock": 20, "unit": "uds"},
     {"item_key": "hebillas", "name": "Hebillas reguladoras", "stock": 80, "min_stock": 15, "unit": "uds"},
@@ -1278,24 +1319,23 @@ class InventoryUpdate(BaseModel):
 
 
 def _load_inventory() -> List[dict]:
-    if not os.path.exists(INVENTORY_FILE):
+    inventory_path = _data_file("inventory_data.json")
+    if not os.path.exists(inventory_path):
         _save_inventory(DEFAULT_INVENTORY)
         return [item.copy() for item in DEFAULT_INVENTORY]
     try:
-        with open(INVENTORY_FILE, "r", encoding="utf-8") as f:
+        with open(inventory_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return [item.copy() for item in DEFAULT_INVENTORY]
 
 
 def _save_inventory(items: List[dict]):
-    with open(INVENTORY_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("inventory_data.json"), "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
 
 
 # --- PERSISTENCIA DE MOVIMIENTOS DE INVENTARIO (JSON local) ---
-
-INVENTORY_MOVEMENTS_FILE = os.path.join(os.path.dirname(__file__), "inventory_movements_data.json")
 
 class InventoryMovement(BaseModel):
     id: str
@@ -1306,16 +1346,17 @@ class InventoryMovement(BaseModel):
     date: str
 
 def _load_movements() -> List[dict]:
-    if not os.path.exists(INVENTORY_MOVEMENTS_FILE):
+    movements_path = _data_file("inventory_movements_data.json")
+    if not os.path.exists(movements_path):
         return []
     try:
-        with open(INVENTORY_MOVEMENTS_FILE, "r", encoding="utf-8") as f:
+        with open(movements_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
 def _save_movements(movements: List[dict]):
-    with open(INVENTORY_MOVEMENTS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("inventory_movements_data.json"), "w", encoding="utf-8") as f:
         json.dump(movements, f, ensure_ascii=False, indent=2)
 
 def _log_movement(item_key: str, quantity: float, movement_type: str, reference: str = ""):
@@ -1459,9 +1500,6 @@ def _create_production_from_order(order: dict) -> dict:
 
 # --- PERSISTENCIA DE PROVEEDORES (JSON local) ---
 
-SUPPLIERS_FILE = os.path.join(os.path.dirname(__file__), "suppliers_data.json")
-
-
 class SupplierCreate(BaseModel):
     name: str
     contact: str = ""
@@ -1475,23 +1513,23 @@ class SupplierResponse(SupplierCreate):
 
 
 def _load_suppliers() -> List[dict]:
-    if not os.path.exists(SUPPLIERS_FILE):
+    suppliers_path = _data_file("suppliers_data.json")
+    if not os.path.exists(suppliers_path):
         return []
     try:
-        with open(SUPPLIERS_FILE, "r", encoding="utf-8") as f:
+        with open(suppliers_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
 
 def _save_suppliers(suppliers: List[dict]):
-    with open(SUPPLIERS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("suppliers_data.json"), "w", encoding="utf-8") as f:
         json.dump(suppliers, f, ensure_ascii=False, indent=2)
 
 
 # --- PERSISTENCIA DE PEDIDOS / ÓRDENES (JSON local) ---
 
-ORDERS_FILE = os.path.join(os.path.dirname(__file__), "orders_data.json")
 
 VALID_ORDER_STATUSES = {"pendiente", "en_confeccion", "terminado", "entregado"}
 # "adelanto" = uso Chile (antes "seña" en Argentina). Se aceptan ambos al leer.
@@ -1702,10 +1740,11 @@ def _order_from_create(order: OrderCreate, existing: Optional[dict] = None) -> d
 
 
 def _load_orders() -> List[dict]:
-    if not os.path.exists(ORDERS_FILE):
+    orders_path = _data_file("orders_data.json")
+    if not os.path.exists(orders_path):
         return []
     try:
-        with open(ORDERS_FILE, "r", encoding="utf-8") as f:
+        with open(orders_path, "r", encoding="utf-8") as f:
             raw = json.load(f)
         if not isinstance(raw, list):
             return []
@@ -1722,7 +1761,7 @@ def _save_orders(orders: List[dict]):
         row = dict(o)
         row.pop("balance_amount", None)  # se recalcula en _normalize_order
         to_save.append(row)
-    with open(ORDERS_FILE, "w", encoding="utf-8") as f:
+    with open(_data_file("orders_data.json"), "w", encoding="utf-8") as f:
         json.dump(to_save, f, ensure_ascii=False, indent=2)
 
 

@@ -11,6 +11,25 @@ const originalFetch = window.fetch;
 const REPO_BASE = document.location.pathname.split('/')[1] || '';
 const BASE_PATH = document.location.hostname.includes('github.io') ? `/${REPO_BASE}` : '';
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function isSafeHttpUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+        const parsed = new URL(url, window.location.origin);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch (err) {
+        return false;
+    }
+}
+
 // Constantes y Base de Datos Mock
 const DB_PREFIX = "t_db_";
 
@@ -1651,7 +1670,10 @@ function showToast(message, type = 'info') {
         warning: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#ffb300" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         info:    '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#42a5f5" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
     };
-    toast.innerHTML = `${icons[type] || icons.info}<span>${message}</span>`;
+    toast.innerHTML = icons[type] || icons.info;
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.appendChild(text);
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('toast-exit');
@@ -2166,10 +2188,10 @@ async function handleOptimize(event) {
         
         if (data.max_units === 0) {
             bottleneckInfo.className = 'bottleneck-card alert-danger';
-            bottleneckNames.innerHTML = `<strong>¡Producción Imposible!</strong> Falta material crítico: <span style="text-decoration: underline">${data.bottlenecks.join(', ')}</span>. Debes reponer stock.`;
+            bottleneckNames.innerHTML = `<strong>¡Producción Imposible!</strong> Falta material crítico: <span style="text-decoration: underline">${escapeHtml(data.bottlenecks.join(', '))}</span>. Debes reponer stock.`;
         } else {
             bottleneckInfo.className = 'bottleneck-card alert-danger';
-            bottleneckNames.innerHTML = `<strong>Limitante de Producción:</strong> <span style="text-decoration: underline">${data.bottlenecks.join(', ')}</span> es el recurso limitante. Quedarán ${data.leftover_inventory[data.bottlenecks[0]]} unidades tras fabricar ${data.max_units} prendas.`;
+            bottleneckNames.innerHTML = `<strong>Limitante de Producción:</strong> <span style="text-decoration: underline">${escapeHtml(data.bottlenecks.join(', '))}</span> es el recurso limitante. Quedarán ${escapeHtml(data.leftover_inventory[data.bottlenecks[0]])} unidades tras fabricar ${escapeHtml(data.max_units)} prendas.`;
         }
 
         tableBody.innerHTML = '';
@@ -2179,10 +2201,10 @@ async function handleOptimize(event) {
             if (isLimit) tr.classList.add('limit-row');
 
             tr.innerHTML = `
-                <td><strong>${name}</strong></td>
-                <td>${info.needed_per_unit}</td>
-                <td>${info.available}</td>
-                <td class="${isLimit ? 'limiting' : ''}">${info.max_units} prendas</td>
+                <td><strong>${escapeHtml(name)}</strong></td>
+                <td>${escapeHtml(info.needed_per_unit)}</td>
+                <td>${escapeHtml(info.available)}</td>
+                <td class="${isLimit ? 'limiting' : ''}">${escapeHtml(info.max_units)} prendas</td>
             `;
             tableBody.appendChild(tr);
         }
@@ -2661,8 +2683,8 @@ async function handleQuote(event) {
         data.breakdown.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${item.item}</strong></td>
-                <td>${item.qty}</td>
+                <td><strong>${escapeHtml(item.item)}</strong></td>
+                <td>${escapeHtml(item.qty)}</td>
                 <td>$${item.unit_cost.toLocaleString()}</td>
                 <td>$${item.subtotal.toLocaleString()}</td>
             `;
@@ -2916,8 +2938,7 @@ function renderClientList(clients) {
         card.className = 'client-card';
         
         const dateStr = client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-CL') : '';
-        const notesHtml = client.notes ? `<div class="client-notes-text">📝 ${client.notes}</div>` : '';
-        const safeName = (client.name || '').replace(/'/g, "\\'");
+        const notesHtml = client.notes ? `<div class="client-notes-text">📝 ${escapeHtml(client.notes)}</div>` : '';
         
         const m = [
             { label: 'Frente/Cabeza', val: client.forehead },
@@ -2951,27 +2972,27 @@ function renderClientList(clients) {
         card.innerHTML = `
             <div class="client-card-header">
                 <div class="client-card-info">
-                    <h4>${client.name}</h4>
-                    ${client.contact ? `<div class="client-contact">${client.contact}</div>` : ''}
-                    <div class="client-date">Fit: ${client.gender || 'Unisex'} · Talle: ${client.preferred_size || '—'} · Act.: ${dateStr}</div>
+                    <h4>${escapeHtml(client.name)}</h4>
+                    ${client.contact ? `<div class="client-contact">${escapeHtml(client.contact)}</div>` : ''}
+                    <div class="client-date">Fit: ${escapeHtml(client.gender || 'Unisex')} · Talle: ${escapeHtml(client.preferred_size || '—')} · Act.: ${escapeHtml(dateStr)}</div>
                 </div>
                 <div class="client-card-actions">
-                    <button type="button" class="client-action-btn load-btn" onclick="useClientInOrder('${client.id}')" title="Usar en una orden">
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInOrder('${escapeHtml(client.id)}')" title="Usar en una orden">
                         📋 Orden
                     </button>
-                    <button type="button" class="client-action-btn load-btn" onclick="useClientInQuote('${client.id}')" title="Usar en cotizador">
+                    <button type="button" class="client-action-btn load-btn" onclick="useClientInQuote('${escapeHtml(client.id)}')" title="Usar en cotizador">
                         💰 Cotizar
                     </button>
-                    <button type="button" class="client-action-btn load-btn" onclick="loadClientToScaling('${client.id}')" title="Cargar medidas al escalado">
+                    <button type="button" class="client-action-btn load-btn" onclick="loadClientToScaling('${escapeHtml(client.id)}')" title="Cargar medidas al escalado">
                         ↗ Escalar
                     </button>
-                    <button type="button" class="client-action-btn edit-btn" onclick="printClientMeasurements('${client.id}')" title="Imprimir ficha">
+                    <button type="button" class="client-action-btn edit-btn" onclick="printClientMeasurements('${escapeHtml(client.id)}')" title="Imprimir ficha">
                         📄
                     </button>
-                    <button type="button" class="client-action-btn edit-btn" onclick="editClient('${client.id}')" title="Editar">
+                    <button type="button" class="client-action-btn edit-btn" onclick="editClient('${escapeHtml(client.id)}')" title="Editar">
                         ✏
                     </button>
-                    <button type="button" class="client-action-btn delete-btn" onclick="deleteClient('${client.id}', '${safeName}')" title="Eliminar">
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteClient('${escapeHtml(client.id)}')" title="Eliminar">
                         ✕
                     </button>
                 </div>
@@ -3112,7 +3133,8 @@ function cancelClientEdit() {
 }
 
 async function deleteClient(clientId, clientName) {
-    if (!confirm(`¿Eliminar la ficha de "${clientName}"? Esta acción no se puede deshacer.`)) return;
+    const name = clientName || (clientsCache || []).find(c => c.id === clientId)?.name || 'esta ficha';
+    if (!confirm(`¿Eliminar la ficha de "${name}"? Esta acción no se puede deshacer.`)) return;
     // confirm kept for destructive operations
     
     try {
@@ -3255,7 +3277,7 @@ function renderCatalogList(catalog) {
             lastCategory = cat;
             const heading = document.createElement('div');
             heading.className = 'catalog-category-heading';
-            heading.innerHTML = `<h3>${CATEGORY_LABELS[cat] || cat}</h3>`;
+            heading.innerHTML = `<h3>${escapeHtml(CATEGORY_LABELS[cat] || cat)}</h3>`;
             listContainer.appendChild(heading);
         }
 
@@ -3287,29 +3309,28 @@ function renderCatalogList(catalog) {
             const chips = prod.variants.map(v => `
                 <span class="item-tag" style="background:rgba(255,255,255,0.05);border:1px solid ${v.color_hex || '#c5a059'};color:var(--color-text-main);font-size:0.75rem;padding:2px 6px;display:inline-flex;align-items:center;gap:4px;">
                     <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${v.color_hex || '#c5a059'};"></span>
-                    ${v.name}
+                    ${escapeHtml(v.name)}
                 </span>
             `).join(' ');
             variantsHtml = `<div class="catalog-variants-list" style="margin-top:0.4rem;display:flex;gap:4px;flex-wrap:wrap;">${chips}</div>`;
         }
 
-        const safeName = (prod.name || key).replace(/'/g, "\\'");
         card.innerHTML = `
             <div class="client-card-header">
                 <div class="client-card-info">
                     <div class="catalog-badges">${coreBadge}${veganBadge}${mtoBadge}</div>
-                    <h4 style="margin-top: 0.3rem;">${prod.name || key}</h4>
-                    <div class="client-date">Clave: <em>${key}</em></div>
-                    ${prod.description ? `<p class="catalog-product-desc">${prod.description}</p>` : ''}
-                    ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${prod.material}</p>` : ''}
+                    <h4 style="margin-top: 0.3rem;">${escapeHtml(prod.name || key)}</h4>
+                    <div class="client-date">Clave: <em>${escapeHtml(key)}</em></div>
+                    ${prod.description ? `<p class="catalog-product-desc">${escapeHtml(prod.description)}</p>` : ''}
+                    ${prod.material ? `<p class="catalog-product-material"><strong>Material:</strong> ${escapeHtml(prod.material)}</p>` : ''}
                     ${variantsHtml}
                 </div>
                 <div class="client-card-actions">
-                    <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${key}')" title="Usar en orden">📋</button>
-                    <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${key}')" title="Usar en cotizador">💰</button>
-                    <button type="button" class="client-action-btn edit-btn" onclick="openBOMEditModal('${key}')" title="Editar Ficha Técnica BOM">✏️ BOM</button>
-                    <button type="button" class="client-action-btn edit-btn" onclick="openVariantModal('${key}')" title="Gestionar Variantes">🎨 Variantes</button>
-                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${key}', '${safeName}')">✕</button>` : ''}
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInOrder('${escapeHtml(key)}')" title="Usar en orden">📋</button>
+                    <button type="button" class="client-action-btn load-btn" onclick="useProductInQuote('${escapeHtml(key)}')" title="Usar en cotizador">💰</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="openBOMEditModal('${escapeHtml(key)}')" title="Editar Ficha Técnica BOM">✏️ BOM</button>
+                    <button type="button" class="client-action-btn edit-btn" onclick="openVariantModal('${escapeHtml(key)}')" title="Gestionar Variantes">🎨 Variantes</button>
+                    ${!isCore ? `<button type="button" class="client-action-btn delete-btn" onclick="deleteProduct('${escapeHtml(key)}')">✕</button>` : ''}
                 </div>
             </div>
             <div class="catalog-item-bom" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.15); border-radius: 4px;">
@@ -3490,7 +3511,8 @@ async function editProduct(key) {
 }
 
 async function deleteProduct(key, name) {
-    if (!confirm(`¿Eliminar la ficha técnica de "${name}" del catálogo?`)) return;
+    const label = name || (productsCatalog && productsCatalog[key] && productsCatalog[key].name) || key;
+    if (!confirm(`¿Eliminar la ficha técnica de "${label}" del catálogo?`)) return;
     // confirm kept for destructive operations
     try {
         const response = await fetch(`/api/products/${key}`, { method: 'DELETE' });
@@ -3567,8 +3589,8 @@ function renderBatchItemsTable() {
     currentBatch.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${item.name}</strong></td>
-            <td>${item.quantity} uds</td>
+            <td><strong>${escapeHtml(item.name)}</strong></td>
+            <td>${escapeHtml(item.quantity)} uds</td>
             <td><button class="client-action-btn delete-btn" onclick="removeBatchItem(${index})">✕ Quitar</button></td>
         `;
         tableBody.appendChild(tr);
@@ -3638,9 +3660,9 @@ async function validateBatchProduction() {
         for (const [name, info] of Object.entries(data.hardware_status)) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${name}</strong></td>
-                <td>${info.needed}</td>
-                <td>${info.available}</td>
+                <td><strong>${escapeHtml(name)}</strong></td>
+                <td>${escapeHtml(info.needed)}</td>
+                <td>${escapeHtml(info.available)}</td>
                 <td class="${info.ok ? 'ok-text' : 'fail-text'}">${info.ok ? '✓ OK' : `Faltan ${Math.round((info.needed - info.available)*100)/100}`}</td>
             `;
             materialsTable.appendChild(tr);
@@ -3658,9 +3680,9 @@ async function validateBatchProduction() {
                 item.className = 'layout-description';
                 item.style.textAlign = 'left';
                 item.innerHTML = `
-                    • Para <strong>${cleanProdName}</strong>:<br>
-                    Necesitas <strong>${status.needed}</strong> paneles de ${status.width}x${status.height}cm.<br>
-                    En el rollo caben un máximo de ${status.available_in_roll}. 
+                    • Para <strong>${escapeHtml(cleanProdName)}</strong>:<br>
+                    Necesitas <strong>${escapeHtml(status.needed)}</strong> paneles de ${escapeHtml(status.width)}x${escapeHtml(status.height)}cm.<br>
+                    En el rollo caben un máximo de ${escapeHtml(status.available_in_roll)}. 
                     <span class="${status.ok ? 'ok-text' : 'fail-text'}">${status.ok ? '(Stock Suficiente)' : '(FALTA ESPACIO EN ROLLO)'}</span>
                 `;
                 panelsList.appendChild(item);
@@ -3721,8 +3743,8 @@ async function loadProductionHistory() {
             netProfit += record.profit * record.quantity;
 
             tr.innerHTML = `
-                <td><span style="font-size: 0.7rem; color: var(--color-text-muted);">${dateStr}</span></td>
-                <td><strong>${record.product_name}</strong></td>
+                <td><span style="font-size: 0.7rem; color: var(--color-text-muted);">${escapeHtml(dateStr)}</span></td>
+                <td><strong>${escapeHtml(record.product_name)}</strong></td>
                 <td>${record.quantity}</td>
                 <td>$${record.retail_price.toLocaleString()}</td>
                 <td class="ok-text">+$${record.profit.toLocaleString()} <span style="font-size: 0.7rem; opacity:0.8;">(${marginPercent}%)</span></td>
@@ -3957,7 +3979,7 @@ async function searchLiveTrends() {
     }
     
     if (feedContainer) {
-        feedContainer.innerHTML = `<p style="padding: 1.5rem; text-align: center; color: var(--accent-gold); font-size: 0.9rem;">🔎 Buscando artículos en vivo sobre "<strong>${query}</strong>" en prensa y redes...</p>`;
+        feedContainer.innerHTML = `<p style="padding: 1.5rem; text-align: center; color: var(--accent-gold); font-size: 0.9rem;">🔎 Buscando artículos en vivo sobre "<strong>${escapeHtml(query)}</strong>" en prensa y redes...</p>`;
     }
     
     try {
@@ -4100,16 +4122,17 @@ function renderTrendsFeed() {
         };
         const catLabel = catMap[art.category] || 'Tendencia Generación';
         
+        const articleHref = isSafeHttpUrl(art.link) ? art.link : '#';
         card.innerHTML = `
             <div class="article-header">
-                <span class="article-source">${art.source}</span>
-                <span class="article-category-badge">${catLabel}</span>
+                <span class="article-source">${escapeHtml(art.source)}</span>
+                <span class="article-category-badge">${escapeHtml(catLabel)}</span>
             </div>
-            <h4 class="article-title">${art.title}</h4>
-            ${art.snippet ? `<p class="article-snippet">${art.snippet}</p>` : ''}
+            <h4 class="article-title">${escapeHtml(art.title)}</h4>
+            ${art.snippet ? `<p class="article-snippet">${escapeHtml(art.snippet)}</p>` : ''}
             <div class="article-footer">
-                <span style="font-size:0.75rem; color: var(--color-text-muted);">${art.pub_date || ''}</span>
-                <a href="${art.link}" target="_blank" class="article-link-btn">Leer artículo →</a>
+                <span style="font-size:0.75rem; color: var(--color-text-muted);">${escapeHtml(art.pub_date || '')}</span>
+                <a href="${escapeHtml(articleHref)}" target="_blank" rel="noopener noreferrer" class="article-link-btn">Leer artículo →</a>
             </div>
         `;
         feedContainer.appendChild(card);
@@ -4388,7 +4411,7 @@ function renderProductAnalytics() {
 
                 row.innerHTML = `
                     <div style="flex:0 0 30px;font-weight:bold;">${medal}</div>
-                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${nameStyle}">${p.name}</div>
+                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${nameStyle}">${escapeHtml(p.name)}</div>
                     <div style="flex:0 0 60px;text-align:right;">${p.units}</div>
                     <div style="flex:0 0 90px;text-align:right;color:#4caf50;">$${p.net_profit.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}</div>
                     <div style="flex:0 0 70px;text-align:right;">$${p.profit_per_hour.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</div>
@@ -4544,7 +4567,7 @@ function renderRestockPredictions() {
         
         card.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong>${p.name}</strong>
+                <strong>${escapeHtml(p.name)}</strong>
                 <span>${color.emoji}</span>
             </div>
             <div style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.5rem;">
@@ -4644,10 +4667,10 @@ function renderInventoryItems(items) {
         tr.title = 'Clic para ajustar este insumo';
         tr.onclick = () => selectInventoryItem(item.item_key);
         tr.innerHTML = `
-            <td><strong>${item.name}</strong></td>
-            <td>${item.stock}</td>
-            <td>${item.min_stock}</td>
-            <td>${item.unit}</td>
+            <td><strong>${escapeHtml(item.name)}</strong></td>
+            <td>${escapeHtml(item.stock)}</td>
+            <td>${escapeHtml(item.min_stock)}</td>
+            <td>${escapeHtml(item.unit)}</td>
             <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
         `;
         tableBody.appendChild(tr);
@@ -4658,7 +4681,7 @@ function renderInventoryItems(items) {
             card.className = `inv-card level-${level}`;
             card.onclick = () => selectInventoryItem(item.item_key);
             card.innerHTML = `
-                <span class="inv-card-name">${item.name}</span>
+                <span class="inv-card-name">${escapeHtml(item.name)}</span>
                 <span class="inv-card-stock">${item.stock} <small>${item.unit}</small></span>
                 <span class="stock-badge ${statusClass}">${statusText}</span>
                 <span class="inv-card-min">mín. ${item.min_stock}</span>
@@ -4741,12 +4764,12 @@ async function loadInventoryMovements() {
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${dateStr}</td>
-                <td><strong>${itemName}</strong></td>
+                <td>${escapeHtml(dateStr)}</td>
+                <td><strong>${escapeHtml(itemName)}</strong></td>
                 <td><span class="stock-badge ${opClass}">${opText}</span></td>
-                <td><strong>${qtyText}</strong></td>
-                <td>${typeText}</td>
-                <td style="color: var(--color-text-muted); font-size: 0.85rem;">${m.reference || ''}</td>
+                <td><strong>${escapeHtml(qtyText)}</strong></td>
+                <td>${escapeHtml(typeText)}</td>
+                <td style="color: var(--color-text-muted); font-size: 0.85rem;">${escapeHtml(m.reference || '')}</td>
             `;
             tableBody.appendChild(tr);
         });
@@ -4865,9 +4888,9 @@ function renderSuppliersBestPrices(comparison) {
         const best = withPrice[0];
         cards.push(`
             <div class="sup-best-card">
-                <span class="sup-best-item">${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</span>
+                <span class="sup-best-item">${escapeHtml(SUPPLIER_PRICE_LABELS[itemKey] || itemKey)}</span>
                 <span class="sup-best-price">$${Number(best.price).toLocaleString('es-CL')}</span>
-                <span class="sup-best-name">${best.supplier}</span>
+                <span class="sup-best-name">${escapeHtml(best.supplier)}</span>
             </div>
         `);
     });
@@ -4898,20 +4921,19 @@ function renderSuppliersList(suppliers) {
                 .map(([k, v]) => `<span class="sup-price-chip">${SUPPLIER_PRICE_LABELS[k] || k}: $${Number(v).toLocaleString('es-CL')}</span>`)
                 .join('')
             : '';
-        const safeName = (sup.name || '').replace(/'/g, "\\'");
         const contact = sup.contact || '';
         const waDigits = contact.replace(/\D/g, '');
         card.innerHTML = `
             <div class="supplier-card-top">
                 <div>
-                    <h4>${sup.name}</h4>
-                    ${contact ? `<div class="supplier-contact">${contact}</div>` : ''}
-                    ${sup.notes ? `<div class="supplier-notes">${sup.notes}</div>` : ''}
+                    <h4>${escapeHtml(sup.name)}</h4>
+                    ${contact ? `<div class="supplier-contact">${escapeHtml(contact)}</div>` : ''}
+                    ${sup.notes ? `<div class="supplier-notes">${escapeHtml(sup.notes)}</div>` : ''}
                 </div>
                 <div class="supplier-card-actions">
-                    ${waDigits.length > 8 ? `<button type="button" class="client-action-btn load-btn" onclick="window.open('https://wa.me/${waDigits}','_blank')" title="WhatsApp">📱</button>` : ''}
-                    <button type="button" class="client-action-btn edit-btn" onclick="editSupplier('${sup.id}')">✏</button>
-                    <button type="button" class="client-action-btn delete-btn" onclick="deleteSupplier('${sup.id}','${safeName}')">✕</button>
+                    ${waDigits.length > 8 ? `<button type="button" class="client-action-btn load-btn" onclick="window.open('https://wa.me/${escapeHtml(waDigits)}','_blank')" title="WhatsApp">📱</button>` : ''}
+                    <button type="button" class="client-action-btn edit-btn" onclick="editSupplier('${escapeHtml(sup.id)}')">✏</button>
+                    <button type="button" class="client-action-btn delete-btn" onclick="deleteSupplier('${escapeHtml(sup.id)}')">✕</button>
                 </div>
             </div>
             ${pricesHtml ? `<div class="sup-price-chips">${pricesHtml}</div>` : '<p class="sup-no-prices">Sin precios cargados</p>'}
@@ -4988,11 +5010,12 @@ async function editSupplier(id) {
 }
 
 async function deleteSupplier(id, name) {
-    if (!confirm(`¿Eliminar el proveedor "${name}"?`)) return;
+    const label = name || (suppliersCache || []).find(s => s.id === id)?.name || 'este proveedor';
+    if (!confirm(`¿Eliminar el proveedor "${label}"?`)) return;
     try {
         const response = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Error al eliminar');
-        showToast(`Proveedor "${name}" eliminado`, 'success');
+        showToast(`Proveedor "${label}" eliminado`, 'success');
         await loadSuppliers();
         await loadPriceComparison();
     } catch (error) {
@@ -5025,7 +5048,7 @@ async function loadPriceComparison() {
         }
 
         let headRow = '<th>Insumo</th>';
-        supplierNames.forEach(s => { headRow += `<th>${s}</th>`; });
+        supplierNames.forEach(s => { headRow += `<th>${escapeHtml(s)}</th>`; });
         thead.innerHTML = `<tr>${headRow}</tr>`;
 
         tbody.innerHTML = '';
@@ -5040,7 +5063,7 @@ async function loadPriceComparison() {
             const positive = rows.filter(r => r.price > 0).map(r => r.price);
             const minPrice = positive.length ? Math.min(...positive) : null;
 
-            let row = `<td><strong>${SUPPLIER_PRICE_LABELS[itemKey] || itemKey}</strong></td>`;
+            let row = `<td><strong>${escapeHtml(SUPPLIER_PRICE_LABELS[itemKey] || itemKey)}</strong></td>`;
             supplierNames.forEach(s => {
                 const val = byName[s] || 0;
                 const cls = (val > 0 && minPrice != null && val === minPrice) ? ' class="price-highlight"' : '';
@@ -5191,19 +5214,17 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
             ? '<span class="order-badge badge-stock-warn">Sin descuento</span>'
             : '');
     const variantBadge = (order.variant_name && order.variant_name !== 'Standard / Base')
-        ? `<span class="order-badge" style="border:1px solid #c5a059;color:#c5a059;background:rgba(197,160,89,0.1);">🎨 ${order.variant_name}</span>`
+        ? `<span class="order-badge" style="border:1px solid #c5a059;color:#c5a059;background:rgba(197,160,89,0.1);">🎨 ${escapeHtml(order.variant_name)}</span>`
         : '';
 
     const shippingBadge = order.shipping_agency
-        ? `<span class="order-badge" style="border:1px solid #4fc3f7;color:#4fc3f7;background:rgba(79,195,247,0.1);">🚚 ${order.shipping_agency} ${order.tracking_number ? '· ' + order.tracking_number : ''}</span>`
+        ? `<span class="order-badge" style="border:1px solid #4fc3f7;color:#4fc3f7;background:rgba(79,195,247,0.1);">🚚 ${escapeHtml(order.shipping_agency)} ${order.tracking_number ? '· ' + escapeHtml(order.tracking_number) : ''}</span>`
         : '';
 
-    const safeClient = (order.client_name || 'Cliente').replace(/'/g, "\\'");
-
     return `
-        <div class="order-client">${order.client_name || 'Cliente'}</div>
-        <div class="order-product">${order.product_name || order.product_key || 'Prenda'} · ${order.size || 'M'}${qty > 1 ? ` · ×${qty}` : ''}</div>
-        ${notes ? `<div class="order-notes">📝 ${notes}</div>` : ''}
+        <div class="order-client">${escapeHtml(order.client_name || 'Cliente')}</div>
+        <div class="order-product">${escapeHtml(order.product_name || order.product_key || 'Prenda')} · ${escapeHtml(order.size || 'M')}${qty > 1 ? ` · ×${qty}` : ''}</div>
+        ${notes ? `<div class="order-notes">📝 ${escapeHtml(notes)}</div>` : ''}
         <div class="order-badges">
             <span class="order-badge badge-pay-${payClass}">${PAYMENT_LABELS[pay] || pay}</span>
             ${variantBadge}
@@ -5220,11 +5241,11 @@ function buildOrderCardHTML(order, { compact = false } = {}) {
             <span>Saldo ${formatMoney(balance)}</span>
         </div>
         <div class="order-actions" style="flex-wrap:wrap;gap:4px;">
-            ${showAdvance ? `<button type="button" class="kanban-advance-btn" onclick="advanceOrderStatus('${order.id}','${status}')">→ ${nextLabel}</button>` : '<span class="order-done-label">Entregada</span>'}
-            <button type="button" class="client-action-btn load-btn" onclick="openShippingModal('${order.id}')" title="Guía de Despacho PDF">📦 Despacho</button>
-            <button type="button" class="client-action-btn load-btn" onclick="openQRModal('${order.id}')" title="Etiqueta QR Taller">📱 QR</button>
-            ${balance > 0 ? `<button type="button" class="client-action-btn edit-btn" onclick="openTransactionModal('${order.id}','${safeClient}',${balance},'saldo')" title="Registrar Pago de Saldo">💰 Cobrar</button>` : ''}
-            <button type="button" class="kanban-delete-btn" onclick="deleteOrder('${order.id}')" title="Eliminar orden">✕</button>
+            ${showAdvance ? `<button type="button" class="kanban-advance-btn" onclick="advanceOrderStatus('${escapeHtml(order.id)}','${escapeHtml(status)}')">→ ${escapeHtml(nextLabel)}</button>` : '<span class="order-done-label">Entregada</span>'}
+            <button type="button" class="client-action-btn load-btn" onclick="openShippingModal('${escapeHtml(order.id)}')" title="Guía de Despacho PDF">📦 Despacho</button>
+            <button type="button" class="client-action-btn load-btn" onclick="openQRModal('${escapeHtml(order.id)}')" title="Etiqueta QR Taller">📱 QR</button>
+            ${balance > 0 ? `<button type="button" class="client-action-btn edit-btn" onclick="openTransactionModal('${escapeHtml(order.id)}')" title="Registrar Pago de Saldo">💰 Cobrar</button>` : ''}
+            <button type="button" class="kanban-delete-btn" onclick="deleteOrder('${escapeHtml(order.id)}')" title="Eliminar orden">✕</button>
         </div>
     `;
 }
@@ -5666,9 +5687,9 @@ async function renderQuoteSupplierComparison(breakdown) {
             const diffColor = diff > 0 ? '#66bb6a' : (diff < 0 ? '#ef5350' : 'var(--color-text-muted)');
 
             rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-                <span>${item.item}</span>
+                <span>${escapeHtml(item.item)}</span>
                 <span style="text-align:right;">
-                    <strong style="color:${diffColor};">${bestSupplier}</strong>
+                    <strong style="color:${diffColor};">${escapeHtml(bestSupplier)}</strong>
                     <span style="color:var(--color-text-muted);margin-left:0.4rem;">$${bestPrice.toLocaleString()}/ud → $${bestSubtotal.toLocaleString()}</span>
                     ${diff > 0 ? `<span style="color:#66bb6a;margin-left:0.4rem;font-size:0.75rem;">↓ $${Math.round(diff).toLocaleString()}</span>` : ''}
                 </span>
@@ -5755,7 +5776,7 @@ function printClientMeasurements(clientId) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Ficha de Medidas - ${client.name}</title>
+    <title>Ficha de Medidas - ${escapeHtml(client.name)}</title>
     <style>
         @media print { body { margin: 0; } @page { margin: 1cm; } }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; max-width: 700px; margin: 0 auto; padding: 20px; }
@@ -5782,15 +5803,15 @@ function printClientMeasurements(clientId) {
         </div>
     </div>
     <div class="client-info">
-        <div><strong>Cliente:</strong> ${client.name}</div>
-        <div><strong>Contacto:</strong> ${client.contact || '—'}</div>
-        <div><strong>Talla Preferida:</strong> ${client.preferred_size || 'M'}</div>
-        <div><strong>Género/Fit:</strong> ${client.gender || 'Unisex'}</div>
+        <div><strong>Cliente:</strong> ${escapeHtml(client.name)}</div>
+        <div><strong>Contacto:</strong> ${escapeHtml(client.contact || '—')}</div>
+        <div><strong>Talla Preferida:</strong> ${escapeHtml(client.preferred_size || 'M')}</div>
+        <div><strong>Género/Fit:</strong> ${escapeHtml(client.gender || 'Unisex')}</div>
     </div>
     <div class="measures-grid">${groupsHtml}</div>
     <div class="notes-box">
         <div class="notes-label">📝 Notas del Taller:</div>
-        <div style="font-size:12px;color:#555;">${client.notes || ''}</div>
+        <div style="font-size:12px;color:#555;">${escapeHtml(client.notes || '')}</div>
     </div>
     <div class="footer">
         <span>Tormenta Indumentaria · Santiago, Chile</span>
@@ -5873,29 +5894,29 @@ async function handleGlobalSearch(query) {
     let html = '';
 
     matchedClients.forEach(c => {
-        html += `<div onclick="closeGlobalSearch();switchTab('clients');selectClientForEdit('${c.id}')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
-            <div><strong>👤 ${c.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${c.contact || c.email || 'Ficha de Cliente'}</div></div>
+        html += `<div onclick="closeGlobalSearch();switchTab('clients');selectClientForEdit('${escapeHtml(c.id)}')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
+            <div><strong>👤 ${escapeHtml(c.name)}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${escapeHtml(c.contact || c.email || 'Ficha de Cliente')}</div></div>
             <span style="font-size:0.7rem;color:#c5a059;">Ver Ficha →</span>
         </div>`;
     });
 
     matchedOrders.forEach(o => {
         html += `<div onclick="closeGlobalSearch();switchTab('orders')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
-            <div><strong>📋 Orden #${o.id}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${o.client_name} · ${o.product_name || o.product_key}</div></div>
+            <div><strong>📋 Orden #${escapeHtml(o.id)}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${escapeHtml(o.client_name)} · ${escapeHtml(o.product_name || o.product_key)}</div></div>
             <span style="font-size:0.7rem;color:#4caf50;">$${(o.quoted_price || 0).toLocaleString('es-CL')} →</span>
         </div>`;
     });
 
     matchedProducts.forEach(p => {
         html += `<div onclick="closeGlobalSearch();switchTab('catalog')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
-            <div><strong>🏷️ ${p.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${p.category || 'Catálogo'}</div></div>
+            <div><strong>🏷️ ${escapeHtml(p.name)}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">${escapeHtml(p.category || 'Catálogo')}</div></div>
             <span style="font-size:0.7rem;color:#c5a059;">Ver Catálogo →</span>
         </div>`;
     });
 
     matchedInventory.forEach(i => {
         html += `<div onclick="closeGlobalSearch();switchTab('inventory')" style="background:rgba(255,255,255,0.04);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.08);">
-            <div><strong>📦 ${i.name}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">Stock actual: ${i.stock} ${i.unit}</div></div>
+            <div><strong>📦 ${escapeHtml(i.name)}</strong><div style="font-size:0.75rem;color:var(--color-text-muted);">Stock actual: ${escapeHtml(i.stock)} ${escapeHtml(i.unit)}</div></div>
             <span style="font-size:0.7rem;color:#2196f3;">Ajustar Stock →</span>
         </div>`;
     });
@@ -6101,13 +6122,13 @@ function renderVariantList(variants) {
             <div style="display:flex;align-items:center;gap:8px;">
                 <span style="width:14px;height:14px;border-radius:50%;background:${v.color_hex || '#c5a059'};border:1px solid rgba(255,255,255,0.2);"></span>
                 <div>
-                    <strong style="font-size:0.85rem;color:var(--color-text-main);">${v.name}</strong>
-                    <div style="font-size:0.75rem;color:var(--color-text-muted);">${v.material || ''} ${v.hardware_color ? '· ' + v.hardware_color : ''}</div>
+                    <strong style="font-size:0.85rem;color:var(--color-text-main);">${escapeHtml(v.name)}</strong>
+                    <div style="font-size:0.75rem;color:var(--color-text-muted);">${escapeHtml(v.material || '')} ${v.hardware_color ? '· ' + escapeHtml(v.hardware_color) : ''}</div>
                 </div>
             </div>
             <div style="display:flex;gap:4px;">
-                <button type="button" class="client-action-btn edit-btn" onclick="editVariant('${v.id}')" title="Editar">✏️</button>
-                <button type="button" class="client-action-btn delete-btn" onclick="deleteVariant('${v.id}')" title="Eliminar">✕</button>
+                <button type="button" class="client-action-btn edit-btn" onclick="editVariant('${escapeHtml(v.id)}')" title="Editar">✏️</button>
+                <button type="button" class="client-action-btn delete-btn" onclick="deleteVariant('${escapeHtml(v.id)}')" title="Eliminar">✕</button>
             </div>
         </div>
     `).join('');
@@ -6230,7 +6251,7 @@ async function handleQuoteProductChange() {
     const prod = products[productKey];
     if (prod && Array.isArray(prod.variants) && prod.variants.length > 0) {
         variantSelect.innerHTML = '<option value="">— Variante Standard / Base —</option>' +
-            prod.variants.map(v => `<option value="${v.id}">${v.name} (${v.hardware_color || v.material || 'Custom'})</option>`).join('');
+            prod.variants.map(v => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.name)} (${escapeHtml(v.hardware_color || v.material || 'Custom')})</option>`).join('');
         if (variantGroup) variantGroup.style.display = 'block';
     } else {
         if (variantGroup) variantGroup.style.display = 'none';
@@ -6262,7 +6283,7 @@ async function handleOrderProductChange() {
     const prod = products[productKey];
     if (prod && Array.isArray(prod.variants) && prod.variants.length > 0) {
         variantSelect.innerHTML = '<option value="">— Variante Standard / Base —</option>' +
-            prod.variants.map(v => `<option value="${v.id}" data-name="${v.name}">${v.name}</option>`).join('');
+            prod.variants.map(v => `<option value="${escapeHtml(v.id)}" data-name="${escapeHtml(v.name)}">${escapeHtml(v.name)}</option>`).join('');
         if (variantGroup) variantGroup.style.display = 'block';
     } else {
         if (variantGroup) variantGroup.style.display = 'none';
@@ -6347,8 +6368,8 @@ function renderTransactionsTable(transactions) {
             <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                 <td style="padding:6px;color:var(--color-text-muted);">${dateStr}</td>
                 <td style="padding:6px;"><span style="color:${color};font-weight:600;">${isInc ? 'Ingreso (+)' : 'Egreso (-)'}</span></td>
-                <td style="padding:6px;"><span class="item-tag">${t.category || 'otro'}</span></td>
-                <td style="padding:6px;">${t.client_name || '—'} ${t.notes ? `<small style="color:var(--color-text-muted);">(${t.notes})</small>` : ''}</td>
+                <td style="padding:6px;"><span class="item-tag">${escapeHtml(t.category || 'otro')}</span></td>
+                <td style="padding:6px;">${escapeHtml(t.client_name || '—')} ${t.notes ? `<small style="color:var(--color-text-muted);">(${escapeHtml(t.notes)})</small>` : ''}</td>
                 <td style="padding:6px;text-align:right;font-weight:600;color:${color};">${isInc ? '+' : '-'}${formatMoney(t.amount)}</td>
             </tr>
         `;
@@ -6358,6 +6379,19 @@ function renderTransactionsTable(transactions) {
 function openTransactionModal(orderId = '', clientName = '', defaultAmount = 0, category = 'seña') {
     const modal = document.getElementById('transaction-modal');
     if (!modal) return;
+
+    if (orderId && (!clientName || !defaultAmount)) {
+        const order = (ordersCache || []).find(o => o.id === orderId);
+        if (order) {
+            if (!clientName) clientName = order.client_name || '';
+            if (!defaultAmount) {
+                defaultAmount = order.balance_amount != null
+                    ? order.balance_amount
+                    : Math.max(0, (order.quoted_price || 0) - (order.amount_paid_total || order.deposit_amount || 0));
+            }
+            if (!category || category === 'seña') category = 'saldo';
+        }
+    }
 
     document.getElementById('tx_order_id').value = orderId || '';
     document.getElementById('tx_client_name').value = clientName || '';
@@ -6444,9 +6478,9 @@ function openShippingModal(orderId) {
     const preview = document.getElementById('ship_order_preview');
     if (preview) {
         preview.innerHTML = `
-            <strong>Orden #${order.id}</strong> — ${order.client_name || 'Cliente'}<br>
-            <strong>Prenda:</strong> ${order.product_name || order.product_key} (${order.size || 'M'}) ${order.variant_name ? '· ' + order.variant_name : ''}<br>
-            <strong>Teléfono:</strong> ${order.contact_phone || 'Sin registrar'}<br>
+            <strong>Orden #${escapeHtml(order.id)}</strong> — ${escapeHtml(order.client_name || 'Cliente')}<br>
+            <strong>Prenda:</strong> ${escapeHtml(order.product_name || order.product_key)} (${escapeHtml(order.size || 'M')}) ${order.variant_name ? '· ' + escapeHtml(order.variant_name) : ''}<br>
+            <strong>Teléfono:</strong> ${escapeHtml(order.contact_phone || 'Sin registrar')}<br>
             <strong>Estado de Pago:</strong> <span style="color:#81c784;">${order.payment_status === 'pagado' ? 'PAGADO 100%' : 'Adelanto 50%'}</span>
         `;
     }
