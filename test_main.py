@@ -8,11 +8,29 @@
 # ]
 # ///
 
+import json
+import os
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
-from main import app, DEFAULT_BOMS
+
+import main
+from main import DATA_DIR_ENV, DATA_FILENAMES, app, DEFAULT_BOMS
 
 client = TestClient(app)
+REPO_ROOT = Path(__file__).resolve().parent
+STATIC_APP_JS = REPO_ROOT / "static" / "app.js"
+
+
+@pytest.fixture(autouse=True)
+def isolated_data_dir(tmp_path, monkeypatch):
+    """Redirect every JSON persistence path to a per-test temp dir.
+
+    Tests must not read or write the versioned *_data.json files in the repo.
+    """
+    monkeypatch.setenv(DATA_DIR_ENV, str(tmp_path))
+    yield tmp_path
 
 def test_read_root():
     response = client.get("/")
@@ -814,6 +832,80 @@ def test_shipping_fields_and_crm():
     # Limpieza
     client.delete(f"/api/clients/{cli_data['id']}")
     client.delete(f"/api/orders/{ord_data['id']}")
+
+
+# --- C1: aislamiento de persistencia y contrato XSS del frontend ---
+
+def _repo_data_snapshots():
+    snapshots = {}
+    for name in DATA_FILENAMES:
+        path = REPO_ROOT / name
+        snapshots[name] = path.read_bytes() if path.exists() else None
+    return snapshots
+
+
+def test_data_dir_default_is_module_dir(monkeypatch):
+    monkeypatch.delenv(DATA_DIR_ENV, raising=False)
+    assert main._data_dir() == os.path.dirname(os.path.abspath(main.__file__))
+
+
+def test_isolated_data_dir_does_not_touch_repo_json(isolated_data_dir):
+    before = _repo_data_snapshots()
+
+    created = client.post(
+        "/api/clients",
+        json={
+            "name": "Cliente de prueba C1",
+            "contact": "@c1_isolation",
+            "notes": "fixture de test — no debe llegar al repo",
+        },
+    )
+    assert created.status_code == 201
+    client_id = created.json()["id"]
+
+    listed = client.get("/api/clients")
+    assert listed.status_code == 200
+    assert any(c["id"] == client_id for c in listed.json())
+
+    tmp_clients = isolated_data_dir / "clients_data.json"
+    assert tmp_clients.exists()
+    tmp_payload = json.loads(tmp_clients.read_text(encoding="utf-8"))
+    assert any(c["id"] == client_id for c in tmp_payload)
+
+    repo_clients = REPO_ROOT / "clients_data.json"
+    if repo_clients.exists():
+        repo_payload = json.loads(repo_clients.read_text(encoding="utf-8"))
+        assert all(c.get("id") != client_id for c in repo_payload)
+
+    assert _repo_data_snapshots() == before
+
+
+def test_api_stores_markup_verbatim_frontend_must_escape():
+    """El API persiste el texto tal cual; el escape XSS vive en static/app.js.
+
+    No hay sanitización server-side en este corte. El frontend servido
+    (static/app.js) debe pasar todo dato de usuaria por escapeHtml / textContent.
+    """
+    payload = {
+        "name": "<img src=x onerror=alert(1)>",
+        "contact": "<script>alert(1)</script>",
+        "notes": "a & b <c>",
+    }
+    response = client.post("/api/clients", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == payload["name"]
+    assert data["contact"] == payload["contact"]
+    assert data["notes"] == payload["notes"]
+
+    source = STATIC_APP_JS.read_text(encoding="utf-8")
+    assert "function escapeHtml" in source
+    assert "escapeHtml(client.name" in source
+    assert "escapeHtml(order.client_name" in source
+    assert "escapeHtml(sup.name" in source
+    assert "escapeHtml(item.item" in source
+    assert "escapeHtml(order.product_name" in source
+
 
 
 
